@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       payload,
     })
     .select("id")
-    .single();
+    .maybeSingle();
 
   // WooCommerce wysyla ping przy tworzeniu webhooka — odpowiedz 200
   if (topic === "ping" || !payload.id) {
