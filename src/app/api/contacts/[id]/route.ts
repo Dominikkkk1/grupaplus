@@ -23,7 +23,7 @@ export async function PATCH(
     .from("users")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || profile.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -99,7 +99,7 @@ export async function DELETE(
     .from("users")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || profile.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
