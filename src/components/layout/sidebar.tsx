@@ -16,11 +16,11 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/orders", label: "Zamowienia", icon: Package },
-  { href: "/production", label: "Produkcja", icon: Factory },
-  { href: "/crm", label: "Klienci", icon: Users },
-  { href: "/products", label: "Produkty", icon: ClipboardList },
-  { href: "/machines", label: "Maszyny", icon: Cog },
+  { href: "/orders", label: "Zamowienia", icon: Package, roles: ["admin", "operator", "client"] },
+  { href: "/production", label: "Produkcja", icon: Factory, roles: ["admin", "operator"] },
+  { href: "/crm", label: "Klienci", icon: Users, roles: ["admin"] },
+  { href: "/products", label: "Produkty", icon: ClipboardList, roles: ["admin"] },
+  { href: "/machines", label: "Maszyny", icon: Cog, roles: ["admin"] },
 ];
 
 export function Sidebar({
@@ -66,7 +66,7 @@ export function Sidebar({
         <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
           Menu
         </p>
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => item.roles.includes(userRole)).map((item) => {
           const Icon = item.icon;
           const isActive = pathname.startsWith(item.href);
           return (

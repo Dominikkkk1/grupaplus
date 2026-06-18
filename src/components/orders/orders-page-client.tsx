@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { Plus, Search, Package } from "lucide-react";
 import { NewOrderForm } from "./new-order-form";
 
 interface ProductOption {
@@ -10,14 +11,54 @@ interface ProductOption {
   sku: string | null;
 }
 
+interface Order {
+  id: string;
+  order_number: string;
+  source: string;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  contact: { full_name: string } | null;
+  company: { name: string } | null;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  new: { label: "Nowe", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  confirmed: { label: "Potwierdzone", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
+  in_production: { label: "W produkcji", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  ready: { label: "Gotowe", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  shipped: { label: "Wyslane", color: "bg-violet-50 text-violet-700 border-violet-200" },
+  delivered: { label: "Dostarczone", color: "bg-zinc-50 text-zinc-600 border-zinc-200" },
+  cancelled: { label: "Anulowane", color: "bg-red-50 text-red-700 border-red-200" },
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  allegro: "Allegro",
+  woo: "Sklep WWW",
+  email: "Email",
+  stacjonarne: "Stacjonarne",
+  baselinker: "BaseLinker",
+};
+
 export function OrdersPageClient({
   products,
-  orderCount,
+  orders,
 }: {
   products: ProductOption[];
-  orderCount: number;
+  orders: Order[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filtered = orders.filter((o) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return (
+      o.order_number.toLowerCase().includes(q) ||
+      o.contact?.full_name?.toLowerCase().includes(q) ||
+      o.company?.name?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
@@ -26,7 +67,7 @@ export function OrdersPageClient({
         <div>
           <h1 className="text-lg font-semibold text-zinc-900">Zamowienia</h1>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            {orderCount} zamowien w systemie
+            {orders.length} zamowien w systemie
           </p>
         </div>
         <button
@@ -46,10 +87,93 @@ export function OrdersPageClient({
         />
         <input
           type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Szukaj po numerze, kliencie..."
           className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-9 pr-4 text-sm placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
         />
       </div>
+
+      {/* Table */}
+      {filtered.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-100 bg-zinc-50/50">
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Nr zamowienia</th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Zrodlo</th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Platnosc</th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((order) => {
+                const status = STATUS_CONFIG[order.status] ?? {
+                  label: order.status,
+                  color: "bg-zinc-50 text-zinc-600 border-zinc-200",
+                };
+                return (
+                  <tr
+                    key={order.id}
+                    className="border-b border-zinc-100 last:border-0 transition-colors hover:bg-zinc-50/50"
+                  >
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="font-mono text-[13px] font-medium text-zinc-900 hover:text-blue-600"
+                      >
+                        {order.order_number}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-zinc-600">
+                      {SOURCE_LABELS[order.source] ?? order.source}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-zinc-900">
+                      {order.company?.name ?? order.contact?.full_name ?? "\u2014"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}
+                      >
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-zinc-600">
+                      {order.payment_status === "paid"
+                        ? "Oplacone"
+                        : order.payment_status === "cod"
+                          ? "Za pobraniem"
+                          : "Oczekuje"}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-zinc-500">
+                      {new Date(order.created_at).toLocaleDateString("pl-PL")}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : query ? (
+        <div className="rounded-lg border border-zinc-200 bg-white p-12 text-center shadow-sm">
+          <p className="text-sm text-zinc-500">
+            Brak wynikow dla &quot;{query}&quot;
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-zinc-200 bg-white p-16 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
+            <Package size={22} className="text-zinc-400" />
+          </div>
+          <p className="text-sm font-medium text-zinc-900">Brak zamowien</p>
+          <p className="mt-1 text-[13px] text-zinc-500">
+            Kliknij &quot;Nowe zamowienie&quot; aby dodac reczne zlecenie lub
+            podlacz WooCommerce.
+          </p>
+        </div>
+      )}
 
       {/* Modal */}
       {showForm && (
