@@ -19,7 +19,7 @@ export default async function AdminLayout({
     .from("users")
     .select("full_name, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   return (
     <div className="flex min-h-screen">

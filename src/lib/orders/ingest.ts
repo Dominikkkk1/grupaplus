@@ -78,7 +78,7 @@ export async function ingestOrder(
           .from("contacts")
           .select("id")
           .eq("email", input.customerEmail)
-          .single();
+          .maybeSingle();
         contactId = fallback?.id ?? null;
       } else {
         contactId = newContact?.id ?? null;

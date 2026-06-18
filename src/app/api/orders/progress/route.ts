@@ -51,6 +51,32 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // Walidacja cofania: nie mozna cofnac etapu jesli nastepny jest ukonczony
+  if (status !== "completed") {
+    const { data: current } = await supabase
+      .from("order_item_progress")
+      .select("order_item_id, step_order")
+      .eq("id", progressId)
+      .single();
+
+    if (current) {
+      const { data: laterCompleted } = await supabase
+        .from("order_item_progress")
+        .select("id")
+        .eq("order_item_id", current.order_item_id)
+        .gt("step_order", current.step_order)
+        .eq("status", "completed")
+        .limit(1);
+
+      if (laterCompleted && laterCompleted.length > 0) {
+        return NextResponse.json(
+          { error: "Nie mozna cofnac — nastepny etap jest ukonczony" },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const updateData: Record<string, unknown> = { status };
 
   if (status === "completed") {

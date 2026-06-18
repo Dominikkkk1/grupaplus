@@ -29,11 +29,15 @@ export async function POST(request: NextRequest) {
 
   // 1. ZAWSZE zapisz surowy payload PRZED przetworzeniem
   const topic = request.headers.get("x-wc-webhook-topic") ?? "unknown";
-  await supabase.from("webhook_events").insert({
-    source: "woocommerce",
-    event_type: topic,
-    payload,
-  });
+  const { data: webhookEvent } = await supabase
+    .from("webhook_events")
+    .insert({
+      source: "woocommerce",
+      event_type: topic,
+      payload,
+    })
+    .select("id")
+    .single();
 
   // WooCommerce wysyla ping przy tworzeniu webhooka — odpowiedz 200
   if (topic === "ping" || !payload.id) {
@@ -51,12 +55,12 @@ export async function POST(request: NextRequest) {
 
     if (signature !== expectedSignature) {
       // Zapisz blad
-      await supabase
-        .from("webhook_events")
-        .update({ error: "Invalid HMAC signature" })
-        .eq("source", "woocommerce")
-        .order("created_at", { ascending: false })
-        .limit(1);
+      if (webhookEvent) {
+        await supabase
+          .from("webhook_events")
+          .update({ error: "Invalid HMAC signature" })
+          .eq("id", webhookEvent.id);
+      }
 
       return NextResponse.json(
         { error: "Invalid signature" },
@@ -75,12 +79,12 @@ export async function POST(request: NextRequest) {
     const result = await ingestOrder(supabase, orderInput);
 
     // Oznacz webhook jako przetworzony
-    await supabase
-      .from("webhook_events")
-      .update({ processed: true })
-      .eq("source", "woocommerce")
-      .order("created_at", { ascending: false })
-      .limit(1);
+    if (webhookEvent) {
+      await supabase
+        .from("webhook_events")
+        .update({ processed: true })
+        .eq("id", webhookEvent.id);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -91,12 +95,12 @@ export async function POST(request: NextRequest) {
     const message = err instanceof Error ? err.message : "Unknown error";
 
     // Zapisz blad w webhook_events
-    await supabase
-      .from("webhook_events")
-      .update({ error: message })
-      .eq("source", "woocommerce")
-      .order("created_at", { ascending: false })
-      .limit(1);
+    if (webhookEvent) {
+      await supabase
+        .from("webhook_events")
+        .update({ error: message })
+        .eq("id", webhookEvent.id);
+    }
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
