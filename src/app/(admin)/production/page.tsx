@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { ProductionBoard } from "@/components/production/production-board";
+import {
+  ProductionBoard,
+  type Step,
+  type ActiveItem,
+} from "@/components/production/production-board";
 
 export default async function ProductionPage() {
   const supabase = await createClient();
@@ -35,8 +39,8 @@ export default async function ProductionPage() {
       </div>
 
       <ProductionBoard
-        steps={(steps ?? []) as { id: string; name: string; color: string }[]}
-        initialItems={(activeItems ?? []) as never[]}
+        steps={(steps ?? []) as unknown as Step[]}
+        initialItems={(activeItems ?? []) as unknown as ActiveItem[]}
       />
     </div>
   );

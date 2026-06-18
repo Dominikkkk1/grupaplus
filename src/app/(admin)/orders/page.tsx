@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { OrdersPageClient } from "@/components/orders/orders-page-client";
+import { OrdersPageClient, type Order } from "@/components/orders/orders-page-client";
 
 export default async function OrdersPage() {
   const supabase = await createClient();
@@ -29,7 +29,7 @@ export default async function OrdersPage() {
     <div>
       <OrdersPageClient
         products={products ?? []}
-        orders={(orders ?? []) as never[]}
+        orders={(orders ?? []) as unknown as Order[]}
       />
     </div>
   );

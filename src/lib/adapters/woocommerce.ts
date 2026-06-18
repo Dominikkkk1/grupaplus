@@ -69,13 +69,16 @@ export function parseWooCommerceOrder(payload: WooOrderPayload): OrderInput {
     .filter(Boolean)
     .join(", ");
 
-  const items: OrderItemInput[] = payload.line_items.map((item) => ({
-    externalId: String(item.id),
-    productSku: item.sku || undefined,
-    description: item.name,
-    quantity: item.quantity,
-    unitPrice: parseFloat(item.price) || undefined,
-  }));
+  const items: OrderItemInput[] = payload.line_items.map((item) => {
+    const parsed = parseFloat(item.price);
+    return {
+      externalId: String(item.id),
+      productSku: item.sku || undefined,
+      description: item.name,
+      quantity: item.quantity,
+      unitPrice: isNaN(parsed) ? undefined : parsed,
+    };
+  });
 
   const shippingMethod =
     payload.shipping_lines?.[0]?.method_title?.toLowerCase() ?? undefined;

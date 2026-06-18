@@ -6,13 +6,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Factory, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-interface Step {
+export interface Step {
   id: string;
   name: string;
   color: string;
 }
 
-interface ActiveItem {
+export interface ActiveItem {
   id: string;
   step_id: string;
   status: string;
