@@ -3,11 +3,13 @@
 -- ============================================================
 
 -- A. Brakujacy workflow dla Plakat A1 (duzy format)
+-- ON CONFLICT DO NOTHING — seed.sql tez zawiera te dane (unika duplikatu przy db reset)
 INSERT INTO product_workflow (product_id, step_id, step_order) VALUES
   ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000001', 1),
   ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000003', 2),
   ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000005', 3),
-  ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000011', 4);
+  ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000011', 4)
+ON CONFLICT DO NOTHING;
 
 -- B. RLS: operator musi widziec contacts i companies
 CREATE POLICY operator_read_contacts ON contacts FOR SELECT
