@@ -25,6 +25,32 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  // Walidacja kolejnosci: nie mozna oznaczyc etapu jako completed
+  // jesli poprzedni etap nie jest ukonczony
+  if (status === "completed") {
+    const { data: current } = await supabase
+      .from("order_item_progress")
+      .select("order_item_id, step_order")
+      .eq("id", progressId)
+      .single();
+
+    if (current && current.step_order > 1) {
+      const { data: prev } = await supabase
+        .from("order_item_progress")
+        .select("status")
+        .eq("order_item_id", current.order_item_id)
+        .eq("step_order", current.step_order - 1)
+        .single();
+
+      if (prev && prev.status !== "completed" && prev.status !== "skipped") {
+        return NextResponse.json(
+          { error: "Poprzedni etap musi byc ukonczony" },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const updateData: Record<string, unknown> = { status };
 
   if (status === "completed") {

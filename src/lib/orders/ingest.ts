@@ -59,7 +59,8 @@ export async function ingestOrder(
     if (existingContact) {
       contactId = existingContact.id;
     } else {
-      const { data: newContact } = await supabase
+      // Upsert: jesli email juz istnieje (race condition), zwroc istniejacy
+      const { data: newContact, error: contactError } = await supabase
         .from("contacts")
         .insert({
           full_name: input.customerName,
@@ -70,7 +71,18 @@ export async function ingestOrder(
         })
         .select("id")
         .single();
-      contactId = newContact?.id ?? null;
+
+      if (contactError && input.customerEmail) {
+        // UNIQUE conflict — pobierz istniejacy kontakt
+        const { data: fallback } = await supabase
+          .from("contacts")
+          .select("id")
+          .eq("email", input.customerEmail)
+          .single();
+        contactId = fallback?.id ?? null;
+      } else {
+        contactId = newContact?.id ?? null;
+      }
     }
   }
 

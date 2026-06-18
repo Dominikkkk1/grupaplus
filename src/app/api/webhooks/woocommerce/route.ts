@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseWooCommerceOrder } from "@/lib/adapters/woocommerce";
+import { parseWooCommerceOrder, type WooOrderPayload } from "@/lib/adapters/woocommerce";
 import { ingestOrder } from "@/lib/orders/ingest";
 
 /**
@@ -71,8 +71,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orderInput = parseWooCommerceOrder(payload as any);
+    const orderInput = parseWooCommerceOrder(payload as unknown as WooOrderPayload);
     const result = await ingestOrder(supabase, orderInput);
 
     // Oznacz webhook jako przetworzony

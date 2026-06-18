@@ -36,7 +36,7 @@ interface WooShipping {
   country: string;
 }
 
-interface WooOrderPayload {
+export interface WooOrderPayload {
   id: number;
   number: string;
   status: string;
