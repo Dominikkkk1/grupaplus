@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { validateFile } from "@/services/file-validation.service";
 
 /**
  * POST /api/orders/[id]/files — upload pliku do zamowienia
@@ -55,7 +56,11 @@ export async function POST(
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  // Zapisz rekord w tabeli order_files
+  // Preflight — walidacja pliku (DPI, wymiary, profil)
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const preflight = await validateFile(fileBuffer, file.type);
+
+  // Zapisz rekord w tabeli order_files z wynikiem preflight
   const { data: record, error: dbError } = await supabase
     .from("order_files")
     .insert({
@@ -65,9 +70,10 @@ export async function POST(
       file_size: file.size,
       mime_type: file.type,
       uploaded_by: user.id,
-      preflight_status: "pending",
+      preflight_status: preflight.status,
+      preflight_result: preflight,
     })
-    .select("id, file_name, file_size, mime_type, created_at")
+    .select("id, file_name, file_size, mime_type, preflight_status, preflight_result, created_at")
     .single();
 
   if (dbError) {

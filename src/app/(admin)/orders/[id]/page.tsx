@@ -56,7 +56,7 @@ export default async function OrderDetailPage({
   const [filesRes, complaintsRes, usersRes] = await Promise.all([
     supabase
       .from("order_files")
-      .select("id, file_name, file_size, mime_type, file_path, created_at")
+      .select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, created_at")
       .eq("order_id", id)
       .order("created_at", { ascending: false }),
     supabase
@@ -330,7 +330,7 @@ export default async function OrderDetailPage({
             </h3>
             <FileUpload
               orderId={id}
-              files={(files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; created_at: string }[]}
+              files={(files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; created_at: string }[]}
             />
           </div>
         </div>

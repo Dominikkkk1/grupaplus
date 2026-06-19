@@ -13,12 +13,21 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+interface PreflightCheck {
+  status: "passed" | "warning" | "failed";
+  label: string;
+  value: string;
+  message?: string;
+}
+
 interface OrderFile {
   id: string;
   file_name: string;
   file_size: number;
   mime_type: string;
   file_path: string;
+  preflight_status: string | null;
+  preflight_result: { checks?: PreflightCheck[] } | null;
   created_at: string;
 }
 
@@ -145,17 +154,36 @@ export function FileUpload({
           {files.map((file) => (
             <div
               key={file.id}
-              className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2"
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2"
             >
-              <FileIcon mime={file.mime_type} />
-              <div className="flex-1 min-w-0">
-                <p className="truncate text-[12px] font-medium text-zinc-900">
-                  {file.file_name}
-                </p>
-                <p className="text-[11px] text-zinc-400">
-                  {formatSize(file.file_size)}
-                </p>
-              </div>
+              <div className="flex items-center gap-2">
+                <FileIcon mime={file.mime_type} />
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-[12px] font-medium text-zinc-900">
+                    {file.file_name}
+                  </p>
+                  <p className="text-[11px] text-zinc-400">
+                    {formatSize(file.file_size)}
+                  </p>
+                </div>
+                {/* Preflight badge */}
+                {file.preflight_status && file.preflight_status !== "pending" && (
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                      file.preflight_status === "passed"
+                        ? "bg-emerald-50 text-emerald-600"
+                        : file.preflight_status === "warning"
+                          ? "bg-amber-50 text-amber-600"
+                          : "bg-red-50 text-red-600"
+                    }`}
+                  >
+                    {file.preflight_status === "passed"
+                      ? "OK"
+                      : file.preflight_status === "warning"
+                        ? "Uwaga"
+                        : "Blad"}
+                  </span>
+                )}
               <button
                 onClick={() => handleDownload(file)}
                 className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
@@ -170,6 +198,29 @@ export function FileUpload({
               >
                 <Trash2 size={14} />
               </button>
+              </div>
+              {/* Szczegoly preflight */}
+              {file.preflight_result?.checks &&
+                file.preflight_result.checks.some(
+                  (c) => c.status !== "passed"
+                ) && (
+                  <div className="mt-1.5 space-y-0.5 border-t border-zinc-100 pt-1.5">
+                    {file.preflight_result.checks
+                      .filter((c) => c.message)
+                      .map((c, ci) => (
+                        <p
+                          key={ci}
+                          className={`text-[11px] ${
+                            c.status === "failed"
+                              ? "text-red-600"
+                              : "text-amber-600"
+                          }`}
+                        >
+                          {c.label}: {c.message}
+                        </p>
+                      ))}
+                  </div>
+                )}
             </div>
           ))}
         </div>
