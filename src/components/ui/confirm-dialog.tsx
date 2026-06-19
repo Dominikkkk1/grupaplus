@@ -56,7 +56,7 @@ export function ConfirmDialog({
             <X size={16} />
           </button>
         </div>
-        <div className="mt-5 flex justify-end gap-3">
+        <div className="mt-5 flex flex-wrap justify-end gap-3">
           <Button
             variant="outline"
             onClick={onCancel}
@@ -68,7 +68,7 @@ export function ConfirmDialog({
           <Button
             onClick={onConfirm}
             disabled={loading}
-            className="bg-red-600 text-[13px] text-white hover:bg-red-700"
+            className="whitespace-nowrap bg-red-600 px-4 py-2 text-[13px] text-white hover:bg-red-700"
           >
             {loading ? "Usuwanie..." : confirmLabel}
           </Button>

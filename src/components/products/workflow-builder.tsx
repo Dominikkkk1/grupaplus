@@ -39,6 +39,7 @@ export function WorkflowBuilder({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(true);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Etapy dostepne = te ktore NIE sa jeszcze przypisane
   const assignedIds = new Set(assigned.map((a) => a.stepId));
@@ -114,6 +115,8 @@ export function WorkflowBuilder({
 
     setSaving(false);
     setSaved(true);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2000);
     router.refresh();
   }
 
@@ -128,19 +131,23 @@ export function WorkflowBuilder({
           onClick={handleSave}
           disabled={saving || saved}
           size="sm"
-          className="bg-zinc-900 text-[12px] text-white hover:bg-zinc-800"
+          className={justSaved ? "bg-emerald-600 text-[12px] text-white" : "bg-zinc-900 text-[12px] text-white hover:bg-zinc-800"}
         >
           {saving ? (
             <span className="flex items-center gap-1.5">
               <Loader2 size={12} className="animate-spin" />
               Zapisywanie...
             </span>
+          ) : justSaved ? (
+            <span className="flex items-center gap-1.5">
+              &#10003; Zapisano!
+            </span>
           ) : saved ? (
             "Zapisano"
           ) : (
             <span className="flex items-center gap-1.5">
               <Save size={12} />
-              Zapisz workflow
+              Zapisz etapy
             </span>
           )}
         </Button>

@@ -11,11 +11,29 @@ interface ProductOption {
   sku: string | null;
 }
 
+interface ContactOption {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  company_id: string | null;
+}
+
+interface CompanyOption {
+  id: string;
+  name: string;
+  nip: string | null;
+}
+
 export function NewOrderForm({
   products,
+  contacts = [],
+  companies = [],
   onClose,
 }: {
   products: ProductOption[];
+  contacts?: ContactOption[];
+  companies?: CompanyOption[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -25,6 +43,53 @@ export function NewOrderForm({
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Sugestie kontaktow/firm na podstawie wpisanego tekstu
+  const suggestions = customerName.length >= 2
+    ? [
+        ...contacts
+          .filter((c) => c.full_name.toLowerCase().includes(customerName.toLowerCase()))
+          .slice(0, 3)
+          .map((c) => ({
+            type: "contact" as const,
+            label: c.full_name,
+            sub: c.email || c.phone || "",
+            contact: c,
+          })),
+        ...companies
+          .filter((c) => c.name.toLowerCase().includes(customerName.toLowerCase()))
+          .slice(0, 3)
+          .map((c) => ({
+            type: "company" as const,
+            label: c.name,
+            sub: c.nip ? `NIP: ${c.nip}` : "",
+            company: c,
+          })),
+      ]
+    : [];
+
+  function selectContact(contact: ContactOption) {
+    setCustomerName(contact.full_name);
+    setCustomerEmail(contact.email ?? "");
+    setCustomerPhone(contact.phone ?? "");
+    setShowSuggestions(false);
+    // Znajdz firme kontaktu
+    if (contact.company_id) {
+      const company = companies.find((c) => c.id === contact.company_id);
+      if (company) {
+        setNip(company.nip ?? "");
+      }
+    }
+  }
+
+  function selectCompany(company: CompanyOption) {
+    setCustomerName(company.name);
+    setNip(company.nip ?? "");
+    setShowSuggestions(false);
+  }
+
+  const [nip, setNip] = useState("");
   const [source, setSource] = useState<string>("stacjonarne");
   const [paymentStatus, setPaymentStatus] = useState<string>("cod");
   const [notes, setNotes] = useState("");
@@ -84,6 +149,7 @@ export function NewOrderForm({
         customerName: customerName || "Klient",
         customerEmail: customerEmail || undefined,
         customerPhone: customerPhone || undefined,
+        nip: nip || undefined,
         paymentStatus,
         notes: notes || undefined,
         items: orderItems,
@@ -168,18 +234,45 @@ export function NewOrderForm({
             </div>
           </div>
 
-          {/* Klient */}
-          <div>
+          {/* Klient z autocomplete */}
+          <div className="relative">
             <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
               Klient
             </label>
             <input
               type="text"
               value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Imie i nazwisko / nazwa firmy"
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="Wpisz imie, nazwisko lub nazwe firmy..."
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      if (s.type === "contact") selectContact(s.contact);
+                      else selectCompany(s.company);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-zinc-50"
+                  >
+                    <span className={`rounded px-1 py-0.5 text-[10px] font-medium ${s.type === "contact" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"}`}>
+                      {s.type === "contact" ? "Kontakt" : "Firma"}
+                    </span>
+                    <span className="font-medium text-zinc-900">{s.label}</span>
+                    {s.sub && <span className="text-zinc-400">{s.sub}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

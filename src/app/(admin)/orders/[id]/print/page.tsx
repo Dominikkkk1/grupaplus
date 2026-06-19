@@ -98,7 +98,7 @@ export default function PrintPage() {
         @media print {
           body { margin: 0; font-size: 11px; }
           .no-print { display: none !important; }
-          .print-page { page-break-after: always; }
+          .print-page { page-break-after: auto; }
         }
         @media screen {
           body { background: #f4f4f5; }

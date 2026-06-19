@@ -27,7 +27,7 @@ export default async function AdminLayout({
         userName={profile?.full_name ?? user.email ?? ""}
         userRole={profile?.role ?? "operator"}
       />
-      <main className="flex-1 overflow-auto bg-zinc-50 p-6">
+      <main className="flex-1 overflow-auto bg-zinc-50 p-6 print:bg-white print:p-0">
         {children}
       </main>
     </div>

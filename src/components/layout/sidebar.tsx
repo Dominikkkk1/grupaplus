@@ -48,7 +48,7 @@ export function Sidebar({
         : "Klient";
 
   return (
-    <aside className="flex w-60 flex-col border-r border-zinc-200 bg-white">
+    <aside className="flex w-60 flex-col border-r border-zinc-200 bg-white print:hidden">
       {/* Logo */}
       <div className="flex items-center gap-3 border-b border-zinc-200 px-5 py-4">
         <Image

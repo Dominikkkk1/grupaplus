@@ -19,17 +19,31 @@ export default async function OrdersPage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const { data: products } = await supabase
-    .from("products")
-    .select("id, name, sku")
-    .eq("is_active", true)
-    .order("name");
+  const [productsRes, contactsRes, companiesRes] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id, name, sku")
+      .eq("is_active", true)
+      .order("name"),
+    supabase
+      .from("contacts")
+      .select("id, full_name, email, phone, company_id")
+      .order("full_name")
+      .limit(200),
+    supabase
+      .from("companies")
+      .select("id, name, nip")
+      .order("name")
+      .limit(200),
+  ]);
 
   return (
     <div>
       <OrdersPageClient
-        products={products ?? []}
+        products={productsRes.data ?? []}
         orders={(orders ?? []) as unknown as Order[]}
+        contacts={(contactsRes.data ?? []) as unknown as { id: string; full_name: string; email: string | null; phone: string | null; company_id: string | null }[]}
+        companies={(companiesRes.data ?? []) as unknown as { id: string; name: string; nip: string | null }[]}
       />
     </div>
   );

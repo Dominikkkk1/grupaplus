@@ -193,7 +193,7 @@ export default function ProductDetailPage() {
             className="flex items-center gap-1.5 text-[12px] font-medium text-zinc-500 hover:text-zinc-900"
           >
             <Plus size={14} />
-            Nowy etap globalny
+            Nowy etap produkcji
           </button>
         </div>
         <WorkflowBuilder

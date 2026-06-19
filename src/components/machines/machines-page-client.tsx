@@ -76,7 +76,7 @@ export function MachinesPageClient({
         <div>
           <h1 className="text-lg font-semibold text-zinc-900">Maszyny</h1>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            {groups.length} grup maszyn
+            {groups.length} grup maszyn — dodaj grupe, potem maszyny do grupy
           </p>
         </div>
         <button
@@ -84,7 +84,7 @@ export function MachinesPageClient({
           className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-zinc-800"
         >
           <Plus size={16} />
-          Dodaj grupe
+          Dodaj grupe maszyn
         </button>
       </div>
 

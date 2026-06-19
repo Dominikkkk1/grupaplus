@@ -23,12 +23,30 @@ export interface Order {
   company: { name: string } | null;
 }
 
+interface ContactOption {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  company_id: string | null;
+}
+
+interface CompanyOption {
+  id: string;
+  name: string;
+  nip: string | null;
+}
+
 export function OrdersPageClient({
   products,
   orders,
+  contacts = [],
+  companies = [],
 }: {
   products: ProductOption[];
   orders: Order[];
+  contacts?: ContactOption[];
+  companies?: CompanyOption[];
 }) {
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
@@ -162,6 +180,8 @@ export function OrdersPageClient({
       {showForm && (
         <NewOrderForm
           products={products}
+          contacts={contacts}
+          companies={companies}
           onClose={() => setShowForm(false)}
         />
       )}

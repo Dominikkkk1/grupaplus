@@ -26,9 +26,14 @@ export function ProductsPageClient({
   products: Product[];
 }) {
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  const malyCount = products.filter((p) => p.category === "maly_format").length;
+  const duzyCount = products.filter((p) => p.category === "duzy_format").length;
+
   const filtered = products.filter((p) => {
+    if (categoryFilter && p.category !== categoryFilter) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     return (
@@ -53,6 +58,27 @@ export function ProductsPageClient({
           <Plus size={16} />
           Dodaj produkt
         </button>
+      </div>
+
+      {/* Filtry kategorii */}
+      <div className="mb-4 flex gap-2">
+        {[
+          { label: `Wszystkie (${products.length})`, value: null },
+          { label: `Maly format (${malyCount})`, value: "maly_format" },
+          { label: `Duzy format (${duzyCount})`, value: "duzy_format" },
+        ].map((f) => (
+          <button
+            key={f.label}
+            onClick={() => setCategoryFilter(f.value)}
+            className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors ${
+              categoryFilter === f.value
+                ? "bg-zinc-900 text-white"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div className="relative mb-6">
