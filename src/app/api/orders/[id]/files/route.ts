@@ -77,6 +77,8 @@ export async function POST(
     .single();
 
   if (dbError) {
+    // Cleanup: usun plik z Storage jesli DB insert fail (zeby nie bylo orphanow)
+    await supabase.storage.from("order-files").remove([filePath]);
     return NextResponse.json({ error: dbError.message }, { status: 500 });
   }
 

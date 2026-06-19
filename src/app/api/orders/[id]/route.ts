@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  new: ["confirmed", "cancelled"],
-  confirmed: ["in_production", "new", "cancelled"],
-  in_production: ["ready", "cancelled"],
-  ready: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: [],
-  cancelled: ["new"],
-};
+import { ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 
 /**
  * PATCH /api/orders/[id] — zmiana statusu i/lub przypisania operatora

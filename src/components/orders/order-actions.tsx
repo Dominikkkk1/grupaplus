@@ -3,18 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, UserPlus } from "lucide-react";
-import { STATUS_CONFIG } from "@/lib/order-constants";
+import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 import { ComplaintForm } from "./complaint-form";
-
-const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  new: ["confirmed", "cancelled"],
-  confirmed: ["in_production", "new", "cancelled"],
-  in_production: ["ready", "cancelled"],
-  ready: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: [],
-  cancelled: ["new"],
-};
 
 interface Complaint {
   id: string;

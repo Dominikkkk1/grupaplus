@@ -35,6 +35,20 @@ export function getClientStatus(dbStatus: string): { label: string; color: strin
   }
 }
 
+/**
+ * Dozwolone przejscia statusow zamowien.
+ * Jedno zrodlo prawdy — uzywane w API route I w komponencie UI.
+ */
+export const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  new: ["confirmed", "cancelled"],
+  confirmed: ["in_production", "new", "cancelled"],
+  in_production: ["ready", "cancelled"],
+  ready: ["shipped", "cancelled"],
+  shipped: ["delivered"],
+  delivered: [],
+  cancelled: ["new"],
+};
+
 export const SOURCE_LABELS: Record<string, string> = {
   allegro: "Allegro",
   woo: "Sklep WWW",
