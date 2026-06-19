@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { progressId, action, force } = body;
+  const { progressId, action, force, machineId } = body;
 
   if (!progressId || !action) {
     return NextResponse.json(
@@ -116,13 +116,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Rozpocznij ten etap
+    const startData: Record<string, unknown> = {
+      status: "in_progress",
+      started_at: new Date().toISOString(),
+      started_by: user.id,
+    };
+    if (machineId) startData.machine_id = machineId;
+
     const { error } = await supabase
       .from("order_item_progress")
-      .update({
-        status: "in_progress",
-        started_at: new Date().toISOString(),
-        started_by: user.id,
-      })
+      .update(startData)
       .eq("id", progressId);
 
     if (error) {
@@ -137,13 +140,16 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "complete") {
+    const completeData: Record<string, unknown> = {
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      completed_by: user.id,
+    };
+    if (machineId) completeData.machine_id = machineId;
+
     const { error } = await supabase
       .from("order_item_progress")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        completed_by: user.id,
-      })
+      .update(completeData)
       .eq("id", progressId);
 
     if (error) {

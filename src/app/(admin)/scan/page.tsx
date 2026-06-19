@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Scan, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Scan, CheckCircle2, AlertTriangle, Loader2, Cog } from "lucide-react";
 
 interface ProgressStep {
   id: string;
@@ -28,6 +28,38 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [scannedOrder, setScannedOrder] = useState<ScannedOrder | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Stanowisko operatora
+  const [machines, setMachines] = useState<{ id: string; name: string; group: string }[]>([]);
+  const [selectedMachine, setSelectedMachine] = useState<string>("");
+
+  // Pobierz maszyny przy starcie + odczytaj zapisane stanowisko
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("machines")
+      .select("id, name, group:machine_groups(name)")
+      .eq("is_active", true)
+      .order("name")
+      .then(({ data }) => {
+        setMachines(
+          (data ?? []).map((m) => ({
+            id: m.id,
+            name: m.name,
+            group: (m.group as unknown as { name: string })?.name ?? "",
+          }))
+        );
+      });
+    // Odczytaj zapisane stanowisko z sessionStorage
+    const saved = sessionStorage.getItem("scan_machine_id");
+    if (saved) setSelectedMachine(saved);
+  }, []);
+
+  function changeMachine(id: string) {
+    setSelectedMachine(id);
+    if (id) sessionStorage.setItem("scan_machine_id", id);
+    else sessionStorage.removeItem("scan_machine_id");
+  }
   const [message, setMessage] = useState<{
     type: "success" | "error" | "warning";
     text: string;
@@ -129,7 +161,12 @@ export default function ScanPage() {
     const res = await fetch("/api/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ progressId, action, force }),
+      body: JSON.stringify({
+        progressId,
+        action,
+        force,
+        machineId: selectedMachine || undefined,
+      }),
     });
 
     const data = await res.json();
@@ -181,6 +218,31 @@ export default function ScanPage() {
         <p className="mt-0.5 text-[13px] text-zinc-500">
           Zeskanuj kod QR z karty produkcyjnej
         </p>
+      </div>
+
+      {/* Stanowisko */}
+      <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <label className="mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-400">
+          <Cog size={14} />
+          Twoje stanowisko
+        </label>
+        <select
+          value={selectedMachine}
+          onChange={(e) => changeMachine(e.target.value)}
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-[14px] font-medium focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+        >
+          <option value="">— Wybierz maszyne —</option>
+          {machines.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name} {m.group ? `(${m.group})` : ""}
+            </option>
+          ))}
+        </select>
+        {!selectedMachine && (
+          <p className="mt-2 text-[11px] text-amber-600">
+            Wybierz maszyne zanim zaczniesz skanowac
+          </p>
+        )}
       </div>
 
       {/* Komunikat */}
