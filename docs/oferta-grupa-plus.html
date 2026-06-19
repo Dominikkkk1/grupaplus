@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oferta — System MES dla Drukarni Grupa Plus</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; line-height: 1.6; font-size: 11pt; }
+
+    @media print {
+      body { font-size: 10pt; }
+      .page { page-break-after: always; }
+      .page:last-child { page-break-after: auto; }
+      .no-print { display: none !important; }
+    }
+
+    @media screen {
+      body { background: #f0f0f0; }
+      .page { max-width: 210mm; margin: 20px auto; background: white; padding: 25mm 20mm; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    }
+
+    h1 { font-size: 22pt; font-weight: 700; color: #111; margin-bottom: 8px; }
+    h2 { font-size: 14pt; font-weight: 700; color: #111; margin-top: 24px; margin-bottom: 12px; border-bottom: 2px solid #e5e5e5; padding-bottom: 6px; }
+    h3 { font-size: 11pt; font-weight: 700; color: #333; margin-top: 16px; margin-bottom: 6px; }
+    p { margin-bottom: 8px; }
+
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #111; padding-bottom: 20px; }
+    .header-left h1 { font-size: 26pt; letter-spacing: -0.5px; }
+    .header-left .subtitle { font-size: 13pt; color: #555; font-weight: 400; }
+    .header-right { text-align: right; font-size: 10pt; color: #666; }
+    .header-right strong { color: #111; }
+
+    .meta-box { background: #f8f8f8; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px 20px; margin-bottom: 24px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10pt; }
+    .meta-grid .label { color: #888; }
+    .meta-grid .value { font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10pt; }
+    th { background: #f5f5f5; text-align: left; padding: 8px 12px; font-weight: 600; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.5px; color: #555; border-bottom: 2px solid #ddd; }
+    td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:hover td { background: #fafafa; }
+
+    .status-done { display: inline-block; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: 600; }
+    .status-deferred { display: inline-block; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: 600; }
+    .status-planned { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: 600; }
+
+    .feature-list { list-style: none; padding: 0; }
+    .feature-list li { padding: 6px 0 6px 20px; position: relative; font-size: 10pt; }
+    .feature-list li::before { content: "✓"; position: absolute; left: 0; color: #16a34a; font-weight: bold; }
+
+    .diagram { background: #f8f8f8; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin: 12px 0; font-family: 'Courier New', monospace; font-size: 9pt; line-height: 1.8; white-space: pre; }
+
+    .highlight-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+    .highlight-box p { margin: 0; font-size: 10pt; }
+
+    .warning-box { background: #fefce8; border-left: 4px solid #eab308; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-size: 9pt; color: #999; text-align: center; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .card { border: 1px solid #e5e5e5; border-radius: 6px; padding: 14px; }
+    .card h3 { margin-top: 0; }
+    .card p { font-size: 10pt; color: #555; }
+
+    .print-btn { position: fixed; top: 20px; right: 20px; background: #111; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; cursor: pointer; z-index: 100; }
+    .print-btn:hover { background: #333; }
+
+    .toc { list-style: none; padding: 0; }
+    .toc li { padding: 4px 0; font-size: 10pt; }
+    .toc li a { color: #3b82f6; text-decoration: none; }
+    .toc li a:hover { text-decoration: underline; }
+    .toc .num { font-weight: 600; color: #111; display: inline-block; width: 24px; }
+  </style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Drukuj / Zapisz PDF</button>
+
+<!-- STRONA 1: Tytulowa -->
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>System Zarzadzania<br>Produkcja Drukarska</h1>
+      <p class="subtitle">Oferta wdrozeniowa dla Drukarni Grupa Plus</p>
+    </div>
+    <div class="header-right">
+      <strong>Akonda</strong><br>
+      Wdrozenia IT dla poligrafii<br><br>
+      Data: 19 czerwca 2026<br>
+      Wersja: 1.0
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div class="meta-grid">
+      <div><span class="label">Klient:</span></div>
+      <div><span class="value">Drukarnia Grupa Plus, Sanok</span></div>
+      <div><span class="label">Kontakt:</span></div>
+      <div><span class="value">Grzegorz (wlasciciel)</span></div>
+      <div><span class="label">Branża:</span></div>
+      <div><span class="value">Druk cyfrowy (maly + duzy format), DTF, UV, sublimacja</span></div>
+      <div><span class="label">Skala:</span></div>
+      <div><span class="value">Kilkadziesiat zamowien dziennie, ~150 ofert Allegro</span></div>
+    </div>
+  </div>
+
+  <h2>Spis tresci</h2>
+  <ol class="toc">
+    <li><span class="num">1.</span> <a href="#problem">Problem i cel projektu</a></li>
+    <li><span class="num">2.</span> <a href="#zakres">Zakres wdrozenia (etapy)</a></li>
+    <li><span class="num">3.</span> <a href="#architektura">Architektura techniczna</a></li>
+    <li><span class="num">4.</span> <a href="#moduly">Szczegolowy opis modulow</a></li>
+    <li><span class="num">5.</span> <a href="#status">Status realizacji</a></li>
+    <li><span class="num">6.</span> <a href="#dalsze">Dalsze kroki i rozwoj</a></li>
+    <li><span class="num">7.</span> <a href="#filozofia">Filozofia projektu</a></li>
+  </ol>
+
+  <div class="footer">
+    Dokument poufny — wylacznie do uzytku wewnetrznego Akonda + Grupa Plus
+  </div>
+</div>
+
+<!-- STRONA 2: Problem -->
+<div class="page" id="problem">
+  <h2>1. Problem i cel projektu</h2>
+
+  <h3>Obecna sytuacja</h3>
+  <p>Drukarnia Grupa Plus posiada nowoczesny park maszynowy (Fuji Revoria, Konica Minolta, Canon, plotery UV, laminatory, gilotyny), natomiast zarzadzanie zamowieniami odbywa sie <strong>recznie</strong>:</p>
+
+  <ul class="feature-list" style="list-style: none;">
+    <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: #dc2626;">✗</span> Zamowienia zapisywane w folderach na dysku sieciowym (NAS)</li>
+    <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: #dc2626;">✗</span> Recepcja recznie kopiuje dane z Allegro, tworzy foldery z data</li>
+    <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: #dc2626;">✗</span> Miniaturki wklejane do Worda, kartki drukowane i noszone po hali</li>
+    <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: #dc2626;">✗</span> Brak wgladu w status produkcji — recepcja biega po hali pytac</li>
+    <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: #dc2626;">✗</span> Brak automatyzacji Allegro (kilkadziesiat zamowien dziennie obslugiwanych recznie)</li>
+  </ul>
+
+  <div class="highlight-box">
+    <p><strong>Cytat z wlasciciela:</strong> „Chcemy prosty dzialajacy szkielet. Nie szyj programu na kazda ewentualnosc — ulatwij zycie w 90% przypadkow."</p>
+  </div>
+
+  <h3>Cel projektu</h3>
+  <p>Zbudowanie systemu MES (Manufacturing Execution System) + mini-CRM, ktory:</p>
+  <ul class="feature-list">
+    <li>Agreguje zamowienia z wielu zrodel (Allegro, sklep WWW, email, stacjonarne)</li>
+    <li>Automatycznie przypisuje etapy produkcji do kazdego zamowienia</li>
+    <li>Daje recepcji wglad na zywo w status kazdego zlecenia</li>
+    <li>Generuje karte produkcyjna z QR kodem do skanowania na hali</li>
+    <li>Sprawdza pliki klientow (DPI, rozmiar, profil kolorystyczny)</li>
+    <li>Zarzadza firma, kontaktami i historia zlecen (CRM)</li>
+  </ul>
+
+  <h2 id="zakres">2. Zakres wdrozenia</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Etap</th>
+        <th>Opis</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>0</strong></td>
+        <td>Schemat bazy danych (13+ tabel, triggery, indeksy, RLS)</td>
+        <td><span class="status-done">Zrealizowany</span></td>
+      </tr>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Autoryzacja + 3 role (admin, operator, klient)</td>
+        <td><span class="status-done">Zrealizowany</span></td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Integracja WooCommerce (webhook, adapter, Realtime)</td>
+        <td><span class="status-done">Zrealizowany</span></td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Integracja Allegro (przez BaseLinker)</td>
+        <td><span class="status-deferred">Wymaga BaseLinker</span></td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Mini-CRM (firmy, kontakty, historia, obrot)</td>
+        <td><span class="status-done">Zrealizowany</span></td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Konfigurowalne workflow + karta produkcyjna z QR</td>
+        <td><span class="status-done">Zrealizowany</span></td>
+      </tr>
+      <tr>
+        <td><strong>6</strong></td>
+        <td>Stacje robocze + karty identyfikacyjne operatorow</td>
+        <td><span class="status-deferred">Wymaga hardware</span></td>
+      </tr>
+      <tr>
+        <td><strong>7</strong></td>
+        <td>Preflight PDF (DPI, wymiary, profil kolorystyczny)</td>
+        <td><span class="status-done">Zrealizowany</span></td>
+      </tr>
+      <tr>
+        <td><strong>8</strong></td>
+        <td>Fakturowanie (integracja z Fakturownia/SKP)</td>
+        <td><span class="status-deferred">Wymaga decyzji</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- STRONA 3: Architektura -->
+<div class="page" id="architektura">
+  <h2>3. Architektura techniczna</h2>
+
+  <h3>Zasada glowna</h3>
+  <div class="highlight-box">
+    <p><strong>Pisz TYLKO to, co jest unikalne dla drukarni. Cala reszte bierz z gotowcow przez API.</strong></p>
+  </div>
+
+  <div class="diagram">┌─────────────────────────────────────────────────┐
+│  ZRODLA ZAMOWIEN                                 │
+│  WooCommerce │ Allegro (BaseLinker) │ Reczne     │
+└──────────────────────┬──────────────────────────┘
+                       │ webhook / formularz
+                       ▼
+┌─────────────────────────────────────────────────┐
+│  NASZ SILNIK PRODUKCJI                           │
+│                                                   │
+│  Next.js + Supabase (PostgreSQL)                 │
+│  ├─ Zamowienia (orders + order_items)            │
+│  ├─ Workflow (product_workflow → progress)       │
+│  ├─ CRM (companies + contacts)                   │
+│  ├─ Pliki (Supabase Storage + preflight)         │
+│  ├─ Kanban produkcji (Realtime)                  │
+│  └─ Karta produkcyjna (QR + druk)               │
+│                                                   │
+│  ← TO BUDUJEMY (bo nie ma gotowca na rynku)      │
+└──────────────────────┬──────────────────────────┘
+                       │
+           ┌───────────┴───────────┐
+           ▼                       ▼
+┌──────────────┐      ┌──────────────────┐
+│ Fakturownia  │      │  Kurierzy         │
+│ (API)        │      │  (InPost, DPD)    │
+└──────────────┘      └──────────────────┘</div>
+
+  <h3>Stack technologiczny</h3>
+  <div class="two-col">
+    <div class="card">
+      <h3>Frontend + API</h3>
+      <p>Next.js 16 (App Router)<br>React 19, Tailwind CSS 4<br>Deploy: Vercel</p>
+    </div>
+    <div class="card">
+      <h3>Baza + Auth + Storage</h3>
+      <p>Supabase (PostgreSQL)<br>Row Level Security (3 role)<br>Realtime subscriptions</p>
+    </div>
+    <div class="card">
+      <h3>Preflight plikow</h3>
+      <p>sharp (obrazki: DPI, wymiary)<br>pdf-lib (PDF: strony, rozmiar)<br>Walidacja synchroniczna</p>
+    </div>
+    <div class="card">
+      <h3>Bezpieczenstwo</h3>
+      <p>HMAC SHA-256 (webhooki)<br>RLS na 13 tabelach<br>Role-based access control</p>
+    </div>
+  </div>
+
+  <h3>Zrodla prawdy</h3>
+  <table>
+    <thead>
+      <tr><th>Dane</th><th>Zrodlo prawdy</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Tresc zamowienia</td><td>WooCommerce / Allegro (integrator)</td></tr>
+      <tr><td>Stan produkcji</td><td>Nasz system (Supabase)</td></tr>
+      <tr><td>Pliki do druku</td><td>Supabase Storage (bucket "order-files")</td></tr>
+      <tr><td>Faktury</td><td>SKP / Fakturownia (do ustalenia)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- STRONA 4: Moduly -->
+<div class="page" id="moduly">
+  <h2>4. Szczegolowy opis modulow</h2>
+
+  <h3>4.1 Zamowienia</h3>
+  <ul class="feature-list">
+    <li>Automatyczne przyjmowanie z WooCommerce (webhook z walidacja HMAC)</li>
+    <li>Reczne tworzenie zamowien (formularz z autocomplete firm/kontaktow)</li>
+    <li>Idempotentnosc — ten sam webhook nie tworzy duplikatu</li>
+    <li>7 statusow: Nowe → Potwierdzone → W produkcji → Gotowe → Wyslane → Dostarczone</li>
+    <li>Walidacja przejsc statusow (nie mozna przeskoczyc etapu)</li>
+    <li>Przypisywanie zamowienia do operatora</li>
+    <li>Upload plikow z automatycznym preflightem (DPI, wymiary, profil)</li>
+  </ul>
+
+  <h3>4.2 Produkcja (kanban na zywo)</h3>
+  <ul class="feature-list">
+    <li>Tablica kanban — kolumny = etapy workflow, karty = pozycje zamowien</li>
+    <li>Aktualizacja w czasie rzeczywistym (Supabase Realtime, debounce 300ms)</li>
+    <li>Statystyki: oczekujace, w realizacji, zagrozony termin</li>
+    <li>Badge "PILNE" / "SPOZNIONE" na kartach z deadline</li>
+    <li>Klik na karte → przejscie do szczegolew zamowienia</li>
+  </ul>
+
+  <h3>4.3 Workflow (konfigurowalne etapy)</h3>
+  <ul class="feature-list">
+    <li>Kazdy produkt ma przypisane etapy (np. Druk → Laminowanie → Ciecie → Pakowanie)</li>
+    <li>Admin sam dodaje/usuwa/zmienia kolejnosc etapow (workflow builder)</li>
+    <li>Nowe etapy i produkty — bez zmian w kodzie</li>
+    <li>Operator odhacza etapy (sekwencyjna walidacja — nie mozna przeskoczyc)</li>
+    <li>Cofanie etapow przy zgloszeniu incydentu (dodruk X arkuszy)</li>
+  </ul>
+
+  <h3>4.4 Karta produkcyjna</h3>
+  <ul class="feature-list">
+    <li>Papierowa karta z QR kodem — skan otwiera zamowienie w systemie</li>
+    <li>Gora: numer zamowienia, termin, pozycje z etapami (checkboxy)</li>
+    <li>Dol: dane klienta, platnosc, wysylka (do odciecia po zakonczeniu)</li>
+    <li>Druk z przegladarki (Ctrl+P), optymalizowany CSS @media print</li>
+  </ul>
+
+  <h3>4.5 CRM (mini-system klientow)</h3>
+  <ul class="feature-list">
+    <li>Firma nadrzedna → osoby kontaktowe → historia zlecen + obrot</li>
+    <li>Klient prywatny = kontakt bez firmy</li>
+    <li>CRUD: dodawanie, edycja, usuwanie firm i kontaktow</li>
+    <li>Statystyki: laczny obrot, srednia wartosc zamowienia, ilosc zlecen</li>
+    <li>Generator ofert PDF per firma (pozycje, ceny, druk)</li>
+  </ul>
+
+  <h3>4.6 Preflight (walidacja plikow)</h3>
+  <ul class="feature-list">
+    <li>Automatyczne sprawdzenie przy uploadzie (synchroniczne, &lt;1 sek)</li>
+    <li>Obrazki: DPI (min 300), wymiary w px i mm, profil RGB/CMYK</li>
+    <li>PDF: wymiary stron, ilosc stron, struktura</li>
+    <li>Wynik: badge OK / Uwaga / Blad + szczegoly pod plikiem</li>
+  </ul>
+
+  <h3>4.7 Kalkulator cen</h3>
+  <ul class="feature-list">
+    <li>Maly format: material + laminat + druk + ciecie + marza wg ilosci</li>
+    <li>Duzy format: szerokosc × wysokosc × cena za m²</li>
+    <li>Edytowalne stawki bazowe (admin zmienia bez kodu)</li>
+    <li>Marza automatyczna: 400% (5-10 szt), 200% (30-50 szt), 130% (500+ szt)</li>
+  </ul>
+</div>
+
+<!-- STRONA 5: Status -->
+<div class="page" id="status">
+  <h2>5. Status realizacji</h2>
+
+  <p>Stan na 19 czerwca 2026. Projekt realizowany od 18 czerwca 2026.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Modul</th>
+        <th>Status</th>
+        <th>Funkcjonalnosci</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Baza danych</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>13 tabel, 7 migracji, triggery, indeksy, RLS, Realtime</td>
+      </tr>
+      <tr>
+        <td><strong>Auth + role</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Login, 3 role, middleware, sidebar filtrowany</td>
+      </tr>
+      <tr>
+        <td><strong>WooCommerce</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Webhook HMAC, adapter, idempotentnosc, auto-progress</td>
+      </tr>
+      <tr>
+        <td><strong>Zamowienia</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Lista, szczegoly, formularz, autocomplete, sortowanie</td>
+      </tr>
+      <tr>
+        <td><strong>Produkcja</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Kanban Realtime, stats, badge PILNE, deadline</td>
+      </tr>
+      <tr>
+        <td><strong>Workflow</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Builder, sekwencyjna walidacja, cofanie, checklisty</td>
+      </tr>
+      <tr>
+        <td><strong>CRM</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Firmy, kontakty, historia, obrot, oferty PDF</td>
+      </tr>
+      <tr>
+        <td><strong>Pliki + preflight</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Upload, DPI/wymiary/profil, badge OK/Uwaga/Blad</td>
+      </tr>
+      <tr>
+        <td><strong>Produkty + maszyny</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>CRUD, grupy maszyn, priorytet, workflow builder</td>
+      </tr>
+      <tr>
+        <td><strong>Karta produkcyjna</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>QR, etapy, dane klienta, druk 1-stronicowy</td>
+      </tr>
+      <tr>
+        <td><strong>Zgloszenia</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Wewn/zewn, cofanie etapow, dodruk, rozwiazywanie</td>
+      </tr>
+      <tr>
+        <td><strong>Portal klienta</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>4 statusy, uproszczony widok, bez admin-features</td>
+      </tr>
+      <tr>
+        <td><strong>Kalkulator cen</strong></td>
+        <td><span class="status-done">Done</span></td>
+        <td>Maly/duzy format, marza, edytowalne stawki</td>
+      </tr>
+      <tr>
+        <td><strong>Allegro/BaseLinker</strong></td>
+        <td><span class="status-deferred">Oczekuje</span></td>
+        <td>Schema gotowa, potrzeba konta BaseLinker</td>
+      </tr>
+      <tr>
+        <td><strong>Stacje robocze</strong></td>
+        <td><span class="status-planned">Planowany</span></td>
+        <td>Czytniki kart, skanery QR, terminale per maszyna</td>
+      </tr>
+      <tr>
+        <td><strong>Fakturowanie</strong></td>
+        <td><span class="status-planned">Planowany</span></td>
+        <td>Integracja z Fakturownia API lub SKP</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="dalsze">6. Dalsze kroki</h2>
+
+  <h3>Do uruchomienia natychmiast</h3>
+  <ol style="font-size: 10pt; padding-left: 20px;">
+    <li>Podlaczenie webhooka WooCommerce do sklepu <code>sklep.grupa-plus.pl</code></li>
+    <li>Utworzenie kont uzytkownikow (admin dla recepcji, operatorzy dla produkcji)</li>
+    <li>Wprowadzenie produktow i etapow workflow (przez interfejs admina)</li>
+    <li>Testowe zamowienie — weryfikacja calego flow</li>
+  </ol>
+
+  <h3>Nastepne wdrozenia (wymagaja zewnetrznych serwisow)</h3>
+  <table>
+    <thead>
+      <tr><th>Co</th><th>Wymaga</th><th>Szacowany czas</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Allegro przez BaseLinker</td><td>Konto BaseLinker (~89-189 zl/mies)</td><td>1-2 dni</td></tr>
+      <tr><td>Stacje robocze na hali</td><td>Skanery kodow (~20 zl/szt), tablety</td><td>3-5 dni</td></tr>
+      <tr><td>Fakturowanie</td><td>Decyzja: Fakturownia vs SKP</td><td>2-3 dni</td></tr>
+      <tr><td>Auto-powiadomienia</td><td>Serwis email (np. Resend)</td><td>1 dzien</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- STRONA 6: Filozofia -->
+<div class="page" id="filozofia">
+  <h2>7. Filozofia projektu</h2>
+
+  <div class="warning-box">
+    <p><strong>Zasada klienta:</strong> „Nie chcemy przekombinowac. Program ma ulatwic zycie w 90% przypadkow, a te 10% to nie musimy szyc programu na kazda ewentualnosc."</p>
+  </div>
+
+  <h3>Co robimy sami (unikalne)</h3>
+  <table>
+    <thead><tr><th>Modul</th><th>Dlaczego sami</th></tr></thead>
+    <tbody>
+      <tr><td>Konfigurowalne workflow per produkt</td><td>Brak gotowca na rynku dla drukarni</td></tr>
+      <tr><td>Stacje robocze + identyfikacja karta</td><td>Specyfika hali produkcyjnej</td></tr>
+      <tr><td>Statusy zlecen + cofanie przy reklamacji</td><td>Unikalna logika produkcyjna</td></tr>
+      <tr><td>Karta produkcyjna z etapami</td><td>Dopasowana do procesu firmy</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Co bierzemy z gotowcow (NIE piszemy od zera)</h3>
+  <table>
+    <thead><tr><th>Modul</th><th>Gotowiec</th></tr></thead>
+    <tbody>
+      <tr><td>Agregacja zamowien Allegro</td><td>BaseLinker / Apilo</td></tr>
+      <tr><td>Fakturowanie</td><td>Fakturownia API</td></tr>
+      <tr><td>Kurierzy / etykiety</td><td>InPost, DPD (przez integrator)</td></tr>
+      <tr><td>Auth, role, uprawnienia</td><td>Supabase Auth + RLS</td></tr>
+      <tr><td>Upload plikow + signed URL</td><td>Supabase Storage</td></tr>
+      <tr><td>Realtime / powiadomienia</td><td>Supabase Realtime</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Wymiennosc adaptera zamowien</h3>
+  <p>Cala warstwa pobierania zamowien jest zamknieta w jednym module ("adapter"). Zmiana integratora (np. z BaseLinker na Apilo) = podmiana jednego pliku, reszta systemu sie nie zmienia.</p>
+
+  <div class="highlight-box">
+    <p><strong>Kluczowa decyzja architektoniczna:</strong> Zamowienie ciagniemy do siebie RAZ (webhook). Od tego momentu zarzadzamy produkcja u siebie. Integrator = zrodlo prawdy dla tresci zamowienia. Nasz system = zrodlo prawdy dla stanu produkcji.</p>
+  </div>
+
+  <h3>Park maszynowy klienta</h3>
+  <p>System jest przygotowany na rozbudowe parku maszynowego. Kazda nowa maszyna to:</p>
+  <ol style="font-size: 10pt; padding-left: 20px;">
+    <li>Dodanie grupy maszyn (jesli nowa kategoria)</li>
+    <li>Dodanie maszyny do grupy (z priorytetem)</li>
+    <li>Opcjonalnie: nowy etap workflow (jesli nowy proces)</li>
+    <li>Przypisanie etapu do produktow (workflow builder)</li>
+  </ol>
+  <p>Wszystko przez interfejs admina — <strong>bez zmian w kodzie</strong>.</p>
+
+  <div class="footer">
+    <p>Dokument przygotowany przez zespol Akonda<br>
+    Dominik Szulim &middot; Cezary Supel &middot; Michal (Support Key2Print) &middot; Dominik Papaj<br><br>
+    Drukarnia Grupa Plus &middot; Sanok &middot; 2026</p>
+  </div>
+</div>
+
+</body>
+</html>

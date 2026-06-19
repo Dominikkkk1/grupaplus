@@ -33,9 +33,11 @@ interface OrderFile {
 
 export function FileUpload({
   orderId,
+  orderItemId,
   files,
 }: {
   orderId: string;
+  orderItemId?: string;
   files: OrderFile[];
 }) {
   const router = useRouter();
@@ -88,6 +90,7 @@ export function FileUpload({
 
     const formData = new FormData();
     formData.append("file", file);
+    if (orderItemId) formData.append("orderItemId", orderItemId);
 
     const res = await fetch(`/api/orders/${orderId}/files`, {
       method: "POST",

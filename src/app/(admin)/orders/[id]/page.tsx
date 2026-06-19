@@ -56,7 +56,7 @@ export default async function OrderDetailPage({
   const [filesRes, complaintsRes, usersRes] = await Promise.all([
     supabase
       .from("order_files")
-      .select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, created_at")
+      .select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, order_item_id, created_at")
       .eq("order_id", id)
       .order("created_at", { ascending: false }),
     supabase
@@ -189,6 +189,18 @@ export default async function OrderDetailPage({
                       Brak przypisanego workflow (zlecenie bez produktu)
                     </div>
                   )}
+
+                  {/* Pliki per pozycje */}
+                  <div className="border-t border-zinc-100 px-4 py-3">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Pliki
+                    </p>
+                    <FileUpload
+                      orderId={id}
+                      orderItemId={item.id}
+                      files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; created_at: string }[]).filter(f => f.order_item_id === item.id)}
+                    />
+                  </div>
                 </div>
               );
             })
@@ -322,17 +334,19 @@ export default async function OrderDetailPage({
             </div>
           )}
 
-          {/* Pliki */}
-          <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
-              <FileText size={14} />
-              Pliki ({files.length})
-            </h3>
-            <FileUpload
-              orderId={id}
-              files={(files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; created_at: string }[]}
-            />
-          </div>
+          {/* Pliki ogolne zamowienia (bez przypisanej pozycji) */}
+          {((files ?? []) as unknown as { order_item_id: string | null }[]).filter(f => !f.order_item_id).length > 0 && (
+            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+              <h3 className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
+                <FileText size={14} />
+                Pliki ogolne
+              </h3>
+              <FileUpload
+                orderId={id}
+                files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; created_at: string }[]).filter(f => !f.order_item_id)}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

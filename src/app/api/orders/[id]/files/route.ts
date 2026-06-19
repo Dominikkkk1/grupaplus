@@ -32,6 +32,7 @@ export async function POST(
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
+  const orderItemId = formData.get("orderItemId") as string | null;
 
   if (!file) {
     return NextResponse.json({ error: "Brak pliku" }, { status: 400 });
@@ -65,6 +66,7 @@ export async function POST(
     .from("order_files")
     .insert({
       order_id: id,
+      order_item_id: orderItemId || null,
       file_name: file.name,
       file_path: filePath,
       file_size: file.size,

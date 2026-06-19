@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Cog,
   Calculator,
+  ScanLine,
   LogOut,
   ChevronRight,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import {
 const NAV_ITEMS = [
   { href: "/orders", label: "Zamowienia", icon: Package, roles: ["admin", "operator", "client"] },
   { href: "/production", label: "Produkcja", icon: Factory, roles: ["admin", "operator"] },
+  { href: "/scan", label: "Skanowanie", icon: ScanLine, roles: ["admin", "operator"] },
   { href: "/crm", label: "Klienci", icon: Users, roles: ["admin"] },
   { href: "/products", label: "Produkty", icon: ClipboardList, roles: ["admin"] },
   { href: "/machines", label: "Maszyny", icon: Cog, roles: ["admin"] },
