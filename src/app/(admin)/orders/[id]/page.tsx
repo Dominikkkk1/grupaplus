@@ -13,6 +13,8 @@ import {
   Printer,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
+import { FileUpload } from "@/components/orders/file-upload";
+import { OrderActions } from "@/components/orders/order-actions";
 import { STATUS_CONFIG, SOURCE_LABELS } from "@/lib/order-constants";
 
 export default async function OrderDetailPage({
@@ -50,6 +52,32 @@ export default async function OrderDetailPage({
     .eq("order_id", id)
     .order("created_at");
 
+  // Pliki, zgloszenia, uzytkownicy (do przypisania)
+  const [filesRes, complaintsRes, usersRes] = await Promise.all([
+    supabase
+      .from("order_files")
+      .select("id, file_name, file_size, mime_type, file_path, created_at")
+      .eq("order_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("complaints")
+      .select(
+        "id, type, reason, status, reprint_quantity, notes, created_at, resolved_at, reported_by_user:users(full_name), revert_step:workflow_steps(name)"
+      )
+      .eq("order_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("users")
+      .select("id, full_name, role")
+      .in("role", ["admin", "operator"])
+      .eq("is_active", true)
+      .order("full_name"),
+  ]);
+
+  const files = filesRes.data ?? [];
+  const complaints = complaintsRes.data ?? [];
+  const teamUsers = usersRes.data ?? [];
+
   const status = STATUS_CONFIG[order.status] ?? {
     label: order.status,
     color: "bg-zinc-50 text-zinc-600 border-zinc-200",
@@ -73,9 +101,6 @@ export default async function OrderDetailPage({
             <h1 className="text-lg font-semibold text-zinc-900">
               {order.order_number}
             </h1>
-            <span className={`rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}>
-              {status.label}
-            </span>
             <span className="rounded bg-zinc-100 px-2 py-0.5 text-[12px] text-zinc-500">
               {SOURCE_LABELS[order.source] ?? order.source}
             </span>
@@ -89,6 +114,18 @@ export default async function OrderDetailPage({
             Drukuj karte
           </a>
         </div>
+        <OrderActions
+          orderId={id}
+          currentStatus={order.status}
+          assignedTo={order.assigned_to as string | null}
+          teamUsers={(teamUsers ?? []) as unknown as { id: string; full_name: string; role: string }[]}
+          items={(items ?? []).map((i) => ({
+            id: i.id,
+            description: (i.product as {name: string} | null)?.name ?? i.description,
+            progress: ((i.progress ?? []) as unknown as { step_id: string; step_order: number; step: { name: string } }[]),
+          }))}
+          complaints={(complaints ?? []) as unknown as { id: string; type: string; reason: string; status: string; reprint_quantity: number | null; notes: string | null; created_at: string; resolved_at: string | null; reported_by_user: { full_name: string } | null; revert_step: { name: string } | null }[]}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -284,6 +321,18 @@ export default async function OrderDetailPage({
               </p>
             </div>
           )}
+
+          {/* Pliki */}
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
+              <FileText size={14} />
+              Pliki ({files.length})
+            </h3>
+            <FileUpload
+              orderId={id}
+              files={(files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; created_at: string }[]}
+            />
+          </div>
         </div>
       </div>
     </div>
