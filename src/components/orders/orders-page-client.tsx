@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Package } from "lucide-react";
 import { NewOrderForm } from "./new-order-form";
-import { STATUS_CONFIG, SOURCE_LABELS } from "@/lib/order-constants";
+import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
 
 interface ProductOption {
   id: string;
@@ -42,12 +42,15 @@ export function OrdersPageClient({
   orders,
   contacts = [],
   companies = [],
+  userRole = "admin",
 }: {
   products: ProductOption[];
   orders: Order[];
   contacts?: ContactOption[];
   companies?: CompanyOption[];
+  userRole?: string;
 }) {
+  const isClient = userRole === "client";
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -66,18 +69,22 @@ export function OrdersPageClient({
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-900">Zamowienia</h1>
+          <h1 className="text-lg font-semibold text-zinc-900">
+            {isClient ? "Moje zamowienia" : "Zamowienia"}
+          </h1>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            {orders.length} zamowien w systemie
+            {orders.length} zamowien {isClient ? "" : "w systemie"}
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-zinc-800"
-        >
-          <Plus size={16} />
-          Nowe zamowienie
-        </button>
+        {!isClient && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-zinc-800"
+          >
+            <Plus size={16} />
+            Nowe zamowienie
+          </button>
+        )}
       </div>
 
       {/* Search */}
@@ -102,19 +109,21 @@ export function OrdersPageClient({
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/50">
                 <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Nr zamowienia</th>
-                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Zrodlo</th>
-                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>
+                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Zrodlo</th>}
+                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>}
                 <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
-                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Platnosc</th>
+                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Platnosc</th>}
                 <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Data</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((order) => {
-                const status = STATUS_CONFIG[order.status] ?? {
-                  label: order.status,
-                  color: "bg-zinc-50 text-zinc-600 border-zinc-200",
-                };
+                const status = isClient
+                  ? getClientStatus(order.status)
+                  : STATUS_CONFIG[order.status] ?? {
+                      label: order.status,
+                      color: "bg-zinc-50 text-zinc-600 border-zinc-200",
+                    };
                 return (
                   <tr
                     key={order.id}
@@ -128,12 +137,16 @@ export function OrdersPageClient({
                         {order.order_number}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-[13px] text-zinc-600">
-                      {SOURCE_LABELS[order.source] ?? order.source}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-zinc-900">
-                      {order.company?.name ?? order.contact?.full_name ?? "\u2014"}
-                    </td>
+                    {!isClient && (
+                      <td className="px-4 py-3 text-[13px] text-zinc-600">
+                        {SOURCE_LABELS[order.source] ?? order.source}
+                      </td>
+                    )}
+                    {!isClient && (
+                      <td className="px-4 py-3 text-[13px] text-zinc-900">
+                        {order.company?.name ?? order.contact?.full_name ?? "\u2014"}
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}
@@ -141,13 +154,15 @@ export function OrdersPageClient({
                         {status.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-[13px] text-zinc-600">
-                      {order.payment_status === "paid"
-                        ? "Oplacone"
-                        : order.payment_status === "cod"
-                          ? "Za pobraniem"
-                          : "Oczekuje"}
-                    </td>
+                    {!isClient && (
+                      <td className="px-4 py-3 text-[13px] text-zinc-600">
+                        {order.payment_status === "paid"
+                          ? "Oplacone"
+                          : order.payment_status === "cod"
+                            ? "Za pobraniem"
+                            : "Oczekuje"}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-[13px] text-zinc-500">
                       {new Date(order.created_at).toLocaleDateString("pl-PL")}
                     </td>

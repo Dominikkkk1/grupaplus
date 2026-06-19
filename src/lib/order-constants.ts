@@ -13,6 +13,28 @@ export const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   cancelled: { label: "Anulowane", color: "bg-red-50 text-red-700 border-red-200" },
 };
 
+/**
+ * Uproszczone statusy dla klienta — widzi tylko 4 etapy zamiast 7.
+ * Mapuje wewnetrzne statusy DB na czytelne statusy klienta.
+ */
+export function getClientStatus(dbStatus: string): { label: string; color: string } {
+  switch (dbStatus) {
+    case "new":
+    case "confirmed":
+      return { label: "Przyjete do realizacji", color: "bg-blue-50 text-blue-700 border-blue-200" };
+    case "in_production":
+    case "ready":
+      return { label: "W realizacji", color: "bg-amber-50 text-amber-700 border-amber-200" };
+    case "shipped":
+    case "delivered":
+      return { label: "Wyslane", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    case "cancelled":
+      return { label: "Anulowane", color: "bg-red-50 text-red-700 border-red-200" };
+    default:
+      return { label: dbStatus, color: "bg-zinc-50 text-zinc-600 border-zinc-200" };
+  }
+}
+
 export const SOURCE_LABELS: Record<string, string> = {
   allegro: "Allegro",
   woo: "Sklep WWW",

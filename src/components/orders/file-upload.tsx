@@ -36,12 +36,46 @@ export function FileUpload({
   const [deleteFile, setDeleteFile] = useState<OrderFile | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [preflightWarning, setPreflightWarning] = useState("");
+
+  // Prosty preflight: sprawdz rozmiar obrazka i DPI
+  async function checkImageDpi(file: File): Promise<string | null> {
+    if (!file.type.startsWith("image/")) return null;
+
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        // Jesli obraz mniejszy niz 1000px w obu wymiarach — prawdopodobnie niskie DPI
+        if (img.width < 1000 && img.height < 1000) {
+          resolve(
+            `Uwaga: obraz ma ${img.width}x${img.height}px — moze miec za niska rozdzielczosc do druku (zalecane min. 300 DPI)`
+          );
+        } else {
+          resolve(null);
+        }
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        resolve(null);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setError("");
+    setPreflightWarning("");
     setUploading(true);
+
+    // Prosty preflight dla obrazkow
+    const warning = await checkImageDpi(file);
+    if (warning) {
+      setPreflightWarning(warning);
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -169,6 +203,12 @@ export function FileUpload({
 
       {error && (
         <p className="mt-2 text-[12px] text-red-600">{error}</p>
+      )}
+
+      {preflightWarning && (
+        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-700">
+          {preflightWarning}
+        </div>
       )}
 
       {deleteFile && (

@@ -11,6 +11,7 @@ import {
   Users,
   ClipboardList,
   Cog,
+  Calculator,
   LogOut,
   ChevronRight,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/crm", label: "Klienci", icon: Users, roles: ["admin"] },
   { href: "/products", label: "Produkty", icon: ClipboardList, roles: ["admin"] },
   { href: "/machines", label: "Maszyny", icon: Cog, roles: ["admin"] },
+  { href: "/calculator", label: "Kalkulator", icon: Calculator, roles: ["admin"] },
 ];
 
 export function Sidebar({

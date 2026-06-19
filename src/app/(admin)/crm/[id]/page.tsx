@@ -8,6 +8,7 @@ import {
   Building2,
   User,
   Plus,
+  FileText,
   Pencil,
   Trash2,
   Package,
@@ -178,6 +179,13 @@ export default function CompanyDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Link
+              href={`/crm/${id}/offer`}
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              <FileText size={14} />
+              Oferta
+            </Link>
             <button
               onClick={() => setShowEditCompany(true)}
               className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50"
