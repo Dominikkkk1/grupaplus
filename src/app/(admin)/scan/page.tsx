@@ -9,7 +9,7 @@ interface ProgressStep {
   id: string;
   step_order: number;
   status: string;
-  step: { name: string; color: string };
+  step: { name: string; color: string; machine_group_id: string | null };
 }
 
 interface ScannedOrder {
@@ -30,7 +30,7 @@ export default function ScanPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Stanowisko operatora
-  const [machines, setMachines] = useState<{ id: string; name: string; group: string }[]>([]);
+  const [machines, setMachines] = useState<{ id: string; name: string; group: string; groupId: string }[]>([]);
   const [selectedMachine, setSelectedMachine] = useState<string>("");
 
   // Pobierz maszyny przy starcie + odczytaj zapisane stanowisko
@@ -38,7 +38,7 @@ export default function ScanPage() {
     const supabase = createClient();
     supabase
       .from("machines")
-      .select("id, name, group:machine_groups(name)")
+      .select("id, name, group_id, group:machine_groups(name)")
       .eq("is_active", true)
       .order("name")
       .then(({ data }) => {
@@ -46,6 +46,7 @@ export default function ScanPage() {
           (data ?? []).map((m) => ({
             id: m.id,
             name: m.name,
+            groupId: (m as unknown as { group_id: string }).group_id ?? "",
             group: (m.group as unknown as { name: string })?.name ?? "",
           }))
         );
@@ -123,7 +124,7 @@ export default function ScanPage() {
     const { data: items } = await supabase
       .from("order_items")
       .select(
-        "id, description, product:products(name), progress:order_item_progress(id, step_order, status, step:workflow_steps(name, color))"
+        "id, description, product:products(name), progress:order_item_progress(id, step_order, status, step:workflow_steps(name, color, machine_group_id))"
       )
       .eq("order_id", orderId)
       .eq("is_completed", false)
@@ -329,64 +330,78 @@ export default function ScanPage() {
                 const isCompleted = step.status === "completed";
                 const isInProgress = step.status === "in_progress";
                 const isPending = step.status === "pending";
+                const isSkipped = step.status === "skipped";
                 const isLoading = actionLoading === step.id;
 
-                return (
-                  <div
-                    key={step.id}
-                    className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
-                      isCompleted
-                        ? "border-emerald-200 bg-emerald-50"
-                        : isInProgress
-                          ? "border-blue-200 bg-blue-50"
-                          : "border-zinc-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{
-                          backgroundColor: (step.step as { color: string })
-                            ?.color,
-                        }}
-                      />
-                      <span className="text-[13px] font-medium text-zinc-900">
-                        {step.step_order}.{" "}
-                        {(step.step as { name: string })?.name}
-                      </span>
-                    </div>
+                // Sprawdz czy stanowisko operatora pasuje do machine_group etapu
+                const stepGroupId = (step.step as { machine_group_id: string | null })?.machine_group_id;
+                const currentMachine = machines.find((m) => m.id === selectedMachine);
+                const machineGroupMismatch =
+                  selectedMachine && stepGroupId && currentMachine && currentMachine.groupId !== stepGroupId;
 
-                    {isCompleted && (
-                      <CheckCircle2
-                        size={18}
-                        className="text-emerald-500"
-                      />
-                    )}
-                    {isInProgress && (
-                      <button
-                        onClick={() => handleAction(step.id, "complete")}
-                        disabled={isLoading}
-                        className="rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          "Zakoncz"
-                        )}
-                      </button>
-                    )}
-                    {isPending && (
-                      <button
-                        onClick={() => handleAction(step.id, "start")}
-                        disabled={isLoading}
-                        className="rounded-lg bg-zinc-900 px-3 py-1 text-[11px] font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          "Rozpocznij"
-                        )}
-                      </button>
+                return (
+                  <div key={step.id}>
+                    <div
+                      className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+                        isCompleted || isSkipped
+                          ? "border-emerald-200 bg-emerald-50"
+                          : isInProgress
+                            ? "border-blue-200 bg-blue-50"
+                            : "border-zinc-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor: (step.step as { color: string })
+                              ?.color,
+                          }}
+                        />
+                        <span className="text-[13px] font-medium text-zinc-900">
+                          {step.step_order}.{" "}
+                          {(step.step as { name: string })?.name}
+                        </span>
+                      </div>
+
+                      {(isCompleted || isSkipped) && (
+                        <CheckCircle2
+                          size={18}
+                          className="text-emerald-500"
+                        />
+                      )}
+                      {isInProgress && (
+                        <button
+                          onClick={() => handleAction(step.id, "complete")}
+                          disabled={isLoading}
+                          className="rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            "Zakoncz"
+                          )}
+                        </button>
+                      )}
+                      {isPending && (
+                        <button
+                          onClick={() => handleAction(step.id, "start")}
+                          disabled={isLoading}
+                          className="rounded-lg bg-zinc-900 px-3 py-1 text-[11px] font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            "Rozpocznij"
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {machineGroupMismatch && (isPending || isInProgress) && (
+                      <p className="mt-1 flex items-center gap-1 px-1 text-[11px] text-amber-600">
+                        <AlertTriangle size={11} />
+                        Stanowisko {currentMachine.name} ({currentMachine.group}) nie pasuje do tego etapu
+                      </p>
                     )}
                   </div>
                 );

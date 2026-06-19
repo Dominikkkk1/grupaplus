@@ -95,10 +95,12 @@ export async function PATCH(request: NextRequest) {
     updateData.completed_at = new Date().toISOString();
     if (machineId) updateData.machine_id = machineId;
   } else {
-    // Cofanie — wyczysc dane
+    // Cofanie — wyczysc dane (completed + started)
     updateData.completed_by = null;
     updateData.completed_at = null;
     updateData.machine_id = null;
+    updateData.started_at = null;
+    updateData.started_by = null;
   }
 
   const { error } = await supabase
@@ -149,10 +151,18 @@ export async function PATCH(request: NextRequest) {
 
         const orderComplete = allItems?.every((i) => i.is_completed);
         if (orderComplete) {
-          await supabase
+          // Tylko jesli zamowienie jest w produkcji — nie przeskakuj z "new"/"confirmed" do "ready"
+          const { data: currentOrder } = await supabase
             .from("orders")
-            .update({ status: "ready" })
-            .eq("id", orderItem.order_id);
+            .select("status")
+            .eq("id", orderItem.order_id)
+            .single();
+          if (currentOrder?.status === "in_production") {
+            await supabase
+              .from("orders")
+              .update({ status: "ready" })
+              .eq("id", orderItem.order_id);
+          }
         }
       }
     }

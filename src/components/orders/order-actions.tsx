@@ -119,7 +119,7 @@ export function OrderActions({
           )}
         </div>
 
-        {/* Przypisanie */}
+        {/* Osoba odpowiedzialna (nadzorujaca — poszczegolne etapy maja swoich operatorow logowanych przez skan) */}
         <div className="flex items-center gap-1.5">
           <UserPlus size={14} className="text-zinc-400" />
           <select
@@ -127,8 +127,9 @@ export function OrderActions({
             value={assignedTo ?? ""}
             onChange={(e) => assignUser(e.target.value || null)}
             className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[12px] text-zinc-600 focus:border-zinc-900 focus:outline-none"
+            title="Osoba nadzorujaca zamowienie. Operatorzy na poszczegolnych etapach sa logowani automatycznie przez skan."
           >
-            <option value="">Nieprzypisane</option>
+            <option value="">Osoba odpowiedzialna</option>
             {teamUsers.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.full_name}

@@ -82,13 +82,11 @@ export async function POST(request: NextRequest) {
             { status: 409 }
           );
         }
-        // force=true → zamknij brakujacy etap
+        // force=true → oznacz brakujacy etap jako pominiety (nie completed — praca nie byla wykonana)
         await supabase
           .from("order_item_progress")
           .update({
-            status: "completed",
-            completed_at: new Date().toISOString(),
-            completed_by: user.id,
+            status: "skipped",
           })
           .eq("order_item_id", progress.order_item_id)
           .eq("step_order", progress.step_order - 1);
@@ -104,13 +102,14 @@ export async function POST(request: NextRequest) {
       .neq("id", progressId);
 
     if (openSteps && openSteps.length > 0) {
+      // Wroc do pending — operator musi swiadomie zakonczyc etap, nie zamykamy automatycznie
       const ids = openSteps.map((s) => s.id);
       await supabase
         .from("order_item_progress")
         .update({
-          status: "completed",
-          completed_at: new Date().toISOString(),
-          completed_by: user.id,
+          status: "pending",
+          started_at: null,
+          started_by: null,
         })
         .in("id", ids);
     }

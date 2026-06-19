@@ -3,31 +3,48 @@ import {
   ProductionBoard,
   type Step,
   type ActiveItem,
+  type MachineGroup,
 } from "@/components/production/production-board";
 
 export default async function ProductionPage() {
   const supabase = await createClient();
 
-  const { data: steps } = await supabase
-    .from("workflow_steps")
-    .select("id, name, color")
-    .order("name");
+  // Pobierz role uzytkownika
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+  const userRole = profile?.role ?? "operator";
 
-  const { data: activeItems } = await supabase
-    .from("order_item_progress")
-    .select(`
-      id,
-      step_id,
-      status,
-      order_item:order_items(
-        description,
-        quantity,
-        order:orders(id, order_number, deadline, status)
-      )
-    `)
-    .in("status", ["pending", "in_progress"])
-    .order("created_at", { ascending: true })
-    .limit(100);
+  const [stepsRes, itemsRes, groupsRes] = await Promise.all([
+    supabase
+      .from("workflow_steps")
+      .select("id, name, color, machine_group_id")
+      .order("name"),
+    supabase
+      .from("order_item_progress")
+      .select(`
+        id,
+        step_id,
+        status,
+        order_item:order_items(
+          description,
+          quantity,
+          order:orders(id, order_number, deadline, status)
+        )
+      `)
+      .in("status", ["pending", "in_progress"])
+      .order("created_at", { ascending: true })
+      .limit(100),
+    supabase
+      .from("machine_groups")
+      .select("id, name")
+      .order("name"),
+  ]);
 
   return (
     <div>
@@ -39,8 +56,10 @@ export default async function ProductionPage() {
       </div>
 
       <ProductionBoard
-        steps={(steps ?? []) as unknown as Step[]}
-        initialItems={(activeItems ?? []) as unknown as ActiveItem[]}
+        steps={(stepsRes.data ?? []) as unknown as Step[]}
+        initialItems={(itemsRes.data ?? []) as unknown as ActiveItem[]}
+        machineGroups={(groupsRes.data ?? []) as unknown as MachineGroup[]}
+        userRole={userRole}
       />
     </div>
   );

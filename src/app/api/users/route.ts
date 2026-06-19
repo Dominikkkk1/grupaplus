@@ -115,10 +115,36 @@ export async function POST(request: NextRequest) {
 
   // Zaktualizuj profil (trigger handle_new_user juz go stworzyl)
   if (newUser.user && phone) {
-    await supabase
+    await adminClient
       .from("users")
       .update({ phone })
       .eq("id", newUser.user.id);
+  }
+
+  // Klient musi miec rekord w contacts — bez tego nie pojawi sie w CRM
+  // i nie bedzie mogl byc przypisany do zamowien (RLS szuka go przez contacts.user_id)
+  if (newUser.user && role === "client") {
+    // Sprawdz czy email juz istnieje w contacts (mogl byc dodany reczne w CRM)
+    const { data: existingContact } = await adminClient
+      .from("contacts")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingContact) {
+      // Podlacz istniejacy contact do nowego usera
+      await adminClient
+        .from("contacts")
+        .update({ user_id: newUser.user.id })
+        .eq("id", existingContact.id);
+    } else {
+      await adminClient.from("contacts").insert({
+        user_id: newUser.user.id,
+        full_name: fullName,
+        email,
+        phone: phone || null,
+      });
+    }
   }
 
   return NextResponse.json({

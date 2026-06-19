@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Factory, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Factory, Clock, AlertTriangle, CheckCircle2, Filter } from "lucide-react";
 
 export interface Step {
   id: string;
   name: string;
   color: string;
+  machine_group_id: string | null;
 }
 
 export interface ActiveItem {
@@ -28,15 +29,49 @@ export interface ActiveItem {
   } | null;
 }
 
+export interface MachineGroup {
+  id: string;
+  name: string;
+}
+
 export function ProductionBoard({
   steps,
   initialItems,
+  machineGroups = [],
+  userRole = "admin",
 }: {
   steps: Step[];
   initialItems: ActiveItem[];
+  machineGroups?: MachineGroup[];
+  userRole?: string;
 }) {
   const router = useRouter();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Filtr machine_group — operator domyslnie filtrowany, admin widzi wszystko
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [groupResolved, setGroupResolved] = useState(false);
+
+  // Reverse lookup: machine_id z sessionStorage → group_id
+  useEffect(() => {
+    const savedMachineId = sessionStorage.getItem("scan_machine_id");
+    if (savedMachineId && userRole === "operator") {
+      const supabase = createClient();
+      supabase
+        .from("machines")
+        .select("group_id")
+        .eq("id", savedMachineId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.group_id) {
+            setSelectedGroupId(data.group_id as string);
+          }
+          setGroupResolved(true);
+        });
+    } else {
+      setGroupResolved(true);
+    }
+  }, [userRole]);
 
   // Supabase Realtime — odswierzaj dane gdy ktos zmieni status etapu
   useEffect(() => {
@@ -60,26 +95,35 @@ export function ProductionBoard({
     };
   }, [router]);
 
+  // Filtrowane etapy wg machine_group
+  const filteredSteps = useMemo(() => {
+    if (!selectedGroupId) return steps;
+    return steps.filter((s) => s.machine_group_id === selectedGroupId);
+  }, [steps, selectedGroupId]);
+
   // Grupuj pozycje wg etapu workflow
   const stepGroups = useMemo(() => {
     const groups = new Map<string, ActiveItem[]>();
-    for (const step of steps) {
+    for (const step of filteredSteps) {
       groups.set(step.id, []);
     }
     for (const item of initialItems) {
-      const existing = groups.get(item.step_id) ?? [];
-      existing.push(item);
-      groups.set(item.step_id, existing);
+      const existing = groups.get(item.step_id);
+      if (existing) {
+        existing.push(item);
+      }
     }
     return groups;
-  }, [steps, initialItems]);
+  }, [filteredSteps, initialItems]);
 
-  // Statystyki
-  const pendingCount = initialItems.filter((i) => i.status === "pending").length;
-  const inProgressCount = initialItems.filter((i) => i.status === "in_progress").length;
+  // Statystyki — tylko dla filtrowanych etapow
+  const filteredStepIds = new Set(filteredSteps.map((s) => s.id));
+  const filteredItems = initialItems.filter((i) => filteredStepIds.has(i.step_id));
+  const pendingCount = filteredItems.filter((i) => i.status === "pending").length;
+  const inProgressCount = filteredItems.filter((i) => i.status === "in_progress").length;
 
   const now = Date.now();
-  const urgentCount = initialItems.filter((i) => {
+  const urgentCount = filteredItems.filter((i) => {
     const deadline = i.order_item?.order?.deadline;
     if (!deadline) return false;
     return new Date(deadline).getTime() < now + 24 * 60 * 60 * 1000;
@@ -87,6 +131,30 @@ export function ProductionBoard({
 
   return (
     <>
+      {/* Filtr stanowiska */}
+      {machineGroups.length > 0 && (
+        <div className="mb-4 flex items-center gap-2">
+          <Filter size={14} className="text-zinc-400" />
+          <select
+            value={selectedGroupId ?? ""}
+            onChange={(e) => setSelectedGroupId(e.target.value || null)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[13px] text-zinc-700 focus:border-zinc-900 focus:outline-none"
+          >
+            <option value="">Wszystkie stanowiska</option>
+            {machineGroups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+          {userRole === "operator" && !selectedGroupId && groupResolved && (
+            <span className="text-[11px] text-amber-600">
+              Wybierz stanowisko na /scan aby automatycznie filtrowac
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="mb-6 grid grid-cols-3 gap-4">
         <StatCard
@@ -110,9 +178,9 @@ export function ProductionBoard({
       </div>
 
       {/* Board */}
-      {steps.length > 0 ? (
+      {filteredSteps.length > 0 ? (
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {steps.map((step) => {
+          {filteredSteps.map((step) => {
             const items = stepGroups.get(step.id) ?? [];
             return (
               <div
@@ -152,10 +220,12 @@ export function ProductionBoard({
             <CheckCircle2 size={22} className="text-zinc-400" />
           </div>
           <p className="text-sm font-medium text-zinc-900">
-            Brak danych produkcyjnych
+            {selectedGroupId ? "Brak etapow dla wybranego stanowiska" : "Brak danych produkcyjnych"}
           </p>
           <p className="mt-1 text-[13px] text-zinc-500">
-            Etapy workflow pojawia sie po skonfigurowaniu produktow.
+            {selectedGroupId
+              ? "Wybierz inne stanowisko lub \"Wszystkie stanowiska\"."
+              : "Etapy workflow pojawia sie po skonfigurowaniu produktow."}
           </p>
         </div>
       )}

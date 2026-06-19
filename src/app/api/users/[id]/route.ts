@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * PATCH /api/users/[id] — edycja uzytkownika (admin only)
@@ -44,6 +45,17 @@ export async function PATCH(
     );
   }
 
+  // Pobierz stara role PRZED updatem (potrzebne do synchronizacji contacts)
+  let oldRole: string | null = null;
+  if (body.role !== undefined) {
+    const { data: oldProfile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", id)
+      .single();
+    oldRole = oldProfile?.role ?? null;
+  }
+
   const { error } = await supabase
     .from("users")
     .update(updateData)
@@ -51,6 +63,57 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Synchronizacja contacts przy zmianie roli
+  if (body.role !== undefined && oldRole && oldRole !== body.role) {
+    const adminClient = createAdminClient();
+
+    if (oldRole === "client" && body.role !== "client") {
+      // Usun contact TYLKO jesli nie ma przypisanych zamowien
+      const { data: contact } = await adminClient
+        .from("contacts")
+        .select("id")
+        .eq("user_id", id)
+        .maybeSingle();
+
+      if (contact) {
+        const { data: orders } = await adminClient
+          .from("orders")
+          .select("id")
+          .eq("contact_id", contact.id)
+          .limit(1);
+
+        if (!orders || orders.length === 0) {
+          await adminClient.from("contacts").delete().eq("user_id", id);
+        }
+      }
+    }
+
+    if (oldRole !== "client" && body.role === "client") {
+      // Stworz contact jesli brak
+      const { data: existingContact } = await adminClient
+        .from("contacts")
+        .select("id")
+        .eq("user_id", id)
+        .maybeSingle();
+
+      if (!existingContact) {
+        const { data: userProfile } = await supabase
+          .from("users")
+          .select("full_name, phone")
+          .eq("id", id)
+          .single();
+        const { data: authData } = await adminClient.auth.admin.getUserById(id);
+
+        await adminClient.from("contacts").insert({
+          user_id: id,
+          full_name: userProfile?.full_name ?? "",
+          email: authData?.user?.email ?? null,
+          phone: userProfile?.phone ?? null,
+        });
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });

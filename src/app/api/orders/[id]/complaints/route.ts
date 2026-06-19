@@ -82,6 +82,8 @@ export async function POST(
           completed_by: null,
           completed_at: null,
           machine_id: null,
+          started_at: null,
+          started_by: null,
         })
         .eq("order_item_id", orderItemId)
         .gte("step_order", targetStep.step_order);
@@ -91,6 +93,26 @@ export async function POST(
         .from("order_items")
         .update({ is_completed: false })
         .eq("id", orderItemId);
+
+      // Jesli zamowienie jest "ready" — cofnij do "in_production"
+      const { data: revertedItem } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("id", orderItemId)
+        .single();
+      if (revertedItem) {
+        const { data: currentOrder } = await supabase
+          .from("orders")
+          .select("status")
+          .eq("id", revertedItem.order_id)
+          .single();
+        if (currentOrder?.status === "ready") {
+          await supabase
+            .from("orders")
+            .update({ status: "in_production" })
+            .eq("id", revertedItem.order_id);
+        }
+      }
     }
   }
 
