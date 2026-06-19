@@ -34,6 +34,11 @@ function getMarginMultiplier(qty: number): number {
 
 export default function CalculatorPage() {
   const [mode, setMode] = useState<"small" | "large">("small");
+  const [showRates, setShowRates] = useState(false);
+
+  // Edytowalne stawki
+  const [printCost, setPrintCost] = useState(PRINT_COST_PER_SHEET);
+  const [cutCost, setCutCost] = useState(CUT_COST);
 
   // Maly format
   const [material, setMaterial] = useState("350g");
@@ -53,8 +58,8 @@ export default function CalculatorPage() {
   const printSides = doubleSided ? 2 : 1;
   const rawCost =
     sheetsNeeded * (mat.pricePerSheet + lam.pricePerSheet) +
-    sheetsNeeded * PRINT_COST_PER_SHEET * printSides +
-    quantity * CUT_COST;
+    sheetsNeeded * printCost * printSides +
+    quantity * cutCost;
   const margin = getMarginMultiplier(quantity);
   const totalSmall = rawCost * margin;
   const perPieceSmall = totalSmall / quantity;
@@ -92,6 +97,28 @@ export default function CalculatorPage() {
             {m.label}
           </button>
         ))}
+      </div>
+
+      {/* Edycja stawek */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowRates(!showRates)}
+          className="text-[12px] font-medium text-zinc-500 hover:text-zinc-900"
+        >
+          {showRates ? "Ukryj stawki bazowe" : "Edytuj stawki bazowe"}
+        </button>
+        {showRates && (
+          <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 lg:grid-cols-4">
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Druk (zl/arkusz)</label>
+              <input type="number" step="0.01" value={printCost} onChange={(e) => setPrintCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie (zl/szt)</label>
+              <input type="number" step="0.01" value={cutCost} onChange={(e) => setCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
+            </div>
+          </div>
+        )}
       </div>
 
       {mode === "small" ? (

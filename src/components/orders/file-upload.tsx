@@ -55,7 +55,7 @@ export function FileUpload({
       const img = new window.Image();
       img.onload = () => {
         // Jesli obraz mniejszy niz 1000px w obu wymiarach — prawdopodobnie niskie DPI
-        if (img.width < 1000 && img.height < 1000) {
+        if (img.width < 1000 || img.height < 1000) {
           resolve(
             `Uwaga: obraz ma ${img.width}x${img.height}px — moze miec za niska rozdzielczosc do druku (zalecane min. 300 DPI)`
           );

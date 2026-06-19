@@ -197,12 +197,16 @@ function ProductionCard({ item, now }: { item: ActiveItem; now: number }) {
   const orderId = orderItem?.order?.id;
 
   let borderClass = "border-zinc-200";
+  let isUrgent = false;
+  let isOverdue = false;
   if (deadline) {
     const deadlineMs = new Date(deadline).getTime();
     if (deadlineMs < now) {
       borderClass = "border-red-400 bg-red-50/30";
+      isOverdue = true;
     } else if (deadlineMs < now + 24 * 60 * 60 * 1000) {
       borderClass = "border-amber-400 bg-amber-50/30";
+      isUrgent = true;
     }
   }
 
@@ -210,9 +214,16 @@ function ProductionCard({ item, now }: { item: ActiveItem; now: number }) {
     <div
       className={`rounded-lg border ${borderClass} bg-white p-3 shadow-sm transition-colors hover:border-zinc-300`}
     >
-      <p className="text-[13px] font-medium text-zinc-900">
-        {orderItem?.description ?? "\u2014"}
-      </p>
+      <div className="flex items-start justify-between">
+        <p className="text-[13px] font-medium text-zinc-900">
+          {orderItem?.description ?? "\u2014"}
+        </p>
+        {(isOverdue || isUrgent) && (
+          <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${isOverdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+            {isOverdue ? "SPÓŹNIONE" : "PILNE"}
+          </span>
+        )}
+      </div>
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[12px] text-zinc-500">
           {orderItem?.quantity ?? 0} szt.

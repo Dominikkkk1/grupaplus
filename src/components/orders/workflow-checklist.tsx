@@ -67,6 +67,7 @@ export function WorkflowChecklist({
             <button
               onClick={() => canToggle && toggleStep(s.id, s.status)}
               disabled={!canToggle || isLoading}
+              title={!canToggle ? "Poprzedni etap musi byc ukonczony" : isCompleted ? "Kliknij aby cofnac" : "Kliknij aby oznaczyc jako ukonczone"}
               className={cn(
                 "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all",
                 isCompleted

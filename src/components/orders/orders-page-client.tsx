@@ -53,16 +53,31 @@ export function OrdersPageClient({
   const isClient = userRole === "client";
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");
+  const [sortAsc, setSortAsc] = useState(false);
 
-  const filtered = orders.filter((o) => {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return (
-      o.order_number.toLowerCase().includes(q) ||
-      o.contact?.full_name?.toLowerCase().includes(q) ||
-      o.company?.name?.toLowerCase().includes(q)
-    );
-  });
+  const filtered = orders
+    .filter((o) => {
+      if (!query) return true;
+      const q = query.toLowerCase();
+      return (
+        o.order_number.toLowerCase().includes(q) ||
+        o.contact?.full_name?.toLowerCase().includes(q) ||
+        o.company?.name?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "date") cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      else if (sortBy === "status") cmp = a.status.localeCompare(b.status);
+      else if (sortBy === "number") cmp = a.order_number.localeCompare(b.order_number);
+      return sortAsc ? cmp : -cmp;
+    });
+
+  function toggleSort(col: typeof sortBy) {
+    if (sortBy === col) setSortAsc(!sortAsc);
+    else { setSortBy(col); setSortAsc(false); }
+  }
 
   return (
     <>
@@ -108,12 +123,12 @@ export function OrdersPageClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/50">
-                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Nr zamowienia</th>
+                <th onClick={() => toggleSort("number")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Nr zamowienia {sortBy === "number" ? (sortAsc ? "↑" : "↓") : ""}</th>
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Zrodlo</th>}
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>}
-                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+                <th onClick={() => toggleSort("status")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Status {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}</th>
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Platnosc</th>}
-                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Data</th>
+                <th onClick={() => toggleSort("date")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Data {sortBy === "date" ? (sortAsc ? "↑" : "↓") : ""}</th>
               </tr>
             </thead>
             <tbody>

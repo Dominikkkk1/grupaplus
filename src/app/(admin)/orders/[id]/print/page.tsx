@@ -60,13 +60,10 @@ export default function PrintPage() {
 
     // Generuj QR kod
     const url = `${window.location.origin}/orders/${id}`;
-    const qr = await QRCode.toDataURL(url, { width: 120, margin: 1 });
+    const qr = await QRCode.toDataURL(url, { width: 200, margin: 1 });
     setQrDataUrl(qr);
 
     setLoading(false);
-
-    // Auto-print po zaladowaniu
-    setTimeout(() => window.print(), 500);
   }, [id]);
 
   useEffect(() => {
@@ -128,7 +125,7 @@ export default function PrintPage() {
               </p>
             </div>
             {qrDataUrl && (
-              <img src={qrDataUrl} alt="QR" style={{ width: "100px", height: "100px" }} />
+              <img src={qrDataUrl} alt="QR" style={{ width: "150px", height: "150px" }} />
             )}
           </div>
 
