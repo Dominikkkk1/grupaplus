@@ -10,6 +10,7 @@ import {
   MapPin,
   CreditCard,
   FileText,
+  Printer,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { STATUS_CONFIG, SOURCE_LABELS } from "@/lib/order-constants";
@@ -67,16 +68,26 @@ export default async function OrderDetailPage({
           <ArrowLeft size={14} />
           Zamowienia
         </Link>
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-zinc-900">
-            {order.order_number}
-          </h1>
-          <span className={`rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}>
-            {status.label}
-          </span>
-          <span className="rounded bg-zinc-100 px-2 py-0.5 text-[12px] text-zinc-500">
-            {SOURCE_LABELS[order.source] ?? order.source}
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-zinc-900">
+              {order.order_number}
+            </h1>
+            <span className={`rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}>
+              {status.label}
+            </span>
+            <span className="rounded bg-zinc-100 px-2 py-0.5 text-[12px] text-zinc-500">
+              {SOURCE_LABELS[order.source] ?? order.source}
+            </span>
+          </div>
+          <a
+            href={`/orders/${id}/print`}
+            target="_blank"
+            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            <Printer size={14} />
+            Drukuj karte
+          </a>
         </div>
       </div>
 
