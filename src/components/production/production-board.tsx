@@ -183,7 +183,7 @@ export function ProductionBoard({
           </div>
           {isOperator && selectedGroupIds.length === 0 && groupResolved && (
             <p className="mt-2 text-[11px] text-amber-600">
-              Wybierz stanowiska na /scan — filtr ustawi sie automatycznie
+              Wybierz stanowiska na /scan — filtr ustawią się automatycznie
             </p>
           )}
         </div>
@@ -206,7 +206,7 @@ export function ProductionBoard({
               onClick={() => setShowAllTodo(!showAllTodo)}
               className="mt-2 text-[12px] font-medium text-blue-600 hover:text-blue-800"
             >
-              {showAllTodo ? "Pokaz mniej" : `Pokaz wszystkie (${todoItems.length})`}
+              {showAllTodo ? "Pokaż mniej" : `Pokaż wszystkie (${todoItems.length})`}
             </button>
           )}
         </div>
@@ -277,12 +277,12 @@ export function ProductionBoard({
             <CheckCircle2 size={22} className="text-zinc-400" />
           </div>
           <p className="text-sm font-medium text-zinc-900">
-            {selectedGroupIds.length > 0 ? "Brak etapow dla wybranych stanowisk" : "Brak danych produkcyjnych"}
+            {selectedGroupIds.length > 0 ? "Brak etapów dla wybranych stanowisk" : "Brak danych produkcyjnych"}
           </p>
           <p className="mt-1 text-[13px] text-zinc-500">
             {selectedGroupIds.length > 0
               ? "Wybierz inne stanowiska lub \"Wszystkie\"."
-              : "Etapy workflow pojawia sie po skonfigurowaniu produktow."}
+              : "Etapy workflow pojawią się po skonfigurowaniu produktów."}
           </p>
         </div>
       )}

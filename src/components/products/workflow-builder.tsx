@@ -207,7 +207,7 @@ export function WorkflowBuilder({
       ) : (
         <div className="mb-6 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
           <p className="text-[13px] text-zinc-500">
-            Brak etapow — dodaj z listy ponizej
+            Brak etapów — dodaj z listy poniżej
           </p>
         </div>
       )}

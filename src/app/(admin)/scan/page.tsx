@@ -337,7 +337,7 @@ export default function ScanPage() {
             Poprzedni etap ({confirmSkip.stepName}) nie jest ukończony.
           </p>
           <p className="mt-1 text-[12px] text-amber-600">
-            Czy potwierdzasz, ze ta czesc zostala wykonana?
+            Czy potwierdzasz, że ta część została wykonana?
           </p>
           <div className="mt-3 flex gap-2">
             <button
