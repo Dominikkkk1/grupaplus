@@ -1,6 +1,6 @@
 /**
- * Szablony email dla powiadomien o zamowieniach.
- * Prosty HTML inline — dziala w kazdym kliencie pocztowym.
+ * Szablony email dla powiadomień o zamówieniach.
+ * Prosty HTML inline — działa w każdym kliencie pocztowym.
  */
 
 function layout(content: string) {
@@ -41,19 +41,19 @@ export function orderConfirmedEmail({
     .join("");
 
   return {
-    subject: `Zamowienie ${orderNumber} — potwierdzone`,
+    subject: `Zamówienie ${orderNumber} — potwierdzone`,
     html: layout(`
-      <p style="margin:0 0 8px;font-size:15px;color:#18181b;">Czesc <strong>${customerName}</strong>,</p>
-      <p style="margin:0 0 20px;font-size:14px;color:#3f3f46;">Twoje zamowienie <strong>${orderNumber}</strong> zostalo potwierdzone i wkrotce rozpoczniemy realizacje.</p>
+      <p style="margin:0 0 8px;font-size:15px;color:#18181b;">Cześć <strong>${customerName}</strong>,</p>
+      <p style="margin:0 0 20px;font-size:14px;color:#3f3f46;">Twoje zamówienie <strong>${orderNumber}</strong> zostało potwierdzone i wkrótce rozpoczniemy realizację.</p>
 
       <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
         <thead>
-          <tr><th style="text-align:left;padding:6px 0;font-size:12px;color:#71717a;text-transform:uppercase;border-bottom:2px solid #e4e4e7;">Pozycja</th><th style="text-align:right;padding:6px 0;font-size:12px;color:#71717a;text-transform:uppercase;border-bottom:2px solid #e4e4e7;">Ilosc</th></tr>
+          <tr><th style="text-align:left;padding:6px 0;font-size:12px;color:#71717a;text-transform:uppercase;border-bottom:2px solid #e4e4e7;">Pozycja</th><th style="text-align:right;padding:6px 0;font-size:12px;color:#71717a;text-transform:uppercase;border-bottom:2px solid #e4e4e7;">Ilość</th></tr>
         </thead>
         <tbody>${itemRows}</tbody>
       </table>
 
-      <p style="margin:0;font-size:13px;color:#71717a;">Poinformujemy Cie mailem gdy zamowienie bedzie wyslane.</p>
+      <p style="margin:0;font-size:13px;color:#71717a;">Poinformujemy Cię mailem gdy zamówienie będzie wysłane.</p>
     `),
   };
 }
@@ -71,20 +71,20 @@ export function orderShippedEmail({
 }) {
   const trackingSection = trackingNumber
     ? `<div style="margin:16px 0;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
-         <p style="margin:0;font-size:13px;color:#166534;"><strong>Numer przesylki:</strong> ${trackingNumber}</p>
+         <p style="margin:0;font-size:13px;color:#166534;"><strong>Numer przesyłki:</strong> ${trackingNumber}</p>
          ${shippingMethod ? `<p style="margin:4px 0 0;font-size:12px;color:#166534;">Metoda: ${shippingMethod}</p>` : ""}
        </div>`
     : "";
 
   return {
-    subject: `Zamowienie ${orderNumber} — wyslane!`,
+    subject: `Zamówienie ${orderNumber} — wysłane!`,
     html: layout(`
-      <p style="margin:0 0 8px;font-size:15px;color:#18181b;">Czesc <strong>${customerName}</strong>,</p>
-      <p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Twoje zamowienie <strong>${orderNumber}</strong> zostalo wyslane! 🎉</p>
+      <p style="margin:0 0 8px;font-size:15px;color:#18181b;">Cześć <strong>${customerName}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Twoje zamówienie <strong>${orderNumber}</strong> zostało wysłane! 🎉</p>
 
       ${trackingSection}
 
-      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Dziekujemy za zamowienie w Drukarni Grupa Plus.</p>
+      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Dziękujemy za zamówienie w Drukarni Grupa Plus.</p>
     `),
   };
 }
