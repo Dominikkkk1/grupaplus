@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { email, password, fullName, role, phone } = await request.json();
+  console.log("[USER CREATE] email=%s role=%s fullName=%s", email, role, fullName);
 
   if (!email || !password || !fullName || !role) {
     return NextResponse.json(
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
     });
 
   if (authError) {
+    console.error("[USER CREATE] auth error:", authError.message);
     if (authError.message.includes("already been registered")) {
       return NextResponse.json(
         { error: "Uzytkownik z tym emailem juz istnieje" },
@@ -121,6 +123,8 @@ export async function POST(request: NextRequest) {
       .eq("id", newUser.user.id);
   }
 
+  console.log("[USER CREATE] auth user created: %s", newUser.user?.id);
+
   // Klient musi miec rekord w contacts — bez tego nie pojawi sie w CRM
   // i nie bedzie mogl byc przypisany do zamowien (RLS szuka go przez contacts.user_id)
   if (newUser.user && role === "client") {
@@ -133,11 +137,13 @@ export async function POST(request: NextRequest) {
 
     if (existingContact) {
       // Podlacz istniejacy contact do nowego usera
+      console.log("[USER CREATE] podlaczam istniejacy contact %s do user %s", existingContact.id, newUser.user.id);
       await adminClient
         .from("contacts")
         .update({ user_id: newUser.user.id })
         .eq("id", existingContact.id);
     } else {
+      console.log("[USER CREATE] tworze nowy contact dla %s", email);
       await adminClient.from("contacts").insert({
         user_id: newUser.user.id,
         full_name: fullName,

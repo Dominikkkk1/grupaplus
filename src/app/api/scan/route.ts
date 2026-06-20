@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    console.log("[SCAN] 401 — brak sesji");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -34,11 +35,13 @@ export async function POST(request: NextRequest) {
     !profile ||
     (profile.role !== "admin" && profile.role !== "operator")
   ) {
+    console.log("[SCAN] 403 — rola:", profile?.role, "user:", user.id);
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
   const { progressId, action, force, machineId } = body;
+  console.log("[SCAN] action=%s progressId=%s force=%s machineId=%s user=%s", action, progressId, force, machineId, user.id);
 
   if (!progressId || !action) {
     return NextResponse.json(
@@ -55,11 +58,15 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (!progress) {
+    console.log("[SCAN] 404 — etap nie znaleziony, progressId=%s", progressId);
     return NextResponse.json(
       { error: "Etap nie znaleziony" },
       { status: 404 }
     );
   }
+
+  const stepName = (progress.step as unknown as { name: string })?.name;
+  console.log("[SCAN] etap: %s (order %d), krok: %s, obecny status: %s", stepName, progress.step_order, progressId, progress.status);
 
   if (action === "start") {
     // Sprawdz czy poprzedni krok jest completed
@@ -72,6 +79,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (prev && prev.status !== "completed" && prev.status !== "skipped") {
+        console.log("[SCAN] prev step status=%s (nie completed/skipped), force=%s", prev.status, force);
         if (!force) {
           return NextResponse.json(
             {
@@ -83,6 +91,7 @@ export async function POST(request: NextRequest) {
           );
         }
         // force=true → oznacz brakujacy etap jako pominiety (nie completed — praca nie byla wykonana)
+        console.log("[SCAN] FORCE SKIP — pomijam prev step (step_order=%d)", progress.step_order - 1);
         await supabase
           .from("order_item_progress")
           .update({
@@ -104,6 +113,7 @@ export async function POST(request: NextRequest) {
     if (openSteps && openSteps.length > 0) {
       // Wroc do pending — operator musi swiadomie zakonczyc etap, nie zamykamy automatycznie
       const ids = openSteps.map((s) => s.id);
+      console.log("[SCAN] AUTO-CLOSE: %d etapow in_progress tego operatora wracaja do pending, ids=%j", ids.length, ids);
       await supabase
         .from("order_item_progress")
         .update({
@@ -128,17 +138,41 @@ export async function POST(request: NextRequest) {
       .eq("id", progressId);
 
     if (error) {
+      console.error("[SCAN] START error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Auto-advance: jesli zamowienie jest "confirmed", przejdz do "in_production"
+    const { data: scannedItem } = await supabase
+      .from("order_items")
+      .select("order_id")
+      .eq("id", progress.order_item_id)
+      .single();
+    if (scannedItem) {
+      const { data: scannedOrder } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", scannedItem.order_id)
+        .single();
+      if (scannedOrder?.status === "confirmed") {
+        console.log("[SCAN] AUTO-ADVANCE: order %s confirmed → in_production", scannedItem.order_id);
+        await supabase
+          .from("orders")
+          .update({ status: "in_production" })
+          .eq("id", scannedItem.order_id);
+      }
+    }
+
+    console.log("[SCAN] STARTED: %s (progressId=%s, machine=%s)", stepName, progressId, machineId || "brak");
     return NextResponse.json({
       ok: true,
       action: "started",
-      stepName: (progress.step as unknown as { name: string })?.name,
+      stepName,
     });
   }
 
   if (action === "complete") {
+    console.log("[SCAN] COMPLETE: %s (progressId=%s)", stepName, progressId);
     const completeData: Record<string, unknown> = {
       status: "completed",
       completed_at: new Date().toISOString(),
@@ -166,16 +200,18 @@ export async function POST(request: NextRequest) {
     );
 
     if (allDone) {
+      console.log("[SCAN] ALL DONE — pozycja %s ukonczona", progress.order_item_id);
       await supabase
         .from("order_items")
         .update({ is_completed: true })
         .eq("id", progress.order_item_id);
     }
 
+    console.log("[SCAN] COMPLETED: %s, allDone=%s", stepName, allDone);
     return NextResponse.json({
       ok: true,
       action: "completed",
-      stepName: (progress.step as unknown as { name: string })?.name,
+      stepName,
       allDone,
     });
   }

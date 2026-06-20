@@ -34,6 +34,7 @@ export async function POST(
   const body = await request.json();
   const { type, orderItemId, reason, revertToStepId, reprintQuantity, notes } =
     body;
+  console.log("[COMPLAINT] orderId=%s type=%s orderItemId=%s revertToStepId=%s user=%s", id, type, orderItemId, revertToStepId, user.id);
 
   if (!reason || !reason.trim()) {
     return NextResponse.json(
@@ -60,8 +61,11 @@ export async function POST(
     .single();
 
   if (error) {
+    console.error("[COMPLAINT] insert error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  console.log("[COMPLAINT] created id=%s", complaint.id);
 
   // Jesli zgloszenie wewnetrzne z cofnieciem etapu — cofnij progress
   if (type === "internal" && revertToStepId && orderItemId) {
@@ -74,6 +78,7 @@ export async function POST(
       .maybeSingle();
 
     if (targetStep) {
+      console.log("[COMPLAINT] REVERT: item=%s from step_order=%d", orderItemId, targetStep.step_order);
       // Cofnij wszystkie etapy od tego w gore do pending
       await supabase
         .from("order_item_progress")
@@ -107,6 +112,7 @@ export async function POST(
           .eq("id", revertedItem.order_id)
           .single();
         if (currentOrder?.status === "ready") {
+          console.log("[COMPLAINT] ORDER REVERT: %s ready → in_production", revertedItem.order_id);
           await supabase
             .from("orders")
             .update({ status: "in_production" })

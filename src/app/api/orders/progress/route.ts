@@ -28,6 +28,7 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json();
   const { progressId, status, machineId } = body;
+  console.log("[PROGRESS] progressId=%s newStatus=%s machineId=%s user=%s", progressId, status, machineId, user.id);
 
   if (!progressId || !status) {
     return NextResponse.json(
@@ -54,6 +55,7 @@ export async function PATCH(request: NextRequest) {
         .single();
 
       if (prev && prev.status !== "completed" && prev.status !== "skipped") {
+        console.log("[PROGRESS] 400 — prev step status=%s, nie mozna complete", prev.status);
         return NextResponse.json(
           { error: "Poprzedni etap musi byc ukonczony" },
           { status: 400 }
@@ -80,6 +82,7 @@ export async function PATCH(request: NextRequest) {
         .limit(1);
 
       if (laterCompleted && laterCompleted.length > 0) {
+        console.log("[PROGRESS] 400 — nie mozna cofnac, nastepny etap ukonczony (ids=%j)", laterCompleted.map(l => l.id));
         return NextResponse.json(
           { error: "Nie mozna cofnac — nastepny etap jest ukonczony" },
           { status: 400 }
@@ -109,8 +112,11 @@ export async function PATCH(request: NextRequest) {
     .eq("id", progressId);
 
   if (error) {
+    console.error("[PROGRESS] DB update error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  console.log("[PROGRESS] updated progressId=%s → %s", progressId, status);
 
   // Sprawdz czy wszystkie etapy pozycji sa ukonczone
   const { data: progress } = await supabase
@@ -130,6 +136,7 @@ export async function PATCH(request: NextRequest) {
     );
 
     // Oznacz pozycje jako ukonczona
+    console.log("[PROGRESS] item %s: allCompleted=%s", progress.order_item_id, !!allCompleted);
     await supabase
       .from("order_items")
       .update({ is_completed: !!allCompleted })
@@ -158,10 +165,13 @@ export async function PATCH(request: NextRequest) {
             .eq("id", orderItem.order_id)
             .single();
           if (currentOrder?.status === "in_production") {
+            console.log("[PROGRESS] ORDER AUTO-ADVANCE: %s → ready (all items done)", orderItem.order_id);
             await supabase
               .from("orders")
               .update({ status: "ready" })
               .eq("id", orderItem.order_id);
+          } else {
+            console.log("[PROGRESS] order %s status=%s — nie auto-advance (nie in_production)", orderItem.order_id, currentOrder?.status);
           }
         }
       }

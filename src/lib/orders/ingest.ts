@@ -16,6 +16,8 @@ export async function ingestOrder(
   supabase: SupabaseClient,
   input: OrderInput
 ): Promise<{ orderId: string; orderNumber: string }> {
+  console.log("[INGEST] source=%s externalId=%s customer=%s items=%d", input.source, input.externalId, input.customerName, input.items.length);
+
   // 1. Idempotentnosc — sprawdz czy juz istnieje
   if (input.externalId) {
     const { data: existing } = await supabase
@@ -26,6 +28,7 @@ export async function ingestOrder(
       .maybeSingle();
 
     if (existing) {
+      console.log("[INGEST] idempotent — zamowienie juz istnieje: %s", existing.order_number);
       return { orderId: existing.id, orderNumber: existing.order_number };
     }
   }
@@ -42,6 +45,7 @@ export async function ingestOrder(
       .select("id")
       .single();
     companyId = company?.id ?? null;
+    console.log("[INGEST] company upsert: nip=%s → id=%s", input.nip, companyId);
   }
 
   // 3. Upsert kontakt (po email lub allegro_login)
@@ -58,6 +62,7 @@ export async function ingestOrder(
 
     if (existingContact) {
       contactId = existingContact.id;
+      console.log("[INGEST] kontakt znaleziony: %s", contactId);
     } else {
       // Upsert: jesli email juz istnieje (race condition), zwroc istniejacy
       const { data: newContact, error: contactError } = await supabase
@@ -73,6 +78,7 @@ export async function ingestOrder(
         .single();
 
       if (contactError && input.customerEmail) {
+        console.log("[INGEST] kontakt UNIQUE conflict, szukam po email=%s", input.customerEmail);
         // UNIQUE conflict — pobierz istniejacy kontakt
         const { data: fallback } = await supabase
           .from("contacts")
@@ -100,6 +106,7 @@ export async function ingestOrder(
     products?.forEach((p) => {
       if (p.sku) productMap.set(p.sku, p.id);
     });
+    console.log("[INGEST] matched %d/%d SKU", productMap.size, skus.length);
   }
 
   // 5. Utworz zamowienie (order_number generuje sie automatycznie przez trigger)
@@ -127,8 +134,11 @@ export async function ingestOrder(
     .single();
 
   if (orderError || !order) {
+    console.error("[INGEST] order INSERT error:", orderError?.message);
     throw new Error(`Blad tworzenia zamowienia: ${orderError?.message}`);
   }
+
+  console.log("[INGEST] order created: %s (%s), contact=%s, company=%s", order.order_number, order.id, contactId, companyId);
 
   // 6. Utworz pozycje (trigger DB automatycznie tworzy progress z product_workflow)
   const orderItems = input.items.map((item) => ({
@@ -145,8 +155,10 @@ export async function ingestOrder(
     .insert(orderItems);
 
   if (itemsError) {
+    console.error("[INGEST] items INSERT error:", itemsError.message);
     throw new Error(`Blad tworzenia pozycji: ${itemsError.message}`);
   }
 
+  console.log("[INGEST] %d pozycji utworzonych dla %s", orderItems.length, order.order_number);
   return { orderId: order.id, orderNumber: order.order_number };
 }

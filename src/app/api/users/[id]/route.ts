@@ -32,6 +32,7 @@ export async function PATCH(
 
   const body = await request.json();
   const updateData: Record<string, unknown> = {};
+  console.log("[USER PATCH] userId=%s body=%j", id, body);
 
   if (body.fullName !== undefined) updateData.full_name = body.fullName;
   if (body.role !== undefined) updateData.role = body.role;
@@ -67,6 +68,7 @@ export async function PATCH(
 
   // Synchronizacja contacts przy zmianie roli
   if (body.role !== undefined && oldRole && oldRole !== body.role) {
+    console.log("[USER PATCH] zmiana roli: %s → %s (userId=%s)", oldRole, body.role, id);
     const adminClient = createAdminClient();
 
     if (oldRole === "client" && body.role !== "client") {
@@ -85,7 +87,10 @@ export async function PATCH(
           .limit(1);
 
         if (!orders || orders.length === 0) {
+          console.log("[USER PATCH] usuwam contact (brak zamowien) userId=%s", id);
           await adminClient.from("contacts").delete().eq("user_id", id);
+        } else {
+          console.log("[USER PATCH] zachowuje contact (ma zamowienia) userId=%s", id);
         }
       }
     }
@@ -99,6 +104,7 @@ export async function PATCH(
         .maybeSingle();
 
       if (!existingContact) {
+        console.log("[USER PATCH] tworze contact dla nowego klienta userId=%s", id);
         const { data: userProfile } = await supabase
           .from("users")
           .select("full_name, phone")

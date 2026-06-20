@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ALLOWED_TRANSITIONS } from "@/lib/order-constants";
+import { notifyOrderStatusChange } from "@/lib/email/notifications";
 
 /**
  * PATCH /api/orders/[id] — zmiana statusu i/lub przypisania operatora
@@ -35,6 +36,7 @@ export async function PATCH(
 
   const body = await request.json();
   const updateData: Record<string, unknown> = {};
+  console.log("[ORDER PATCH] orderId=%s body=%j user=%s", id, body, user.id);
 
   // Zmiana statusu — walidacja przejsc
   if (body.status) {
@@ -53,6 +55,7 @@ export async function PATCH(
 
     const allowed = ALLOWED_TRANSITIONS[order.status] ?? [];
     if (!allowed.includes(body.status)) {
+      console.log("[ORDER PATCH] 400 — niedozwolone przejscie: %s → %s (allowed: %j)", order.status, body.status, allowed);
       return NextResponse.json(
         {
           error: `Nie mozna zmienic statusu z "${order.status}" na "${body.status}"`,
@@ -61,6 +64,7 @@ export async function PATCH(
       );
     }
 
+    console.log("[ORDER PATCH] status: %s → %s", order.status, body.status);
     updateData.status = body.status;
   }
 
@@ -83,6 +87,13 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Powiadomienie email (fire-and-forget — nie blokuje response)
+  if (body.status) {
+    notifyOrderStatusChange(supabase, id, body.status).catch((err) =>
+      console.error("[ORDER PATCH] notify error:", err)
+    );
   }
 
   return NextResponse.json({ ok: true });

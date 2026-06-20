@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
 
   // 1. ZAWSZE zapisz surowy payload PRZED przetworzeniem
   const topic = request.headers.get("x-wc-webhook-topic") ?? "unknown";
+  console.log("[WEBHOOK WOO] topic=%s payload.id=%s", topic, payload.id);
   const { data: webhookEvent } = await supabase
     .from("webhook_events")
     .insert({
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
       .digest("base64");
 
     if (signature !== expectedSignature) {
+      console.error("[WEBHOOK WOO] HMAC mismatch — invalid signature");
       // Zapisz blad
       if (webhookEvent) {
         await supabase
@@ -76,6 +78,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const orderInput = parseWooCommerceOrder(payload as unknown as WooOrderPayload);
+    console.log("[WEBHOOK WOO] parsed: customer=%s items=%d source=%s", orderInput.customerName, orderInput.items.length, orderInput.source);
     const result = await ingestOrder(supabase, orderInput);
 
     // Oznacz webhook jako przetworzony
@@ -86,6 +89,7 @@ export async function POST(request: NextRequest) {
         .eq("id", webhookEvent.id);
     }
 
+    console.log("[WEBHOOK WOO] success: %s (%s)", result.orderNumber, result.orderId);
     return NextResponse.json({
       ok: true,
       orderId: result.orderId,
@@ -93,6 +97,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[WEBHOOK WOO] error:", message);
 
     // Zapisz blad w webhook_events
     if (webhookEvent) {

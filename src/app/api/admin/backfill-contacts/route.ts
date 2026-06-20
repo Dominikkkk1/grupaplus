@@ -29,6 +29,7 @@ export async function POST() {
   }
 
   const adminClient = createAdminClient();
+  console.log("[BACKFILL] start — user=%s", user.id);
 
   // 1. Pobierz wszystkich userow z rola "client"
   const { data: clientUsers } = await adminClient
@@ -36,6 +37,7 @@ export async function POST() {
     .select("id, full_name, phone")
     .eq("role", "client");
 
+  console.log("[BACKFILL] clientUsers=%d", clientUsers?.length ?? 0);
   if (!clientUsers || clientUsers.length === 0) {
     return NextResponse.json({ created: 0, skipped: 0, message: "Brak userow z rola client" });
   }
@@ -52,6 +54,7 @@ export async function POST() {
 
   // 3. Filtruj userow bez contacts
   const missingUsers = clientUsers.filter((u) => !existingUserIds.has(u.id));
+  console.log("[BACKFILL] missing=%d, existing=%d", missingUsers.length, existingUserIds.size);
 
   if (missingUsers.length === 0) {
     return NextResponse.json({
@@ -79,9 +82,11 @@ export async function POST() {
   const { error } = await adminClient.from("contacts").insert(toInsert);
 
   if (error) {
+    console.error("[BACKFILL] insert error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  console.log("[BACKFILL] done — created=%d, skipped=%d", toInsert.length, clientUsers.length - toInsert.length);
   return NextResponse.json({
     created: toInsert.length,
     skipped: clientUsers.length - toInsert.length,
