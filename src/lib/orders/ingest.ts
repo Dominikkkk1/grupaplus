@@ -150,14 +150,19 @@ export async function ingestOrder(
     specifications: item.specifications ?? {},
   }));
 
-  const { error: itemsError } = await supabase
+  console.log("[INGEST] inserting %d items: %j", orderItems.length, orderItems.map(i => ({ desc: i.description, product_id: i.product_id, qty: i.quantity })));
+
+  const { data: insertedItems, error: itemsError } = await supabase
     .from("order_items")
-    .insert(orderItems);
+    .insert(orderItems)
+    .select("id, description, product_id");
 
   if (itemsError) {
     console.error("[INGEST] items INSERT error:", itemsError.message);
     throw new Error(`Blad tworzenia pozycji: ${itemsError.message}`);
   }
+
+  console.log("[INGEST] items inserted: %j", insertedItems);
 
   console.log("[INGEST] %d pozycji utworzonych dla %s", orderItems.length, order.order_number);
   return { orderId: order.id, orderNumber: order.order_number };

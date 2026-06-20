@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
+  console.log("[ORDER CREATE] body.items=%j", body.items);
 
   // Walidacja
   if (!body.items || body.items.length === 0) {

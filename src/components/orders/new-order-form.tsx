@@ -132,6 +132,9 @@ export function NewOrderForm({
         quantity: i.quantity,
       }));
 
+    console.log("[ORDER FORM] raw items state:", items);
+    console.log("[ORDER FORM] filtered orderItems:", orderItems);
+
     if (orderItems.length === 0) {
       setError("Dodaj przynajmniej jedna pozycje");
       setLoading(false);
