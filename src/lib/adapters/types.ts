@@ -31,7 +31,9 @@ export interface OrderInput {
 
 export interface OrderItemInput {
   externalId?: string;
-  /** SKU do matchowania z tabela products */
+  /** UUID produktu — uzywane przez formularz reczny */
+  productId?: string;
+  /** SKU do matchowania z tabela products — uzywane przez webhooki */
   productSku?: string;
   description: string;
   quantity: number;

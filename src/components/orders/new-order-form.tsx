@@ -126,14 +126,11 @@ export function NewOrderForm({
 
     const orderItems = items
       .filter((i) => i.description.trim())
-      .map((i) => {
-        const product = products.find((p) => p.id === i.productId);
-        return {
-          productSku: product?.sku ?? undefined,
-          description: i.description,
-          quantity: i.quantity,
-        };
-      });
+      .map((i) => ({
+        productId: i.productId || undefined,
+        description: i.description,
+        quantity: i.quantity,
+      }));
 
     if (orderItems.length === 0) {
       setError("Dodaj przynajmniej jedna pozycje");

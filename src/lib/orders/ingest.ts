@@ -143,7 +143,7 @@ export async function ingestOrder(
   // 6. Utworz pozycje (trigger DB automatycznie tworzy progress z product_workflow)
   const orderItems = input.items.map((item) => ({
     order_id: order.id,
-    product_id: item.productSku ? productMap.get(item.productSku) ?? null : null,
+    product_id: item.productId ?? (item.productSku ? productMap.get(item.productSku) ?? null : null),
     description: item.description,
     quantity: item.quantity,
     unit_price: item.unitPrice ?? null,
