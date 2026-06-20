@@ -4,7 +4,7 @@ import { useEffect, useRef, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Factory, Clock, AlertTriangle, CheckCircle2, Filter } from "lucide-react";
+import { Factory, Clock, AlertTriangle, CheckCircle2, ListTodo } from "lucide-react";
 
 export interface Step {
   id: string;
@@ -47,33 +47,34 @@ export function ProductionBoard({
 }) {
   const router = useRouter();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isOperator = userRole === "operator";
 
-  // Filtr machine_group — operator domyslnie filtrowany, admin widzi wszystko
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  // Multi-group filtr — operator z sessionStorage, admin wszystko
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [groupResolved, setGroupResolved] = useState(false);
 
-  // Reverse lookup: machine_id z sessionStorage → group_id
+  // Odczytaj grupy z sessionStorage (ustawione na /scan)
   useEffect(() => {
-    const savedMachineId = sessionStorage.getItem("scan_machine_id");
-    if (savedMachineId && userRole === "operator") {
-      const supabase = createClient();
-      supabase
-        .from("machines")
-        .select("group_id")
-        .eq("id", savedMachineId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.group_id) {
-            setSelectedGroupId(data.group_id as string);
-          }
-          setGroupResolved(true);
-        });
-    } else {
-      setGroupResolved(true);
-    }
-  }, [userRole]);
+    try {
+      const saved = sessionStorage.getItem("scan_group_ids");
+      if (saved) {
+        const ids = JSON.parse(saved) as string[];
+        if (ids.length > 0) setSelectedGroupIds(ids);
+      }
+    } catch {}
+    setGroupResolved(true);
+  }, []);
 
-  // Supabase Realtime — odswierzaj dane gdy ktos zmieni status etapu
+  function toggleGroup(groupId: string) {
+    setSelectedGroupIds((prev) => {
+      const next = prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId];
+      return next;
+    });
+  }
+
+  // Supabase Realtime
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -82,7 +83,6 @@ export function ProductionBoard({
         "postgres_changes",
         { event: "*", schema: "public", table: "order_item_progress" },
         () => {
-          // Debounce 300ms — przy wielu zmianach naraz nie refetchujemy co event
           if (debounceRef.current) clearTimeout(debounceRef.current);
           debounceRef.current = setTimeout(() => router.refresh(), 300);
         }
@@ -95,11 +95,11 @@ export function ProductionBoard({
     };
   }, [router]);
 
-  // Filtrowane etapy wg machine_group
+  // Filtrowane etapy — multi-group
   const filteredSteps = useMemo(() => {
-    if (!selectedGroupId) return steps;
-    return steps.filter((s) => s.machine_group_id === selectedGroupId);
-  }, [steps, selectedGroupId]);
+    if (selectedGroupIds.length === 0) return steps;
+    return steps.filter((s) => s.machine_group_id && selectedGroupIds.includes(s.machine_group_id));
+  }, [steps, selectedGroupIds]);
 
   // Grupuj pozycje wg etapu workflow
   const stepGroups = useMemo(() => {
@@ -116,7 +116,7 @@ export function ProductionBoard({
     return groups;
   }, [filteredSteps, initialItems]);
 
-  // Statystyki — tylko dla filtrowanych etapow
+  // Statystyki
   const filteredStepIds = new Set(filteredSteps.map((s) => s.id));
   const filteredItems = initialItems.filter((i) => filteredStepIds.has(i.step_id));
   const pendingCount = filteredItems.filter((i) => i.status === "pending").length;
@@ -129,28 +129,85 @@ export function ProductionBoard({
     return new Date(deadline).getTime() < now + 24 * 60 * 60 * 1000;
   }).length;
 
+  // "Twoje zadania" — pending items w filtrowanych etapach, sortowane po pilnosci
+  const todoItems = useMemo(() => {
+    if (!isOperator || selectedGroupIds.length === 0) return [];
+    return filteredItems
+      .filter((i) => i.status === "pending")
+      .sort((a, b) => {
+        const dA = a.order_item?.order?.deadline;
+        const dB = b.order_item?.order?.deadline;
+        // Pilne (z deadline) na gorze
+        if (dA && !dB) return -1;
+        if (!dA && dB) return 1;
+        if (dA && dB) return new Date(dA).getTime() - new Date(dB).getTime();
+        return 0;
+      });
+  }, [isOperator, selectedGroupIds, filteredItems]);
+
+  const [showAllTodo, setShowAllTodo] = useState(false);
+  const visibleTodo = showAllTodo ? todoItems : todoItems.slice(0, 5);
+
   return (
     <>
-      {/* Filtr stanowiska */}
+      {/* Filtr stanowisk — pigulki multi-select */}
       {machineGroups.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <Filter size={14} className="text-zinc-400" />
-          <select
-            value={selectedGroupId ?? ""}
-            onChange={(e) => setSelectedGroupId(e.target.value || null)}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[13px] text-zinc-700 focus:border-zinc-900 focus:outline-none"
-          >
-            <option value="">Wszystkie stanowiska</option>
-            {machineGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
+        <div className="mb-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setSelectedGroupIds([])}
+              className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                selectedGroupIds.length === 0
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+              }`}
+            >
+              Wszystkie
+            </button>
+            {machineGroups.map((g) => {
+              const isSelected = selectedGroupIds.includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => toggleGroup(g.id)}
+                  className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                    isSelected
+                      ? "border-zinc-900 bg-zinc-900 text-white"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+                  }`}
+                >
+                  {g.name}
+                </button>
+              );
+            })}
+          </div>
+          {isOperator && selectedGroupIds.length === 0 && groupResolved && (
+            <p className="mt-2 text-[11px] text-amber-600">
+              Wybierz stanowiska na /scan — filtr ustawi sie automatycznie
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Twoje zadania — tylko operator z wybranymi grupami */}
+      {isOperator && todoItems.length > 0 && (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50/30 p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-blue-700">
+            <ListTodo size={14} />
+            Do zrobienia ({todoItems.length})
+          </h3>
+          <div className="space-y-2">
+            {visibleTodo.map((item) => (
+              <ProductionCard key={item.id} item={item} now={now} />
             ))}
-          </select>
-          {userRole === "operator" && !selectedGroupId && groupResolved && (
-            <span className="text-[11px] text-amber-600">
-              Wybierz stanowisko na /scan aby automatycznie filtrowac
-            </span>
+          </div>
+          {todoItems.length > 5 && (
+            <button
+              onClick={() => setShowAllTodo(!showAllTodo)}
+              className="mt-2 text-[12px] font-medium text-blue-600 hover:text-blue-800"
+            >
+              {showAllTodo ? "Pokaz mniej" : `Pokaz wszystkie (${todoItems.length})`}
+            </button>
           )}
         </div>
       )}
@@ -220,11 +277,11 @@ export function ProductionBoard({
             <CheckCircle2 size={22} className="text-zinc-400" />
           </div>
           <p className="text-sm font-medium text-zinc-900">
-            {selectedGroupId ? "Brak etapow dla wybranego stanowiska" : "Brak danych produkcyjnych"}
+            {selectedGroupIds.length > 0 ? "Brak etapow dla wybranych stanowisk" : "Brak danych produkcyjnych"}
           </p>
           <p className="mt-1 text-[13px] text-zinc-500">
-            {selectedGroupId
-              ? "Wybierz inne stanowisko lub \"Wszystkie stanowiska\"."
+            {selectedGroupIds.length > 0
+              ? "Wybierz inne stanowiska lub \"Wszystkie\"."
               : "Etapy workflow pojawia sie po skonfigurowaniu produktow."}
           </p>
         </div>

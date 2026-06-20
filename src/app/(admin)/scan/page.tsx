@@ -20,6 +20,11 @@ interface ScannedOrder {
   steps: ProgressStep[];
 }
 
+interface MachineGroup {
+  id: string;
+  name: string;
+}
+
 export default function ScanPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLDivElement>(null);
@@ -29,38 +34,74 @@ export default function ScanPage() {
   const [scannedOrder, setScannedOrder] = useState<ScannedOrder | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Stanowisko operatora
+  // Stanowiska operatora (multi-select grup)
+  const [machineGroups, setMachineGroups] = useState<MachineGroup[]>([]);
   const [machines, setMachines] = useState<{ id: string; name: string; group: string; groupId: string }[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [selectedMachine, setSelectedMachine] = useState<string>("");
 
-  // Pobierz maszyny przy starcie + odczytaj zapisane stanowisko
+  // Pobierz grupy maszyn + maszyny przy starcie
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from("machines")
-      .select("id, name, group_id, group:machine_groups(name)")
-      .eq("is_active", true)
-      .order("name")
-      .then(({ data }) => {
-        setMachines(
-          (data ?? []).map((m) => ({
-            id: m.id,
-            name: m.name,
-            groupId: (m as unknown as { group_id: string }).group_id ?? "",
-            group: (m.group as unknown as { name: string })?.name ?? "",
-          }))
-        );
-      });
-    // Odczytaj zapisane stanowisko z sessionStorage
-    const saved = sessionStorage.getItem("scan_machine_id");
-    if (saved) setSelectedMachine(saved);
+    Promise.all([
+      supabase.from("machine_groups").select("id, name").order("name"),
+      supabase
+        .from("machines")
+        .select("id, name, group_id, group:machine_groups(name)")
+        .eq("is_active", true)
+        .order("name"),
+    ]).then(([groupsRes, machinesRes]) => {
+      setMachineGroups((groupsRes.data ?? []) as MachineGroup[]);
+      setMachines(
+        (machinesRes.data ?? []).map((m) => ({
+          id: m.id,
+          name: m.name,
+          groupId: (m as unknown as { group_id: string }).group_id ?? "",
+          group: (m.group as unknown as { name: string })?.name ?? "",
+        }))
+      );
+    });
+    // Odczytaj zapisane stanowiska z sessionStorage
+    try {
+      const savedGroups = sessionStorage.getItem("scan_group_ids");
+      if (savedGroups) setSelectedGroupIds(JSON.parse(savedGroups));
+      const savedMachine = sessionStorage.getItem("scan_machine_id");
+      if (savedMachine) setSelectedMachine(savedMachine);
+    } catch {}
   }, []);
+
+  function toggleGroup(groupId: string) {
+    setSelectedGroupIds((prev) => {
+      const next = prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId];
+      sessionStorage.setItem("scan_group_ids", JSON.stringify(next));
+      // Jesli wybrana maszyna nie jest w nowych grupach — wyczysc
+      const machineInGroups = machines.find((m) => m.id === selectedMachine);
+      if (machineInGroups && !next.includes(machineInGroups.groupId)) {
+        setSelectedMachine("");
+        sessionStorage.removeItem("scan_machine_id");
+      }
+      return next;
+    });
+  }
 
   function changeMachine(id: string) {
     setSelectedMachine(id);
     if (id) sessionStorage.setItem("scan_machine_id", id);
     else sessionStorage.removeItem("scan_machine_id");
   }
+
+  // Maszyny filtrowane po wybranych grupach
+  const filteredMachines = selectedGroupIds.length > 0
+    ? machines.filter((m) => selectedGroupIds.includes(m.groupId))
+    : machines;
+
+  // Nazwy wybranych grup (do ostrzezenia)
+  const selectedGroupNames = machineGroups
+    .filter((g) => selectedGroupIds.includes(g.id))
+    .map((g) => g.name);
+
   const [message, setMessage] = useState<{
     type: "success" | "error" | "warning";
     text: string;
@@ -88,7 +129,7 @@ export default function ScanPage() {
           scanner.stop().catch(() => {});
           setScanning(false);
         },
-        () => {} // ignore errors
+        () => {}
       );
     } catch {
       setMessage({ type: "error", text: "Nie udalo sie uruchomic kamery" });
@@ -98,7 +139,6 @@ export default function ScanPage() {
 
   // Przetworz zeskanowany QR
   const handleQrScanned = useCallback(async (url: string) => {
-    // Wyciagnij order ID z URL: /orders/UUID
     const match = url.match(/\/orders\/([a-f0-9-]+)/i);
     if (!match) {
       setMessage({ type: "error", text: "Nieprawidlowy kod QR" });
@@ -108,7 +148,6 @@ export default function ScanPage() {
     const orderId = match[1];
     const supabase = createClient();
 
-    // Pobierz zamowienie z pozycjami i etapami
     const { data: order } = await supabase
       .from("orders")
       .select("id, order_number")
@@ -120,7 +159,6 @@ export default function ScanPage() {
       return;
     }
 
-    // Pobierz pierwsza pozycje z etapami (uproszczenie — jedna pozycja per skan)
     const { data: items } = await supabase
       .from("order_items")
       .select(
@@ -192,7 +230,6 @@ export default function ScanPage() {
           : `Ukonczono: ${data.stepName}`,
     });
 
-    // Odswierz dane zamowienia
     if (scannedOrder) {
       handleQrScanned(`/orders/${scannedOrder.orderId}`);
     }
@@ -221,27 +258,59 @@ export default function ScanPage() {
         </p>
       </div>
 
-      {/* Stanowisko */}
+      {/* Stanowiska — pigulki grup */}
       <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
         <label className="mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-400">
           <Cog size={14} />
-          Twoje stanowisko
+          Twoje stanowiska
         </label>
-        <select
-          value={selectedMachine}
-          onChange={(e) => changeMachine(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-[14px] font-medium focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-        >
-          <option value="">— Wybierz maszyne —</option>
-          {machines.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name} {m.group ? `(${m.group})` : ""}
-            </option>
-          ))}
-        </select>
-        {!selectedMachine && (
+        {machineGroups.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {machineGroups.map((g) => {
+              const isSelected = selectedGroupIds.includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => toggleGroup(g.id)}
+                  className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                    isSelected
+                      ? "border-zinc-900 bg-zinc-900 text-white"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+                  }`}
+                >
+                  {g.name}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[12px] text-zinc-400">Ladowanie...</p>
+        )}
+
+        {/* Dropdown maszyny — filtrowany po grupach */}
+        {selectedGroupIds.length > 0 && (
+          <div className="mt-3">
+            <label className="mb-1 block text-[11px] font-medium text-zinc-400">
+              Maszyna (opcjonalnie)
+            </label>
+            <select
+              value={selectedMachine}
+              onChange={(e) => changeMachine(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            >
+              <option value="">— Dowolna —</option>
+              {filteredMachines.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.group})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {selectedGroupIds.length === 0 && (
           <p className="mt-2 text-[11px] text-amber-600">
-            Wybierz maszyne zanim zaczniesz skanowac
+            Wybierz stanowiska zanim zaczniesz skanowac
           </p>
         )}
       </div>
@@ -333,11 +402,13 @@ export default function ScanPage() {
                 const isSkipped = step.status === "skipped";
                 const isLoading = actionLoading === step.id;
 
-                // Sprawdz czy stanowisko operatora pasuje do machine_group etapu
+                // Sprawdz czy etap pasuje do wybranych grup stanowisk
                 const stepGroupId = (step.step as { machine_group_id: string | null })?.machine_group_id;
-                const currentMachine = machines.find((m) => m.id === selectedMachine);
-                const machineGroupMismatch =
-                  selectedMachine && stepGroupId && currentMachine && currentMachine.groupId !== stepGroupId;
+                const stepGroupName = stepGroupId
+                  ? machineGroups.find((g) => g.id === stepGroupId)?.name
+                  : null;
+                const groupMismatch =
+                  selectedGroupIds.length > 0 && stepGroupId && !selectedGroupIds.includes(stepGroupId);
 
                 return (
                   <div key={step.id}>
@@ -397,10 +468,15 @@ export default function ScanPage() {
                         </button>
                       )}
                     </div>
-                    {machineGroupMismatch && (isPending || isInProgress) && (
-                      <p className="mt-1 flex items-center gap-1 px-1 text-[11px] text-amber-600">
+                    {groupMismatch && (isPending || isInProgress) && (
+                      <p className="mt-1 flex items-center gap-1 px-1 text-[11px] text-red-500">
                         <AlertTriangle size={11} />
-                        Stanowisko {currentMachine.name} ({currentMachine.group}) nie pasuje do tego etapu
+                        Wymaga stanowiska: <strong>{stepGroupName}</strong>
+                        {selectedGroupNames.length > 0 && (
+                          <span className="text-zinc-400">
+                            {" "}— Twoje: {selectedGroupNames.join(", ")}
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>
@@ -423,7 +499,7 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Link do skanera recznego */}
+      {/* Reczne wpisanie numeru */}
       <div className="mt-4 text-center">
         <p className="text-[11px] text-zinc-400">
           Lub wpisz numer zamowienia recznie:
@@ -436,7 +512,6 @@ export default function ScanPage() {
             if (e.key === "Enter") {
               const input = e.currentTarget.value.trim();
               if (input) {
-                // Szukaj po order_number
                 const supabase = createClient();
                 supabase
                   .from("orders")
