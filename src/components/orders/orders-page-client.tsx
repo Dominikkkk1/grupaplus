@@ -53,11 +53,29 @@ export function OrdersPageClient({
   const isClient = userRole === "client";
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Statusy aktywne vs zakonczone
+  const ACTIVE_STATUSES = ["new", "confirmed", "in_production", "ready"];
+  const FINISHED_STATUSES = ["shipped", "delivered", "cancelled"];
+
+  // Liczniki per status
+  const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
+    acc[o.status] = (acc[o.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
+  const finishedCount = orders.filter((o) => FINISHED_STATUSES.includes(o.status)).length;
+
   const filtered = orders
     .filter((o) => {
+      // Filtr statusu
+      if (statusFilter === "active" && !ACTIVE_STATUSES.includes(o.status)) return false;
+      if (statusFilter === "finished" && !FINISHED_STATUSES.includes(o.status)) return false;
+      if (statusFilter !== "all" && statusFilter !== "active" && statusFilter !== "finished" && o.status !== statusFilter) return false;
+      // Wyszukiwarka
       if (!query) return true;
       const q = query.toLowerCase();
       return (
@@ -116,6 +134,40 @@ export function OrdersPageClient({
           className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-9 pr-4 text-sm placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
         />
       </div>
+
+      {/* Filtry statusu */}
+      {!isClient && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {[
+            { key: "active", label: "Aktywne", count: activeCount },
+            { key: "all", label: "Wszystkie", count: orders.length },
+            { key: "new", label: "Nowe", count: statusCounts["new"] ?? 0 },
+            { key: "confirmed", label: "Potwierdzone", count: statusCounts["confirmed"] ?? 0 },
+            { key: "in_production", label: "W produkcji", count: statusCounts["in_production"] ?? 0 },
+            { key: "ready", label: "Gotowe", count: statusCounts["ready"] ?? 0 },
+            { key: "finished", label: "Zakonczone", count: finishedCount },
+          ]
+            .filter((f) => f.count > 0 || f.key === "active" || f.key === "all")
+            .map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+                  statusFilter === f.key
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+                }`}
+              >
+                {f.label}
+                {f.count > 0 && (
+                  <span className={`ml-1.5 ${statusFilter === f.key ? "text-zinc-400" : "text-zinc-400"}`}>
+                    {f.count}
+                  </span>
+                )}
+              </button>
+            ))}
+        </div>
+      )}
 
       {/* Table */}
       {filtered.length > 0 ? (

@@ -30,7 +30,7 @@ export default async function OrdersPage() {
       company:companies(name)
     `)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
 
   // Dodatkowe dane tylko dla admin (klient nie potrzebuje)
   let products: { id: string; name: string; sku: string | null }[] = [];
