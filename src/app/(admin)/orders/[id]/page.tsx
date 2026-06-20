@@ -17,6 +17,7 @@ import {
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { FileUpload } from "@/components/orders/file-upload";
 import { OrderActions } from "@/components/orders/order-actions";
+import { DeleteOrderButton } from "@/components/orders/delete-order-button";
 import { STATUS_CONFIG, SOURCE_LABELS } from "@/lib/order-constants";
 
 export default async function OrderDetailPage({
@@ -328,6 +329,9 @@ export default async function OrderDetailPage({
               </div>
             </div>
           </div>
+
+          {/* Usun zamowienie */}
+          <DeleteOrderButton orderId={id} />
 
           {/* Uwagi */}
           {order.notes && (
