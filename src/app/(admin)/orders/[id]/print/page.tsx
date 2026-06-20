@@ -79,12 +79,12 @@ export default function PrintPage() {
   }
 
   if (!order) {
-    return <p className="p-8 text-zinc-500">Zamowienie nie znalezione</p>;
+    return <p className="p-8 text-zinc-500">Zamówienie nie znalezione</p>;
   }
 
   const paymentLabel =
     order.payment_status === "paid"
-      ? "Oplacone"
+      ? "Opłacone"
       : order.payment_status === "cod"
         ? "Za pobraniem"
         : "Oczekuje";
@@ -196,7 +196,7 @@ export default function PrintPage() {
         {/* === DOL: DANE KLIENTA === */}
         <div>
           <p style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#a1a1aa", marginBottom: "0.75rem" }}>
-            Dane klienta (odetnij po zakonczeniu)
+            Dane klienta (odetnij po zakończeniu)
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.85rem" }}>
@@ -225,7 +225,7 @@ export default function PrintPage() {
               </div>
             )}
             <div>
-              <span style={{ color: "#71717a" }}>Platnosc: </span>
+              <span style={{ color: "#71717a" }}>Płatność: </span>
               <strong>{paymentLabel}</strong>
             </div>
             {order.total_price && (

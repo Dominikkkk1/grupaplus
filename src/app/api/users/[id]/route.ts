@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * PATCH /api/users/[id] — edycja uzytkownika (admin only)
+ * PATCH /api/users/[id] — edycja użytkownika (admin only)
  * Body: { fullName?, role?, phone?, isActive? }
  */
 export async function PATCH(
@@ -90,7 +90,7 @@ export async function PATCH(
           console.log("[USER PATCH] usuwam contact (brak zamowien) userId=%s", id);
           await adminClient.from("contacts").delete().eq("user_id", id);
         } else {
-          console.log("[USER PATCH] zachowuje contact (ma zamowienia) userId=%s", id);
+          console.log("[USER PATCH] zachowuje contact (ma zamówienia) userId=%s", id);
         }
       }
     }

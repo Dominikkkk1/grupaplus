@@ -90,7 +90,7 @@ export function ComplaintForm({
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
           <h2 className="text-[15px] font-semibold text-zinc-900">
-            Nowe zgloszenie
+            Nowe zgłoszenie
           </h2>
           <button
             onClick={onClose}
@@ -104,7 +104,7 @@ export function ComplaintForm({
           {/* Typ */}
           <div>
             <label className="mb-2 block text-[12px] font-medium text-zinc-600">
-              Typ zgloszenia
+              Typ zgłoszenia
             </label>
             <div className="flex gap-3">
               {[
@@ -197,10 +197,10 @@ export function ComplaintForm({
             </div>
           )}
 
-          {/* Powod */}
+          {/* Powód */}
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
-              Powod zgloszenia *
+              Powód zgłoszenia *
             </label>
             <textarea
               value={reason}
@@ -252,7 +252,7 @@ export function ComplaintForm({
                   Zapisywanie...
                 </span>
               ) : (
-                "Zglos incydent"
+                "Zgłoś incydent"
               )}
             </Button>
           </div>

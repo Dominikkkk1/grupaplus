@@ -30,7 +30,7 @@ const WARN_DPI = 300; // ponizej = warning (moze byc rozmyty)
 const PT_TO_MM = 0.3528; // 1 punkt PDF = 0.3528 mm
 
 /**
- * Waliduje plik uploadowany do zamowienia.
+ * Waliduje plik uploadowany do zamówienia.
  * Obsluguje obrazki (JPG/PNG/TIFF) i PDF.
  */
 export async function validateFile(

@@ -48,7 +48,7 @@ export async function PATCH(
 
     if (!order) {
       return NextResponse.json(
-        { error: "Zamowienie nie znalezione" },
+        { error: "Zamówienie nie znalezione" },
         { status: 404 }
       );
     }
@@ -58,7 +58,7 @@ export async function PATCH(
       console.log("[ORDER PATCH] 400 — niedozwolone przejscie: %s → %s (allowed: %j)", order.status, body.status, allowed);
       return NextResponse.json(
         {
-          error: `Nie mozna zmienic statusu z "${order.status}" na "${body.status}"`,
+          error: `Nie można zmienić statusu z "${order.status}" na "${body.status}"`,
         },
         { status: 400 }
       );
@@ -100,7 +100,7 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/orders/[id] — usuwanie zamowienia (admin only)
+ * DELETE /api/orders/[id] — usuwanie zamówienia (admin only)
  * CASCADE automatycznie usunie: order_items, order_item_progress, order_files, complaints
  */
 export async function DELETE(
@@ -127,7 +127,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Pobierz numer zamowienia do logu
+  // Pobierz numer zamówienia do logu
   const { data: order } = await supabase
     .from("orders")
     .select("order_number")
@@ -135,7 +135,7 @@ export async function DELETE(
     .maybeSingle();
 
   if (!order) {
-    return NextResponse.json({ error: "Zamowienie nie znalezione" }, { status: 404 });
+    return NextResponse.json({ error: "Zamówienie nie znalezione" }, { status: 404 });
   }
 
   console.log("[ORDER DELETE] %s (id=%s) by user=%s", order.order_number, id, user.id);

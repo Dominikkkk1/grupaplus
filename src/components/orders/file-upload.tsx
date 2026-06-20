@@ -197,12 +197,12 @@ export function FileUpload({
               <button
                 onClick={() => setDeleteFile(file)}
                 className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-                title="Usun"
+                title="Usuń"
               >
                 <Trash2 size={14} />
               </button>
               </div>
-              {/* Szczegoly preflight */}
+              {/* Szczegóły preflight */}
               {file.preflight_result?.checks &&
                 file.preflight_result.checks.some(
                   (c) => c.status !== "passed"

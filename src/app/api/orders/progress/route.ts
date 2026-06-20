@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Walidacja kolejnosci: nie mozna oznaczyc etapu jako completed
-  // jesli poprzedni etap nie jest ukonczony
+  // jesli poprzedni etap nie jest ukończony
   if (status === "completed") {
     const { data: current } = await supabase
       .from("order_item_progress")
@@ -57,14 +57,14 @@ export async function PATCH(request: NextRequest) {
       if (prev && prev.status !== "completed" && prev.status !== "skipped") {
         console.log("[PROGRESS] 400 — prev step status=%s, nie mozna complete", prev.status);
         return NextResponse.json(
-          { error: "Poprzedni etap musi byc ukonczony" },
+          { error: "Poprzedni etap musi byc ukończony" },
           { status: 400 }
         );
       }
     }
   }
 
-  // Walidacja cofania: nie mozna cofnac etapu jesli nastepny jest ukonczony
+  // Walidacja cofania: nie mozna cofnąć etapu jesli nastepny jest ukończony
   if (status !== "completed") {
     const { data: current } = await supabase
       .from("order_item_progress")
@@ -82,9 +82,9 @@ export async function PATCH(request: NextRequest) {
         .limit(1);
 
       if (laterCompleted && laterCompleted.length > 0) {
-        console.log("[PROGRESS] 400 — nie mozna cofnac, nastepny etap ukonczony (ids=%j)", laterCompleted.map(l => l.id));
+        console.log("[PROGRESS] 400 — nie mozna cofnąć, nastepny etap ukończony (ids=%j)", laterCompleted.map(l => l.id));
         return NextResponse.json(
-          { error: "Nie mozna cofnac — nastepny etap jest ukonczony" },
+          { error: "Nie mozna cofnąć — nastepny etap jest ukończony" },
           { status: 400 }
         );
       }
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest) {
 
   console.log("[PROGRESS] updated progressId=%s → %s", progressId, status);
 
-  // Sprawdz czy wszystkie etapy pozycji sa ukonczone
+  // Sprawdz czy wszystkie etapy pozycji sa ukończone
   const { data: progress } = await supabase
     .from("order_item_progress")
     .select("order_item_id, status")
@@ -142,7 +142,7 @@ export async function PATCH(request: NextRequest) {
       .update({ is_completed: !!allCompleted })
       .eq("id", progress.order_item_id);
 
-    // Jesli wszystkie pozycje zamowienia ukonczone → zmien status zamowienia
+    // Jesli wszystkie pozycje zamówienia ukończone → zmien status zamówienia
     if (allCompleted) {
       const { data: orderItem } = await supabase
         .from("order_items")
@@ -158,7 +158,7 @@ export async function PATCH(request: NextRequest) {
 
         const orderComplete = allItems?.every((i) => i.is_completed);
         if (orderComplete) {
-          // Tylko jesli zamowienie jest w produkcji — nie przeskakuj z "new"/"confirmed" do "ready"
+          // Tylko jesli zamówienie jest w produkcji — nie przeskakuj z "new"/"confirmed" do "ready"
           const { data: currentOrder } = await supabase
             .from("orders")
             .select("status")

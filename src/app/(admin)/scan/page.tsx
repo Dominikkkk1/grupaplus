@@ -132,7 +132,7 @@ export default function ScanPage() {
         () => {}
       );
     } catch {
-      setMessage({ type: "error", text: "Nie udalo sie uruchomic kamery" });
+      setMessage({ type: "error", text: "Nie udało się uruchomić kamery" });
       setScanning(false);
     }
   }
@@ -141,7 +141,7 @@ export default function ScanPage() {
   const handleQrScanned = useCallback(async (url: string) => {
     const match = url.match(/\/orders\/([a-f0-9-]+)/i);
     if (!match) {
-      setMessage({ type: "error", text: "Nieprawidlowy kod QR" });
+      setMessage({ type: "error", text: "Nieprawidłowy kod QR" });
       return;
     }
 
@@ -155,7 +155,7 @@ export default function ScanPage() {
       .single();
 
     if (!order) {
-      setMessage({ type: "error", text: "Zamowienie nie znalezione" });
+      setMessage({ type: "error", text: "Zamówienie nie znalezione" });
       return;
     }
 
@@ -169,7 +169,7 @@ export default function ScanPage() {
       .limit(1);
 
     if (!items || items.length === 0) {
-      setMessage({ type: "success", text: "Wszystkie pozycje ukonczone!" });
+      setMessage({ type: "success", text: "Wszystkie pozycje ukończone!" });
       return;
     }
 
@@ -188,7 +188,7 @@ export default function ScanPage() {
     setMessage(null);
   }, []);
 
-  // Rozpocznij / zakoncz etap
+  // Rozpocznij / zakończ etap
   async function handleAction(
     progressId: string,
     action: "start" | "complete",
@@ -226,8 +226,8 @@ export default function ScanPage() {
       type: "success",
       text:
         action === "start"
-          ? `Rozpoczeto: ${data.stepName}`
-          : `Ukonczono: ${data.stepName}`,
+          ? `Rozpoczęto: ${data.stepName}`
+          : `Ukończono: ${data.stepName}`,
     });
 
     if (scannedOrder) {
@@ -334,7 +334,7 @@ export default function ScanPage() {
       {confirmSkip && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
           <p className="text-[13px] font-medium text-amber-800">
-            Poprzedni etap ({confirmSkip.stepName}) nie jest ukonczony.
+            Poprzedni etap ({confirmSkip.stepName}) nie jest ukończony.
           </p>
           <p className="mt-1 text-[12px] text-amber-600">
             Czy potwierdzasz, ze ta czesc zostala wykonana?
@@ -372,13 +372,13 @@ export default function ScanPage() {
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 py-3 text-[13px] font-medium text-white hover:bg-zinc-800"
             >
               <Scan size={16} />
-              Uruchom kamere
+              Uruchom kamerę
             </button>
           )}
         </div>
       )}
 
-      {/* Zeskanowane zamowienie */}
+      {/* Zeskanowane zamówienie */}
       {scannedOrder && (
         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-100 px-5 py-4">
@@ -450,7 +450,7 @@ export default function ScanPage() {
                           {isLoading ? (
                             <Loader2 size={12} className="animate-spin" />
                           ) : (
-                            "Zakoncz"
+                            "Zakończ"
                           )}
                         </button>
                       )}
@@ -493,7 +493,7 @@ export default function ScanPage() {
               }}
               className="w-full rounded-lg border border-zinc-200 py-2 text-[13px] font-medium text-zinc-600 hover:bg-zinc-50"
             >
-              Skanuj kolejna karte
+              Skanuj kolejną kartę
             </button>
           </div>
         </div>
@@ -502,7 +502,7 @@ export default function ScanPage() {
       {/* Reczne wpisanie numeru */}
       <div className="mt-4 text-center">
         <p className="text-[11px] text-zinc-400">
-          Lub wpisz numer zamowienia recznie:
+          Lub wpisz numer zamówienia recznie:
         </p>
         <input
           type="text"
@@ -524,7 +524,7 @@ export default function ScanPage() {
                     } else {
                       setMessage({
                         type: "error",
-                        text: "Zamowienie nie znalezione",
+                        text: "Zamówienie nie znalezione",
                       });
                     }
                   });

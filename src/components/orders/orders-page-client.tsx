@@ -57,7 +57,7 @@ export function OrdersPageClient({
   const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");
   const [sortAsc, setSortAsc] = useState(false);
 
-  // Statusy aktywne vs zakonczone
+  // Statusy aktywne vs zakończone
   const ACTIVE_STATUSES = ["new", "confirmed", "in_production", "ready"];
   const FINISHED_STATUSES = ["shipped", "delivered", "cancelled"];
 
@@ -103,10 +103,10 @@ export function OrdersPageClient({
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-zinc-900">
-            {isClient ? "Moje zamowienia" : "Zamowienia"}
+            {isClient ? "Moje zamówienia" : "Zamówienia"}
           </h1>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            {orders.length} zamowien {isClient ? "" : "w systemie"}
+            {orders.length} zamówień {isClient ? "" : "w systemie"}
           </p>
         </div>
         {!isClient && (
@@ -115,7 +115,7 @@ export function OrdersPageClient({
             className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-zinc-800"
           >
             <Plus size={16} />
-            Nowe zamowienie
+            Nowe zamówienie
           </button>
         )}
       </div>
@@ -145,7 +145,7 @@ export function OrdersPageClient({
             { key: "confirmed", label: "Potwierdzone", count: statusCounts["confirmed"] ?? 0 },
             { key: "in_production", label: "W produkcji", count: statusCounts["in_production"] ?? 0 },
             { key: "ready", label: "Gotowe", count: statusCounts["ready"] ?? 0 },
-            { key: "finished", label: "Zakonczone", count: finishedCount },
+            { key: "finished", label: "Zakończone", count: finishedCount },
           ]
             .filter((f) => f.count > 0 || f.key === "active" || f.key === "all")
             .map((f) => (
@@ -175,11 +175,11 @@ export function OrdersPageClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/50">
-                <th onClick={() => toggleSort("number")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Nr zamowienia {sortBy === "number" ? (sortAsc ? "↑" : "↓") : ""}</th>
-                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Zrodlo</th>}
+                <th onClick={() => toggleSort("number")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Nr zamówienia {sortBy === "number" ? (sortAsc ? "↑" : "↓") : ""}</th>
+                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Źródło</th>}
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>}
                 <th onClick={() => toggleSort("status")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Status {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}</th>
-                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Platnosc</th>}
+                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Płatność</th>}
                 <th onClick={() => toggleSort("date")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Data {sortBy === "date" ? (sortAsc ? "↑" : "↓") : ""}</th>
               </tr>
             </thead>
@@ -224,7 +224,7 @@ export function OrdersPageClient({
                     {!isClient && (
                       <td className="px-4 py-3 text-[13px] text-zinc-600">
                         {order.payment_status === "paid"
-                          ? "Oplacone"
+                          ? "Opłacone"
                           : order.payment_status === "cod"
                             ? "Za pobraniem"
                             : "Oczekuje"}
@@ -252,7 +252,7 @@ export function OrdersPageClient({
           </div>
           <p className="text-sm font-medium text-zinc-900">Brak zamowien</p>
           <p className="mt-1 text-[13px] text-zinc-500">
-            Kliknij &quot;Nowe zamowienie&quot; aby dodac reczne zlecenie lub
+            Kliknij &quot;Nowe zamówienie&quot; aby dodac reczne zlecenie lub
             podlacz WooCommerce.
           </p>
         </div>

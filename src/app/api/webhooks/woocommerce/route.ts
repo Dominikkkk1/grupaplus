@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 3. Przetwarzaj tylko zamowienia
+  // 3. Przetwarzaj tylko zamówienia
   if (!topic.startsWith("order.")) {
     return NextResponse.json({ ok: true, message: "skipped" });
   }

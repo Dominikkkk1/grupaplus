@@ -218,7 +218,7 @@ export function ProductionBoard({
           icon={<Clock size={18} className="text-amber-600" />}
           iconBg="bg-amber-50"
           value={pendingCount}
-          label="Oczekujace"
+          label="Oczekujące"
         />
         <StatCard
           icon={<Factory size={18} className="text-blue-600" />}
@@ -230,7 +230,7 @@ export function ProductionBoard({
           icon={<AlertTriangle size={18} className="text-red-600" />}
           iconBg="bg-red-50"
           value={urgentCount}
-          label="Zagrozony termin"
+          label="Zagrożony termin"
         />
       </div>
 

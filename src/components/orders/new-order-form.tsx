@@ -136,7 +136,7 @@ export function NewOrderForm({
     console.log("[ORDER FORM] filtered orderItems:", orderItems);
 
     if (orderItems.length === 0) {
-      setError("Dodaj przynajmniej jedna pozycje");
+      setError("Dodaj przynajmniej jedną pozycję");
       setLoading(false);
       return;
     }
@@ -158,7 +158,7 @@ export function NewOrderForm({
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Blad tworzenia zamowienia");
+      setError(data.error || "Blad tworzenia zamówienia");
       setLoading(false);
       return;
     }
@@ -192,7 +192,7 @@ export function NewOrderForm({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
           <h2 className="text-[15px] font-semibold text-zinc-900">
-            Nowe zamowienie
+            Nowe zamówienie
           </h2>
           <button
             onClick={onClose}
@@ -203,11 +203,11 @@ export function NewOrderForm({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Zrodlo + platnosc */}
+          {/* Źródło + platnosc */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
-                Zrodlo
+                Źródło
               </label>
               <select
                 value={source}
@@ -220,7 +220,7 @@ export function NewOrderForm({
             </div>
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
-                Platnosc
+                Płatność
               </label>
               <select
                 value={paymentStatus}
@@ -228,7 +228,7 @@ export function NewOrderForm({
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
               >
                 <option value="cod">Za pobraniem</option>
-                <option value="paid">Oplacone</option>
+                <option value="paid">Opłacone</option>
                 <option value="pending">Oczekuje</option>
               </select>
             </div>
@@ -392,7 +392,7 @@ export function NewOrderForm({
                   Tworzenie...
                 </span>
               ) : (
-                "Utworz zamowienie"
+                "Utworz zamówienie"
               )}
             </Button>
           </div>

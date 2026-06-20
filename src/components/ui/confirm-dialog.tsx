@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export function ConfirmDialog({
   title,
   message,
-  confirmLabel = "Usun",
+  confirmLabel = "Usuń",
   loading = false,
   onConfirm,
   onCancel,

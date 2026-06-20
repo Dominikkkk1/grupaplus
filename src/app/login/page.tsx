@@ -55,7 +55,7 @@ export default function LoginPage() {
             produkcja
           </h1>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-zinc-400">
-            Kontroluj zamowienia, workflow produkcyjny i komunikacje
+            Kontroluj zamówienia, workflow produkcyjny i komunikacje
             z klientami w jednym miejscu.
           </p>
         </div>

@@ -85,13 +85,13 @@ export function OrderActions({
   const COMPLAINT_STATUS: Record<string, { label: string; color: string }> = {
     open: { label: "Otwarte", color: "bg-red-50 text-red-700 border-red-200" },
     in_progress: { label: "W trakcie", color: "bg-amber-50 text-amber-700 border-amber-200" },
-    resolved: { label: "Rozwiazane", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    resolved: { label: "Rozwiązane", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     rejected: { label: "Odrzucone", color: "bg-zinc-50 text-zinc-600 border-zinc-200" },
   };
 
   return (
     <>
-      {/* Status + przypisanie + zgloszenie */}
+      {/* Status + przypisanie + zgłoszenie */}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {/* Status dropdown */}
         <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export function OrderActions({
               }}
               className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[12px] text-zinc-600 focus:border-zinc-900 focus:outline-none"
             >
-              <option value="">Zmien na...</option>
+              <option value="">Zmień na...</option>
               {allowedNext.map((s) => (
                 <option key={s} value={s}>
                   {STATUS_CONFIG[s]?.label ?? s}
@@ -127,7 +127,7 @@ export function OrderActions({
             value={assignedTo ?? ""}
             onChange={(e) => assignUser(e.target.value || null)}
             className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[12px] text-zinc-600 focus:border-zinc-900 focus:outline-none"
-            title="Osoba nadzorujaca zamowienie. Operatorzy na poszczegolnych etapach sa logowani automatycznie przez skan."
+            title="Osoba nadzorujaca zamówienie. Operatorzy na poszczegolnych etapach sa logowani automatycznie przez skan."
           >
             <option value="">Osoba odpowiedzialna</option>
             {teamUsers.map((u) => (
@@ -138,13 +138,13 @@ export function OrderActions({
           </select>
         </div>
 
-        {/* Przycisk zgloszenia */}
+        {/* Przycisk zgłoszenia */}
         <button
           onClick={() => setShowComplaintForm(true)}
           className="flex items-center gap-1.5 rounded-lg border border-amber-200 px-3 py-1 text-[12px] font-medium text-amber-700 hover:bg-amber-50"
         >
           <AlertTriangle size={12} />
-          Zglos incydent
+          Zgłoś incydent
         </button>
       </div>
 
@@ -190,7 +190,7 @@ export function OrderActions({
                     {" · "}
                     {new Date(c.created_at).toLocaleDateString("pl-PL")}
                     {c.revert_step &&
-                      ` · Cofnieto do: ${(c.revert_step as { name: string }).name}`}
+                      ` · Cofnięto do: ${(c.revert_step as { name: string }).name}`}
                     {c.reprint_quantity &&
                       ` · Dodruk: ${c.reprint_quantity} szt.`}
                   </p>
@@ -200,7 +200,7 @@ export function OrderActions({
                     onClick={() => resolveComplaint(c.id)}
                     className="rounded-md px-2 py-1 text-[11px] font-medium text-emerald-600 hover:bg-emerald-50"
                   >
-                    Rozwiaz
+                    Rozwiąż
                   </button>
                 )}
               </div>
@@ -211,7 +211,7 @@ export function OrderActions({
         return (
           <div className="mt-4">
             <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
-              Zgloszenia ({complaints.length})
+              Zgłoszenia ({complaints.length})
             </h3>
             {/* Otwarte — zawsze widoczne */}
             {openComplaints.length > 0 && (
@@ -219,11 +219,11 @@ export function OrderActions({
                 {openComplaints.map(renderComplaint)}
               </div>
             )}
-            {/* Rozwiazane — collapsible */}
+            {/* Rozwiązane — collapsible */}
             {resolvedComplaints.length > 0 && (
               <details className={openComplaints.length > 0 ? "mt-3" : ""}>
                 <summary className="cursor-pointer text-[12px] font-medium text-zinc-400 hover:text-zinc-600">
-                  Rozwiazane ({resolvedComplaints.length})
+                  Rozwiązane ({resolvedComplaints.length})
                 </summary>
                 <div className="mt-2 space-y-2">
                   {resolvedComplaints.map(renderComplaint)}
@@ -234,7 +234,7 @@ export function OrderActions({
         );
       })()}
 
-      {/* Modal zgloszenia */}
+      {/* Modal zgłoszenia */}
       {showComplaintForm && (
         <ComplaintForm
           orderId={orderId}

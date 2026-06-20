@@ -217,7 +217,7 @@ export default function ProductDetailPage() {
       {showDelete && (
         <ConfirmDialog
           title="Usun produkt"
-          message={`Czy na pewno chcesz usunac "${product.name}"? Workflow zostanie usuniety. Istniejace zamowienia zachowaja swoje etapy.`}
+          message={`Czy na pewno chcesz usunac "${product.name}"? Workflow zostanie usuniety. Istniejace zamówienia zachowaja swoje etapy.`}
           loading={deleteLoading}
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}

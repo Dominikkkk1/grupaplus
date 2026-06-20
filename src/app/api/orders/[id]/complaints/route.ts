@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * POST /api/orders/[id]/complaints — nowe zgloszenie incydentu
+ * POST /api/orders/[id]/complaints — nowe zgłoszenie incydentu
  */
 export async function POST(
   request: NextRequest,
@@ -38,12 +38,12 @@ export async function POST(
 
   if (!reason || !reason.trim()) {
     return NextResponse.json(
-      { error: "Powod zgloszenia jest wymagany" },
+      { error: "Powód zgłoszenia jest wymagany" },
       { status: 400 }
     );
   }
 
-  // Utworz zgloszenie
+  // Utworz zgłoszenie
   const { data: complaint, error } = await supabase
     .from("complaints")
     .insert({
@@ -67,7 +67,7 @@ export async function POST(
 
   console.log("[COMPLAINT] created id=%s", complaint.id);
 
-  // Jesli zgloszenie wewnetrzne z cofnieciem etapu — cofnij progress
+  // Jesli zgłoszenie wewnetrzne z cofnieciem etapu — cofnij progress
   if (type === "internal" && revertToStepId && orderItemId) {
     // Znajdz step_order tego etapu
     const { data: targetStep } = await supabase
@@ -99,7 +99,7 @@ export async function POST(
         .update({ is_completed: false })
         .eq("id", orderItemId);
 
-      // Jesli zamowienie jest "ready" — cofnij do "in_production"
+      // Jesli zamówienie jest "ready" — cofnij do "in_production"
       const { data: revertedItem } = await supabase
         .from("order_items")
         .select("order_id")

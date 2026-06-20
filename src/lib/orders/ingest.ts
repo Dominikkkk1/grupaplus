@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OrderInput } from "@/lib/adapters/types";
 
 /**
- * Tworzy zamowienie z ujednoliconego OrderInput.
+ * Tworzy zamówienie z ujednoliconego OrderInput.
  * Uzywany przez webhook (WooCommerce/BaseLinker) i formularz reczny.
  *
  * Flow:
@@ -28,7 +28,7 @@ export async function ingestOrder(
       .maybeSingle();
 
     if (existing) {
-      console.log("[INGEST] idempotent — zamowienie juz istnieje: %s", existing.order_number);
+      console.log("[INGEST] idempotent — zamówienie juz istnieje: %s", existing.order_number);
       return { orderId: existing.id, orderNumber: existing.order_number };
     }
   }
@@ -109,7 +109,7 @@ export async function ingestOrder(
     console.log("[INGEST] matched %d/%d SKU", productMap.size, skus.length);
   }
 
-  // 5. Utworz zamowienie (order_number generuje sie automatycznie przez trigger)
+  // 5. Utworz zamówienie (order_number generuje sie automatycznie przez trigger)
   const totalPrice = input.items.reduce(
     (sum, i) => sum + (i.unitPrice ?? 0) * i.quantity,
     0
@@ -135,7 +135,7 @@ export async function ingestOrder(
 
   if (orderError || !order) {
     console.error("[INGEST] order INSERT error:", orderError?.message);
-    throw new Error(`Blad tworzenia zamowienia: ${orderError?.message}`);
+    throw new Error(`Blad tworzenia zamówienia: ${orderError?.message}`);
   }
 
   console.log("[INGEST] order created: %s (%s), contact=%s, company=%s", order.order_number, order.id, contactId, companyId);

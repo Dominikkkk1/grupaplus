@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
         if (!force) {
           return NextResponse.json(
             {
-              error: "Poprzedni etap nie jest ukonczony",
+              error: "Poprzedni etap nie jest ukończony",
               requiresConfirmation: true,
               stepName: (progress.step as unknown as { name: string })?.name,
             },
             { status: 409 }
           );
         }
-        // force=true → oznacz brakujacy etap jako pominiety (nie completed — praca nie byla wykonana)
+        // force=true → oznacz brakujacy etap jako pominięty (nie completed — praca nie byla wykonana)
         console.log("[SCAN] FORCE SKIP — pomijam prev step (step_order=%d)", progress.step_order - 1);
         await supabase
           .from("order_item_progress")
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       .neq("id", progressId);
 
     if (openSteps && openSteps.length > 0) {
-      // Wroc do pending — operator musi swiadomie zakonczyc etap, nie zamykamy automatycznie
+      // Wroc do pending — operator musi swiadomie zakończyc etap, nie zamykamy automatycznie
       const ids = openSteps.map((s) => s.id);
       console.log("[SCAN] AUTO-CLOSE: %d etapow in_progress tego operatora wracaja do pending, ids=%j", ids.length, ids);
       await supabase
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Auto-advance: jesli zamowienie jest "confirmed", przejdz do "in_production"
+    // Auto-advance: jesli zamówienie jest "confirmed", przejdz do "in_production"
     const { data: scannedItem } = await supabase
       .from("order_items")
       .select("order_id")
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Sprawdz czy wszystkie etapy pozycji ukonczone
+    // Sprawdz czy wszystkie etapy pozycji ukończone
     const { data: allSteps } = await supabase
       .from("order_item_progress")
       .select("status")

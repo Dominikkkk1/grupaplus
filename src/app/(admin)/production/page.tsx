@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function ProductionPage() {
   const supabase = await createClient();
 
-  // Pobierz role uzytkownika
+  // Pobierz role użytkownika
   const {
     data: { user },
   } = await supabase.auth.getUser();

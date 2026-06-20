@@ -89,9 +89,9 @@ export default function UsersPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-900">Uzytkownicy</h1>
+          <h1 className="text-lg font-semibold text-zinc-900">Użytkownicy</h1>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            {users.length} uzytkownikow w systemie
+            {users.length} użytkownikow w systemie
           </p>
         </div>
         <button
@@ -102,7 +102,7 @@ export default function UsersPage() {
           className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm hover:bg-zinc-800"
         >
           <Plus size={16} />
-          Dodaj uzytkownika
+          Dodaj użytkownika
         </button>
       </div>
 
@@ -112,7 +112,7 @@ export default function UsersPage() {
           <thead>
             <tr className="border-b border-zinc-100 bg-zinc-50/50">
               <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
-                Uzytkownik
+                Użytkownik
               </th>
               <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
                 Email
@@ -299,7 +299,7 @@ function UserForm({
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
           <h2 className="text-[15px] font-semibold text-zinc-900">
-            {isEdit ? "Edytuj uzytkownika" : "Nowy uzytkownik"}
+            {isEdit ? "Edytuj użytkownika" : "Nowy użytkownik"}
           </h2>
           <button
             onClick={onClose}
@@ -341,7 +341,7 @@ function UserForm({
               </div>
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
-                  Haslo * (min. 6 znakow)
+                  Haslo * (min. 6 znaków)
                 </label>
                 <input
                   type="password"
@@ -412,7 +412,7 @@ function UserForm({
               ) : isEdit ? (
                 "Zapisz zmiany"
               ) : (
-                "Dodaj uzytkownika"
+                "Dodaj użytkownika"
               )}
             </Button>
           </div>

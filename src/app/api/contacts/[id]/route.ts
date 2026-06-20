@@ -59,7 +59,7 @@ export async function PATCH(
 
     if (existing) {
       return NextResponse.json(
-        { error: "Kontakt z tym emailem juz istnieje" },
+        { error: "Kontakt z tym emailem już istnieje" },
         { status: 409 }
       );
     }
@@ -79,7 +79,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/contacts/[id] — usuwanie kontaktu
- * Nie mozna usunac jesli ma powiazane zamowienia
+ * Nie mozna usunac jesli ma powiazane zamówienia
  */
 export async function DELETE(
   _request: NextRequest,
@@ -105,7 +105,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Sprawdz czy kontakt ma zamowienia
+  // Sprawdz czy kontakt ma zamówienia
   const { data: orders } = await supabase
     .from("orders")
     .select("id")
@@ -114,7 +114,7 @@ export async function DELETE(
 
   if (orders && orders.length > 0) {
     return NextResponse.json(
-      { error: "Nie mozna usunac — kontakt ma powiazane zamowienia" },
+      { error: "Nie mozna usunac — kontakt ma powiazane zamówienia" },
       { status: 409 }
     );
   }

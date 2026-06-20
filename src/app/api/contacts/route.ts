@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { error: "Kontakt z tym emailem juz istnieje" },
+        { error: "Kontakt z tym emailem już istnieje" },
         { status: 409 }
       );
     }

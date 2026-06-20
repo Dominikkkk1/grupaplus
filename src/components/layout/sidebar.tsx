@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/orders", label: "Zamowienia", icon: Package, roles: ["admin", "operator", "client"] },
+  { href: "/orders", label: "Zamówienia", icon: Package, roles: ["admin", "operator", "client"] },
   { href: "/production", label: "Produkcja", icon: Factory, roles: ["admin", "operator"] },
   { href: "/scan", label: "Skanowanie", icon: ScanLine, roles: ["admin", "operator"] },
   { href: "/crm", label: "Klienci", icon: Users, roles: ["admin"] },
   { href: "/products", label: "Produkty", icon: ClipboardList, roles: ["admin"] },
   { href: "/machines", label: "Maszyny", icon: Cog, roles: ["admin"] },
   { href: "/calculator", label: "Kalkulator", icon: Calculator, roles: ["admin"] },
-  { href: "/settings/users", label: "Uzytkownicy", icon: Shield, roles: ["admin"] },
+  { href: "/settings/users", label: "Użytkownicy", icon: Shield, roles: ["admin"] },
 ];
 
 export function Sidebar({

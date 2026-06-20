@@ -5,7 +5,7 @@ import { ingestOrder } from "@/lib/orders/ingest";
 import type { OrderSource } from "@/lib/adapters/types";
 
 /**
- * POST /api/orders — reczne tworzenie zamowienia (admin)
+ * POST /api/orders — reczne tworzenie zamówienia (admin)
  */
 export async function POST(request: NextRequest) {
   // Sprawdz auth
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Sprawdz role (tylko admin moze tworzyc reczne zamowienia)
+  // Sprawdz role (tylko admin moze tworzyc reczne zamówienia)
   const { data: profile } = await supabaseAuth
     .from("users")
     .select("role")
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   // Walidacja
   if (!body.items || body.items.length === 0) {
     return NextResponse.json(
-      { error: "Zamowienie musi miec przynajmniej jedna pozycje" },
+      { error: "Zamówienie musi miec przynajmniej jedna pozycje" },
       { status: 400 }
     );
   }

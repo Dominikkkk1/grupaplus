@@ -1,6 +1,6 @@
 /**
- * Wspolne stale dla zamowien — uzywane w liscie, szczegolach i innych widokach.
- * Jedno zrodlo prawdy (DRY) — zmieniasz tutaj, zmienia sie wszedzie.
+ * Wspolne stale dla zamówień — uzywane w liscie, szczegolach i innych widokach.
+ * Jedno źródło prawdy (DRY) — zmieniasz tutaj, zmienia sie wszedzie.
  */
 
 export const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -8,7 +8,7 @@ export const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   confirmed: { label: "Potwierdzone", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
   in_production: { label: "W produkcji", color: "bg-amber-50 text-amber-700 border-amber-200" },
   ready: { label: "Gotowe", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  shipped: { label: "Wyslane", color: "bg-violet-50 text-violet-700 border-violet-200" },
+  shipped: { label: "Wysłane", color: "bg-violet-50 text-violet-700 border-violet-200" },
   delivered: { label: "Dostarczone", color: "bg-zinc-50 text-zinc-600 border-zinc-200" },
   cancelled: { label: "Anulowane", color: "bg-red-50 text-red-700 border-red-200" },
 };
@@ -21,13 +21,13 @@ export function getClientStatus(dbStatus: string): { label: string; color: strin
   switch (dbStatus) {
     case "new":
     case "confirmed":
-      return { label: "Przyjete do realizacji", color: "bg-blue-50 text-blue-700 border-blue-200" };
+      return { label: "Przyjęte do realizacji", color: "bg-blue-50 text-blue-700 border-blue-200" };
     case "in_production":
     case "ready":
       return { label: "W realizacji", color: "bg-amber-50 text-amber-700 border-amber-200" };
     case "shipped":
     case "delivered":
-      return { label: "Wyslane", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+      return { label: "Wysłane", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
     case "cancelled":
       return { label: "Anulowane", color: "bg-red-50 text-red-700 border-red-200" };
     default:
@@ -37,7 +37,7 @@ export function getClientStatus(dbStatus: string): { label: string; color: strin
 
 /**
  * Dozwolone przejscia statusow zamowien.
- * Jedno zrodlo prawdy — uzywane w API route I w komponencie UI.
+ * Jedno źródło prawdy — uzywane w API route I w komponencie UI.
  */
 export const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   new: ["confirmed", "cancelled"],

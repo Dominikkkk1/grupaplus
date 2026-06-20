@@ -3,12 +3,12 @@ import { sendEmail } from "./resend";
 import { orderConfirmedEmail, orderShippedEmail } from "./templates";
 
 /**
- * Wysyla powiadomienie email do klienta przy zmianie statusu zamowienia.
+ * Wysyla powiadomienie email do klienta przy zmianie statusu zamówienia.
  * Wywolywane FIRE-AND-FORGET (nie blokuje response).
  *
  * Obslugiwane przejscia:
- * - → confirmed: "Zamowienie potwierdzone"
- * - → shipped: "Zamowienie wyslane" (z tracking number)
+ * - → confirmed: "Zamówienie potwierdzone"
+ * - → shipped: "Zamówienie wysłane" (z tracking number)
  */
 export async function notifyOrderStatusChange(
   supabase: SupabaseClient,
@@ -17,7 +17,7 @@ export async function notifyOrderStatusChange(
 ) {
   if (newStatus !== "confirmed" && newStatus !== "shipped") return;
 
-  // Pobierz dane zamowienia + kontakt + pozycje
+  // Pobierz dane zamówienia + kontakt + pozycje
   const { data: order } = await supabase
     .from("orders")
     .select(
@@ -27,7 +27,7 @@ export async function notifyOrderStatusChange(
     .single();
 
   if (!order) {
-    console.log("[NOTIFY] brak zamowienia %s", orderId);
+    console.log("[NOTIFY] brak zamówienia %s", orderId);
     return;
   }
 
@@ -37,7 +37,7 @@ export async function notifyOrderStatusChange(
   } | null;
 
   if (!contact?.email) {
-    console.log("[NOTIFY] brak email klienta dla zamowienia %s", order.order_number);
+    console.log("[NOTIFY] brak email klienta dla zamówienia %s", order.order_number);
     return;
   }
 

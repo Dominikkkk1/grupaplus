@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * GET /api/users — lista uzytkownikow (admin only)
+ * GET /api/users — lista użytkownikow (admin only)
  */
 export async function GET() {
   const supabase = await createClient();
@@ -47,7 +47,7 @@ export async function GET() {
 }
 
 /**
- * POST /api/users — tworzenie nowego uzytkownika (admin only)
+ * POST /api/users — tworzenie nowego użytkownika (admin only)
  * Body: { email, password, fullName, role, phone? }
  */
 export async function POST(request: NextRequest) {
@@ -75,21 +75,21 @@ export async function POST(request: NextRequest) {
 
   if (!email || !password || !fullName || !role) {
     return NextResponse.json(
-      { error: "Email, haslo, imie i rola sa wymagane" },
+      { error: "Email, hasło, imię i rola są wymagane" },
       { status: 400 }
     );
   }
 
   if (!["admin", "operator", "client"].includes(role)) {
     return NextResponse.json(
-      { error: "Rola musi byc: admin, operator lub client" },
+      { error: "Rola musi być: admin, operator lub client" },
       { status: 400 }
     );
   }
 
   if (password.length < 6) {
     return NextResponse.json(
-      { error: "Haslo musi miec minimum 6 znakow" },
+      { error: "Hasło musi mieć minimum 6 znaków" },
       { status: 400 }
     );
   }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     console.error("[USER CREATE] auth error:", authError.message);
     if (authError.message.includes("already been registered")) {
       return NextResponse.json(
-        { error: "Uzytkownik z tym emailem juz istnieje" },
+        { error: "Użytkownik z tym emailem już istnieje" },
         { status: 409 }
       );
     }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
   console.log("[USER CREATE] auth user created: %s", newUser.user?.id);
 
   // Klient musi miec rekord w contacts — bez tego nie pojawi sie w CRM
-  // i nie bedzie mogl byc przypisany do zamowien (RLS szuka go przez contacts.user_id)
+  // i nie bedzie mogl byc przypisany do zamówień (RLS szuka go przez contacts.user_id)
   if (newUser.user && role === "client") {
     // Sprawdz czy email juz istnieje w contacts (mogl byc dodany reczne w CRM)
     const { data: existingContact } = await adminClient

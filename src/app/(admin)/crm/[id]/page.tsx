@@ -215,7 +215,7 @@ export default function CompanyDetailPage() {
       <div className="mb-6 grid grid-cols-3 gap-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <p className="text-2xl font-semibold text-zinc-900">{orders.length}</p>
-          <p className="text-[12px] text-zinc-500">Zamowienia</p>
+          <p className="text-[12px] text-zinc-500">Zamówienia</p>
         </div>
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <p className="text-2xl font-semibold text-zinc-900">
@@ -285,7 +285,7 @@ export default function CompanyDetailPage() {
                   <button
                     onClick={() => setDeleteContact(contact)}
                     className="rounded-md p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-                    title="Usun"
+                    title="Usuń"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -302,11 +302,11 @@ export default function CompanyDetailPage() {
         )}
       </div>
 
-      {/* Historia zamowien */}
+      {/* Historia zamówień */}
       <div>
         <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-zinc-500">
           <Package size={14} />
-          Historia zamowien ({orders.length})
+          Historia zamówień ({orders.length})
         </h2>
         {orders.length > 0 ? (
           <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -370,7 +370,7 @@ export default function CompanyDetailPage() {
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
             <p className="text-[13px] text-zinc-500">
-              Brak zamowien od tej firmy
+              Brak zamówień od tej firmy
             </p>
           </div>
         )}

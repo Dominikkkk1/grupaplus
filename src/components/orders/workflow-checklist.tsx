@@ -53,7 +53,7 @@ export function WorkflowChecklist({
         const isRework = s.status === "rework";
         const isLoading = loading === s.id;
 
-        // Czy poprzedni krok jest ukonczony (lub to pierwszy krok)?
+        // Czy poprzedni krok jest ukończony (lub to pierwszy krok)?
         const prevCompleted = i === 0 || steps[i - 1].status === "completed" || steps[i - 1].status === "skipped";
         // Skipped i in_progress nie mozna toggle — skipped jest finalny, in_progress konczy sie przez skan
         const canToggle = (prevCompleted && !isSkipped && !isInProgress) || isCompleted;
@@ -72,11 +72,11 @@ export function WorkflowChecklist({
               onClick={() => canToggle && toggleStep(s.id, s.status)}
               disabled={!canToggle || isLoading}
               title={
-                isSkipped ? "Etap pominiety" :
-                isInProgress ? "Etap w trakcie — zakoncz przez skan" :
-                !canToggle ? "Poprzedni etap musi byc ukonczony" :
-                isCompleted ? "Kliknij aby cofnac" :
-                "Kliknij aby oznaczyc jako ukonczone"
+                isSkipped ? "Etap pominięty" :
+                isInProgress ? "Etap w trakcie — zakończ przez skan" :
+                !canToggle ? "Poprzedni etap musi byc ukończony" :
+                isCompleted ? "Kliknij aby cofnąć" :
+                "Kliknij aby oznaczyc jako ukończone"
               }
               className={cn(
                 "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all",
@@ -152,7 +152,7 @@ export function WorkflowChecklist({
                 </div>
               )}
               {isSkipped && (
-                <div className="mt-0.5 text-[11px] text-zinc-400">Pominieto</div>
+                <div className="mt-0.5 text-[11px] text-zinc-400">Pominięto</div>
               )}
             </div>
 

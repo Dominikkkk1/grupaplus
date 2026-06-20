@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * PATCH /api/orders/[id]/complaints/[complaintId] — zmiana statusu zgloszenia
+ * PATCH /api/orders/[id]/complaints/[complaintId] — zmiana statusu zgłoszenia
  */
 export async function PATCH(
   request: NextRequest,

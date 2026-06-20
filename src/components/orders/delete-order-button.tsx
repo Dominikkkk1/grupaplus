@@ -17,7 +17,7 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
         className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 py-2 text-[12px] font-medium text-red-500 hover:bg-red-50 transition-colors"
       >
         <Trash2 size={12} />
-        Usun zamowienie
+        Usuń zamówienie
       </button>
 
       {showConfirm && (
@@ -30,21 +30,21 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-[15px] font-semibold text-zinc-900">
-              Usunac zamowienie?
+              Usunąć zamówienie?
             </h3>
             <p className="mt-2 text-[13px] text-zinc-500">
-              To usunie zamowienie wraz ze wszystkimi pozycjami, etapami, plikami
-              i zgloszeniami. Tej operacji nie mozna cofnac.
+              To usunie zamówienie wraz ze wszystkimi pozycjami, etapami, plikami
+              i zgłoszeniami. Tej operacji nie można cofnąć.
             </p>
             <div className="mt-4">
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
-                Wpisz USUN aby potwierdzic
+                Wpisz USUŃ aby potwierdzić
               </label>
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="USUN"
+                placeholder="USUŃ"
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
                 autoFocus
               />
@@ -60,7 +60,7 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
                 Anuluj
               </button>
               <button
-                disabled={input !== "USUN" || loading}
+                disabled={input !== "USUŃ" || loading}
                 onClick={async () => {
                   setLoading(true);
                   const res = await fetch(`/api/orders/${orderId}`, {
@@ -75,7 +75,7 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
                 }}
                 className="rounded-lg bg-red-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {loading ? "Usuwanie..." : "Usun zamowienie"}
+                {loading ? "Usuwanie..." : "Usuń zamówienie"}
               </button>
             </div>
           </div>

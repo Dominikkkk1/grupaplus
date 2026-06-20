@@ -196,7 +196,7 @@ export function WorkflowBuilder({
                 <button
                   onClick={() => removeStep(step.stepId)}
                   className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-                  title="Usun"
+                  title="Usuń"
                 >
                   <X size={14} />
                 </button>

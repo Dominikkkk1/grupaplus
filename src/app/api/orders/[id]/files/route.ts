@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { validateFile } from "@/services/file-validation.service";
 
 /**
- * POST /api/orders/[id]/files — upload pliku do zamowienia
+ * POST /api/orders/[id]/files — upload pliku do zamówienia
  * Body: FormData z polem "file"
  */
 export async function POST(

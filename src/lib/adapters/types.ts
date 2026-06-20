@@ -1,6 +1,6 @@
 /**
  * Wspolny interfejs adaptera zamowien.
- * Kazde zrodlo (WooCommerce, BaseLinker, reczne) mapuje swoj payload na ten format.
+ * Kazde źródło (WooCommerce, BaseLinker, reczne) mapuje swoj payload na ten format.
  * Wymiana integratora = podmiana jednego pliku adaptera.
  */
 
