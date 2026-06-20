@@ -17,6 +17,7 @@ export interface ActiveItem {
   id: string;
   step_id: string;
   status: string;
+  started_by_user: { full_name: string } | null;
   order_item: {
     description: string;
     quantity: number;
@@ -322,11 +323,16 @@ function ProductionCard({ item, now }: { item: ActiveItem; now: number }) {
   const orderItem = item.order_item;
   const deadline = orderItem?.order?.deadline;
   const orderId = orderItem?.order?.id;
+  const isInProgress = item.status === "in_progress";
+  const operatorName = item.started_by_user?.full_name;
 
   let borderClass = "border-zinc-200";
   let isUrgent = false;
   let isOverdue = false;
-  if (deadline) {
+
+  if (isInProgress) {
+    borderClass = "border-blue-300 bg-blue-50/40";
+  } else if (deadline) {
     const deadlineMs = new Date(deadline).getTime();
     if (deadlineMs < now) {
       borderClass = "border-red-400 bg-red-50/30";
@@ -345,12 +351,22 @@ function ProductionCard({ item, now }: { item: ActiveItem; now: number }) {
         <p className="text-[13px] font-medium text-zinc-900">
           {orderItem?.description ?? "\u2014"}
         </p>
-        {(isOverdue || isUrgent) && (
+        {isInProgress && (
+          <span className="flex-shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+            W TRAKCIE
+          </span>
+        )}
+        {!isInProgress && (isOverdue || isUrgent) && (
           <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${isOverdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
             {isOverdue ? "SPÓŹNIONE" : "PILNE"}
           </span>
         )}
       </div>
+      {isInProgress && operatorName && (
+        <p className="mt-1 text-[11px] font-medium text-blue-600">
+          {operatorName}
+        </p>
+      )}
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[12px] text-zinc-500">
           {orderItem?.quantity ?? 0} szt.
