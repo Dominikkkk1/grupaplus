@@ -214,7 +214,7 @@ export function ProductionBoard({
       )}
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard
           icon={<Clock size={18} className="text-amber-600" />}
           iconBg="bg-amber-50"

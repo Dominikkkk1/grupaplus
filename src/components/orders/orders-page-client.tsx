@@ -100,19 +100,19 @@ export function OrdersPageClient({
   return (
     <>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between sm:mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-900">
+          <h1 className="text-base font-semibold text-zinc-900 sm:text-lg">
             {isClient ? "Moje zamówienia" : "Zamówienia"}
           </h1>
-          <p className="mt-0.5 text-[13px] text-zinc-500">
+          <p className="mt-0.5 text-[12px] text-zinc-500 sm:text-[13px]">
             {orders.length} zamówień {isClient ? "" : "w systemie"}
           </p>
         </div>
         {!isClient && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-zinc-800"
+            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-[13px]"
           >
             <Plus size={16} />
             Nowe zamówienie
@@ -137,7 +137,7 @@ export function OrdersPageClient({
 
       {/* Filtry statusu */}
       {!isClient && (
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
           {[
             { key: "active", label: "Aktywne", count: activeCount },
             { key: "all", label: "Wszystkie", count: orders.length },
@@ -171,16 +171,16 @@ export function OrdersPageClient({
 
       {/* Table */}
       {filtered.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/50">
-                <th onClick={() => toggleSort("number")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Nr zamówienia {sortBy === "number" ? (sortAsc ? "↑" : "↓") : ""}</th>
-                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Źródło</th>}
+                <th onClick={() => toggleSort("number")} className="cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Nr {sortBy === "number" ? (sortAsc ? "↑" : "↓") : ""}</th>
+                {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Źródło</th>}
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>}
-                <th onClick={() => toggleSort("status")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Status {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}</th>
-                {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Płatność</th>}
-                <th onClick={() => toggleSort("date")} className="cursor-pointer px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Data {sortBy === "date" ? (sortAsc ? "↑" : "↓") : ""}</th>
+                <th onClick={() => toggleSort("status")} className="cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Status {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}</th>
+                {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 lg:table-cell">Płatność</th>}
+                <th onClick={() => toggleSort("date")} className="hidden cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 sm:table-cell">Data {sortBy === "date" ? (sortAsc ? "↑" : "↓") : ""}</th>
               </tr>
             </thead>
             <tbody>
@@ -205,7 +205,7 @@ export function OrdersPageClient({
                       </Link>
                     </td>
                     {!isClient && (
-                      <td className="px-4 py-3 text-[13px] text-zinc-600">
+                      <td className="hidden px-4 py-3 text-[13px] text-zinc-600 sm:table-cell">
                         {SOURCE_LABELS[order.source] ?? order.source}
                       </td>
                     )}
@@ -216,13 +216,13 @@ export function OrdersPageClient({
                     )}
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-block rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}
+                        className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[12px] font-medium ${status.color}`}
                       >
                         {status.label}
                       </span>
                     </td>
                     {!isClient && (
-                      <td className="px-4 py-3 text-[13px] text-zinc-600">
+                      <td className="hidden px-4 py-3 text-[13px] text-zinc-600 lg:table-cell">
                         {order.payment_status === "paid"
                           ? "Opłacone"
                           : order.payment_status === "cod"
@@ -230,7 +230,7 @@ export function OrdersPageClient({
                             : "Oczekuje"}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-[13px] text-zinc-500">
+                    <td className="hidden px-4 py-3 text-[13px] text-zinc-500 sm:table-cell">
                       {new Date(order.created_at).toLocaleDateString("pl-PL")}
                     </td>
                   </tr>

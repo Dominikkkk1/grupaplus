@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -16,6 +17,8 @@ import {
   Shield,
   LogOut,
   ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -39,6 +42,7 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -53,10 +57,12 @@ export function Sidebar({
         ? "Operator"
         : "Klient";
 
-  return (
-    <aside className="flex w-60 flex-col border-r border-zinc-200 bg-white print:hidden">
+  const filteredNav = NAV_ITEMS.filter((item) => item.roles.includes(userRole));
+
+  const navContent = (
+    <>
       {/* Logo */}
-      <div className="flex items-center gap-3 border-b border-zinc-200 px-5 py-4">
+      <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
         <Image
           src="/logo.webp"
           alt="Grupa Plus"
@@ -65,6 +71,13 @@ export function Sidebar({
           className="h-8 w-auto"
           priority
         />
+        {/* Zamknij na mobile */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 md:hidden"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Nawigacja */}
@@ -72,13 +85,14 @@ export function Sidebar({
         <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
           Menu
         </p>
-        {NAV_ITEMS.filter((item) => item.roles.includes(userRole)).map((item) => {
+        {filteredNav.map((item) => {
           const Icon = item.icon;
           const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className={cn(
                 "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all",
                 isActive
@@ -108,7 +122,7 @@ export function Sidebar({
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600">
             {userName.charAt(0).toUpperCase()}
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-medium text-zinc-900">
               {userName}
             </p>
@@ -123,6 +137,47 @@ export function Sidebar({
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile: hamburger button (top bar) */}
+      <div className="fixed left-0 right-0 top-0 z-40 flex items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3 md:hidden print:hidden">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-100"
+        >
+          <Menu size={22} />
+        </button>
+        <Image
+          src="/logo.webp"
+          alt="Grupa Plus"
+          width={100}
+          height={26}
+          className="h-6 w-auto"
+        />
+      </div>
+
+      {/* Mobile: overlay sidebar */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
+          <aside
+            className="flex h-full w-72 flex-col bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {navContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop: stały sidebar */}
+      <aside className="hidden w-60 flex-col border-r border-zinc-200 bg-white md:flex print:hidden">
+        {navContent}
+      </aside>
+    </>
   );
 }
