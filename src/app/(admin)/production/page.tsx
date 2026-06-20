@@ -6,6 +6,8 @@ import {
   type MachineGroup,
 } from "@/components/production/production-board";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProductionPage() {
   const supabase = await createClient();
 

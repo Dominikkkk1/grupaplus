@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { CrmPageClient } from "@/components/crm/crm-page-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function CrmPage() {
   const supabase = await createClient();
 

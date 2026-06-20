@@ -98,3 +98,57 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * DELETE /api/orders/[id] — usuwanie zamowienia (admin only)
+ * CASCADE automatycznie usunie: order_items, order_item_progress, order_files, complaints
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || profile.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Pobierz numer zamowienia do logu
+  const { data: order } = await supabase
+    .from("orders")
+    .select("order_number")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!order) {
+    return NextResponse.json({ error: "Zamowienie nie znalezione" }, { status: 404 });
+  }
+
+  console.log("[ORDER DELETE] %s (id=%s) by user=%s", order.order_number, id, user.id);
+
+  const { error } = await supabase
+    .from("orders")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("[ORDER DELETE] error:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

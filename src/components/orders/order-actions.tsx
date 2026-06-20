@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, UserPlus } from "lucide-react";
+import { AlertTriangle, UserPlus, Trash2 } from "lucide-react";
 import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 import { ComplaintForm } from "./complaint-form";
 
@@ -44,6 +44,9 @@ export function OrderActions({
   const [statusLoading, setStatusLoading] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
   const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const statusConfig = STATUS_CONFIG[currentStatus] ?? {
     label: currentStatus,
@@ -146,7 +149,65 @@ export function OrderActions({
           <AlertTriangle size={12} />
           Zglos incydent
         </button>
+
+        {/* Usun zamowienie */}
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1 text-[12px] font-medium text-red-600 hover:bg-red-50 ml-auto"
+        >
+          <Trash2 size={12} />
+          Usun
+        </button>
       </div>
+
+      {/* Modal potwierdzenia usuwania */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-zinc-900">Usunac zamowienie?</h3>
+            <p className="mt-2 text-[13px] text-zinc-500">
+              To usunie zamowienie wraz ze wszystkimi pozycjami, etapami, plikami i zgloszeniami. Tej operacji nie mozna cofnac.
+            </p>
+            <div className="mt-4">
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
+                Wpisz USUN aby potwierdzic
+              </label>
+              <input
+                type="text"
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                placeholder="USUN"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                autoFocus
+              />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteInput(""); }}
+                className="rounded-lg border border-zinc-200 px-4 py-2 text-[13px] font-medium text-zinc-600 hover:bg-zinc-50"
+              >
+                Anuluj
+              </button>
+              <button
+                disabled={deleteInput !== "USUN" || deleteLoading}
+                onClick={async () => {
+                  setDeleteLoading(true);
+                  const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+                  if (res.ok) {
+                    router.push("/orders");
+                  } else {
+                    setDeleteLoading(false);
+                    setDeleteInput("");
+                  }
+                }}
+                className="rounded-lg bg-red-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleteLoading ? "Usuwanie..." : "Usun zamowienie"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lista zgloszen */}
       {complaints.length > 0 && (

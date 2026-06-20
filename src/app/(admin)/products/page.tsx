@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { ProductsPageClient } from "@/components/products/products-page-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProductsPage() {
   const supabase = await createClient();
 
