@@ -39,7 +39,7 @@ export default async function OrderDetailPage({
 
   if (!order) notFound();
 
-  const { data: items } = await supabase
+  const { data: items, error: itemsError } = await supabase
     .from("order_items")
     .select(`
       *,
@@ -53,6 +53,11 @@ export default async function OrderDetailPage({
     `)
     .eq("order_id", id)
     .order("created_at");
+
+  if (itemsError) {
+    console.error("[ORDER DETAIL] items query error:", itemsError.message, itemsError.details, itemsError.hint);
+  }
+  console.log("[ORDER DETAIL] orderId=%s items=%d error=%s", id, items?.length ?? 0, itemsError?.message ?? "none");
 
   // Pliki, zgloszenia, uzytkownicy (do przypisania)
   const [filesRes, complaintsRes, usersRes] = await Promise.all([
