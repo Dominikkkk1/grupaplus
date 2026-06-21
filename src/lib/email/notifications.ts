@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail } from "./resend";
-import { orderConfirmedEmail, orderShippedEmail, orderReadyEmail } from "./templates";
+import { orderConfirmedEmail, orderShippedEmail, orderReadyEmail, complaintEmail } from "./templates";
 
 /**
  * Wysyla powiadomienie email do klienta przy zmianie statusu zamówienia.
@@ -78,5 +78,67 @@ export async function notifyOrderStatusChange(
     });
 
     await sendEmail({ to: contact.email, subject, html });
+  }
+}
+
+/**
+ * Powiadomienie o nowym zgloszeniu reklamacji/incydentu.
+ * Wysyla email do przypisanej osoby lub do wszystkich adminow.
+ */
+export async function notifyComplaint(
+  supabase: SupabaseClient,
+  opts: {
+    orderId: string;
+    orderNumber: string | null;
+    type: string;
+    reason: string;
+    reportedBy: string;
+    assignedTo: string | null;
+  }
+) {
+  // Pobierz imie zglaszajacego
+  const { data: reporter } = await supabase
+    .from("users")
+    .select("full_name")
+    .eq("id", opts.reportedBy)
+    .maybeSingle();
+
+  const reporterName = reporter?.full_name ?? "Operator";
+
+  // Wyznacz odbiorcow: przypisana osoba lub wszyscy admini
+  let recipients: string[] = [];
+
+  if (opts.assignedTo) {
+    const { data: assigned } = await supabase
+      .from("users")
+      .select("email")
+      .eq("id", opts.assignedTo)
+      .maybeSingle();
+    if (assigned?.email) recipients.push(assigned.email);
+  }
+
+  if (recipients.length === 0) {
+    const { data: admins } = await supabase
+      .from("users")
+      .select("email")
+      .eq("role", "admin")
+      .eq("is_active", true);
+    recipients = (admins ?? []).map((a) => a.email).filter((e): e is string => !!e);
+  }
+
+  if (recipients.length === 0) {
+    console.log("[NOTIFY] brak odbiorcow dla complaint orderId=%s", opts.orderId);
+    return;
+  }
+
+  const { subject, html } = complaintEmail({
+    orderNumber: opts.orderNumber ?? opts.orderId,
+    type: opts.type,
+    reason: opts.reason,
+    reporterName,
+  });
+
+  for (const email of recipients) {
+    await sendEmail({ to: email, subject, html });
   }
 }

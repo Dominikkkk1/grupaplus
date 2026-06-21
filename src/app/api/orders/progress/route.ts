@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyOrderStatusChange } from "@/lib/email/notifications";
 
 /**
  * PATCH /api/orders/progress — zmiana statusu etapu workflow
@@ -170,6 +171,10 @@ export async function PATCH(request: NextRequest) {
               .from("orders")
               .update({ status: "ready" })
               .eq("id", orderItem.order_id);
+
+            notifyOrderStatusChange(supabase, orderItem.order_id, "ready").catch(
+              (err) => console.error("[PROGRESS] notify ready error:", err)
+            );
           } else {
             console.log("[PROGRESS] order %s status=%s — nie auto-advance (nie in_production)", orderItem.order_id, currentOrder?.status);
           }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyComplaint } from "@/lib/email/notifications";
 
 /**
  * POST /api/orders/[id]/complaints — nowe zgłoszenie incydentu
@@ -66,6 +67,22 @@ export async function POST(
   }
 
   console.log("[COMPLAINT] created id=%s", complaint.id);
+
+  // Powiadomienie email (fire-and-forget)
+  const { data: orderInfo } = await supabase
+    .from("orders")
+    .select("order_number, assigned_to")
+    .eq("id", id)
+    .single();
+
+  notifyComplaint(supabase, {
+    orderId: id,
+    orderNumber: orderInfo?.order_number ?? null,
+    type: type || "internal",
+    reason: reason.trim(),
+    reportedBy: user.id,
+    assignedTo: (orderInfo?.assigned_to as string) ?? null,
+  }).catch((err) => console.error("[COMPLAINT] notify error:", err));
 
   // Jesli zgłoszenie wewnetrzne z cofnieciem etapu — cofnij progress
   if (type === "internal" && revertToStepId && orderItemId) {

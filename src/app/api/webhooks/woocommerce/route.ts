@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseWooCommerceOrder, type WooOrderPayload } from "@/lib/adapters/woocommerce";
 import { ingestOrder } from "@/lib/orders/ingest";
+import { notifyOrderStatusChange } from "@/lib/email/notifications";
 
 /**
  * POST /api/webhooks/woocommerce
@@ -87,6 +88,20 @@ export async function POST(request: NextRequest) {
         .from("webhook_events")
         .update({ processed: true })
         .eq("id", webhookEvent.id);
+    }
+
+    // Auto-confirm oplaconego zamowienia (nie wymaga recznej akcji)
+    if (orderInput.paymentStatus === "paid") {
+      console.log("[WEBHOOK WOO] auto-confirm: %s (paid)", result.orderId);
+      await supabase
+        .from("orders")
+        .update({ status: "confirmed" })
+        .eq("id", result.orderId)
+        .eq("status", "new");
+
+      notifyOrderStatusChange(supabase, result.orderId, "confirmed").catch(
+        (err) => console.error("[WEBHOOK WOO] notify error:", err)
+      );
     }
 
     console.log("[WEBHOOK WOO] success: %s (%s)", result.orderNumber, result.orderId);
