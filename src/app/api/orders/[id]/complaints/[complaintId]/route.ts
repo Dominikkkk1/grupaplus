@@ -8,7 +8,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; complaintId: string }> }
 ) {
-  const { complaintId } = await params;
+  const { id, complaintId } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,13 +34,21 @@ export async function PATCH(
   if (notes !== undefined) updateData.notes = notes;
   if (status === "resolved") updateData.resolved_at = new Date().toISOString();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("complaints")
     .update(updateData)
-    .eq("id", complaintId);
+    .eq("id", complaintId)
+    .eq("order_id", id)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[COMPLAINT PATCH] error:", error.message);
+    return NextResponse.json({ error: "Blad aktualizacji" }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: "Zgłoszenie nie znalezione" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

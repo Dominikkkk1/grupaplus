@@ -87,9 +87,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (password.length < 6) {
+  if (password.length < 8) {
     return NextResponse.json(
-      { error: "Hasło musi mieć minimum 6 znaków" },
+      { error: "Hasło musi mieć minimum 8 znaków" },
       { status: 400 }
     );
   }

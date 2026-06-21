@@ -68,6 +68,11 @@ export async function PATCH(
     updateData.status = body.status;
   }
 
+  // Tracking number
+  if (body.trackingNumber !== undefined) {
+    updateData.tracking_number = body.trackingNumber || null;
+  }
+
   // Przypisanie operatora
   if (body.assignedTo !== undefined) {
     updateData.assigned_to = body.assignedTo || null;
@@ -87,6 +92,23 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Auto-shipped: dodanie tracking number przy statusie "ready" → automatycznie shipped
+  if (body.trackingNumber && !body.status) {
+    const { data: currentOrder } = await supabase
+      .from("orders")
+      .select("status")
+      .eq("id", id)
+      .single();
+
+    if (currentOrder?.status === "ready") {
+      console.log("[ORDER PATCH] auto-shipped: tracking added to ready order %s", id);
+      await supabase.from("orders").update({ status: "shipped" }).eq("id", id);
+      notifyOrderStatusChange(supabase, id, "shipped").catch((err) =>
+        console.error("[ORDER PATCH] notify shipped error:", err)
+      );
+    }
   }
 
   // Powiadomienie email (fire-and-forget — nie blokuje response)

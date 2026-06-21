@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
 
   // 2. Waliduj podpis HMAC
   const secret = process.env.WOOCOMMERCE_WEBHOOK_SECRET;
-  if (secret) {
+  if (!secret) {
+    console.error("[WEBHOOK WOO] WOOCOMMERCE_WEBHOOK_SECRET not set");
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  }
+  {
     const signature = request.headers.get("x-wc-webhook-signature") ?? "";
     const expectedSignature = crypto
       .createHmac("sha256", secret)

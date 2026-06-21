@@ -47,7 +47,8 @@ export async function POST(
 
   // Upload do Supabase Storage
   const ext = file.name.split(".").pop() ?? "bin";
-  const filePath = `${id}/${Date.now()}-${file.name}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const filePath = `${id}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage
     .from("order-files")
@@ -94,7 +95,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await params; // consume params
+  // params consumed below after fileId check
   const supabase = await createClient();
   const {
     data: { user },
@@ -119,20 +120,27 @@ export async function DELETE(
     return NextResponse.json({ error: "Brak fileId" }, { status: 400 });
   }
 
-  // Pobierz sciezke pliku
+  const { id: orderId } = await params;
+
+  // Pobierz sciezke pliku — weryfikuj ze nalezy do tego zamowienia
   const { data: fileRecord } = await supabase
     .from("order_files")
     .select("file_path")
     .eq("id", fileId)
+    .eq("order_id", orderId)
     .maybeSingle();
 
-  if (fileRecord?.file_path) {
+  if (!fileRecord) {
+    return NextResponse.json({ error: "Plik nie znaleziony" }, { status: 404 });
+  }
+
+  if (fileRecord.file_path) {
     await supabase.storage
       .from("order-files")
       .remove([fileRecord.file_path]);
   }
 
-  await supabase.from("order_files").delete().eq("id", fileId);
+  await supabase.from("order_files").delete().eq("id", fileId).eq("order_id", orderId);
 
   return NextResponse.json({ ok: true });
 }

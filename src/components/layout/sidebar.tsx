@@ -19,9 +19,11 @@ import {
   ChevronRight,
   Menu,
   X,
+  BarChart3,
 } from "lucide-react";
 
 const NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard", icon: BarChart3, roles: ["admin"] },
   { href: "/orders", label: "Zamówienia", icon: Package, roles: ["admin", "operator", "client"] },
   { href: "/production", label: "Produkcja", icon: Factory, roles: ["admin", "operator"] },
   { href: "/scan", label: "Skanowanie", icon: ScanLine, roles: ["admin", "operator"] },

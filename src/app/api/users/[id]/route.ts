@@ -35,7 +35,12 @@ export async function PATCH(
   console.log("[USER PATCH] userId=%s body=%j", id, body);
 
   if (body.fullName !== undefined) updateData.full_name = body.fullName;
-  if (body.role !== undefined) updateData.role = body.role;
+  if (body.role !== undefined) {
+    if (!["admin", "operator", "client"].includes(body.role)) {
+      return NextResponse.json({ error: "Nieprawidłowa rola" }, { status: 400 });
+    }
+    updateData.role = body.role;
+  }
   if (body.phone !== undefined) updateData.phone = body.phone;
   if (body.isActive !== undefined) updateData.is_active = body.isActive;
 
