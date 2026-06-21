@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyOrderStatusChange } from "@/lib/email/notifications";
 
 /**
  * POST /api/scan — skanowanie QR na stacji roboczej
@@ -205,6 +206,35 @@ export async function POST(request: NextRequest) {
         .from("order_items")
         .update({ is_completed: true })
         .eq("id", progress.order_item_id);
+
+      // Sprawdz czy WSZYSTKIE pozycje zamowienia sa ukonczone → auto-ready
+      const { data: itemRow } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("id", progress.order_item_id)
+        .single();
+
+      if (itemRow) {
+        const { data: allItems } = await supabase
+          .from("order_items")
+          .select("is_completed")
+          .eq("order_id", itemRow.order_id);
+
+        const orderReady = allItems?.every((i) => i.is_completed);
+        if (orderReady) {
+          console.log("[SCAN] ORDER READY — zamowienie %s gotowe", itemRow.order_id);
+          await supabase
+            .from("orders")
+            .update({ status: "ready" })
+            .eq("id", itemRow.order_id)
+            .in("status", ["in_production"]);
+
+          // Email powiadomienie o gotowosci (fire-and-forget)
+          notifyOrderStatusChange(supabase, itemRow.order_id, "ready").catch(
+            (err) => console.error("[SCAN] notify ready error:", err)
+          );
+        }
+      }
     }
 
     console.log("[SCAN] COMPLETED: %s, allDone=%s", stepName, allDone);

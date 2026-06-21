@@ -237,13 +237,13 @@ export function ProductionBoard({
 
       {/* Board */}
       {filteredSteps.length > 0 ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredSteps.map((step) => {
             const items = stepGroups.get(step.id) ?? [];
             return (
               <div
                 key={step.id}
-                className="w-72 flex-shrink-0 rounded-lg border border-zinc-200 bg-zinc-50/50"
+                className="rounded-lg border border-zinc-200 bg-zinc-50/50"
               >
                 <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3">
                   <div

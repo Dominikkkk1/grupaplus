@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail } from "./resend";
-import { orderConfirmedEmail, orderShippedEmail } from "./templates";
+import { orderConfirmedEmail, orderShippedEmail, orderReadyEmail } from "./templates";
 
 /**
  * Wysyla powiadomienie email do klienta przy zmianie statusu zamówienia.
@@ -15,7 +15,7 @@ export async function notifyOrderStatusChange(
   orderId: string,
   newStatus: string
 ) {
-  if (newStatus !== "confirmed" && newStatus !== "shipped") return;
+  if (newStatus !== "confirmed" && newStatus !== "shipped" && newStatus !== "ready") return;
 
   // Pobierz dane zamówienia + kontakt + pozycje
   const { data: order } = await supabase
@@ -55,6 +55,15 @@ export async function notifyOrderStatusChange(
         description: i.description,
         quantity: i.quantity,
       })),
+    });
+
+    await sendEmail({ to: contact.email, subject, html });
+  }
+
+  if (newStatus === "ready") {
+    const { subject, html } = orderReadyEmail({
+      orderNumber: order.order_number,
+      customerName: contact.full_name,
     });
 
     await sendEmail({ to: contact.email, subject, html });

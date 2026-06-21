@@ -58,6 +58,28 @@ export function orderConfirmedEmail({
   };
 }
 
+export function orderReadyEmail({
+  orderNumber,
+  customerName,
+}: {
+  orderNumber: string;
+  customerName: string;
+}) {
+  return {
+    subject: `Zamówienie ${orderNumber} — gotowe!`,
+    html: layout(`
+      <p style="margin:0 0 8px;font-size:15px;color:#18181b;">Cześć <strong>${customerName}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Twoje zamówienie <strong>${orderNumber}</strong> jest gotowe do odbioru lub wysyłki.</p>
+
+      <div style="margin:16px 0;padding:12px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;">
+        <p style="margin:0;font-size:13px;color:#1e40af;">Skontaktujemy się z Tobą w sprawie odbioru lub wysyłki.</p>
+      </div>
+
+      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Dziękujemy za zamówienie w Drukarni Grupa Plus.</p>
+    `),
+  };
+}
+
 export function orderShippedEmail({
   orderNumber,
   customerName,

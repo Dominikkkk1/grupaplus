@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Scan, CheckCircle2, AlertTriangle, Loader2, Cog } from "lucide-react";
+import { Scan, CheckCircle2, AlertTriangle, Loader2, Cog, Download, FileText, Image as ImageIcon } from "lucide-react";
 
 interface ProgressStep {
   id: string;
@@ -12,12 +12,21 @@ interface ProgressStep {
   step: { name: string; color: string; machine_group_id: string | null };
 }
 
+interface ItemFile {
+  id: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  file_path: string;
+}
+
 interface ScannedOrder {
   orderId: string;
   orderNumber: string;
   itemDescription: string;
   itemId: string;
   steps: ProgressStep[];
+  files: ItemFile[];
 }
 
 interface MachineGroup {
@@ -176,6 +185,13 @@ export default function ScanPage() {
     const item = items[0];
     const product = item.product as unknown as { name: string } | null;
 
+    // Pobierz pliki przypisane do tej pozycji
+    const { data: itemFiles } = await supabase
+      .from("order_files")
+      .select("id, file_name, file_size, mime_type, file_path")
+      .eq("order_item_id", item.id)
+      .order("created_at", { ascending: false });
+
     setScannedOrder({
       orderId: order.id,
       orderNumber: order.order_number,
@@ -184,6 +200,7 @@ export default function ScanPage() {
       steps: ((item.progress ?? []) as unknown as ProgressStep[]).sort(
         (a, b) => a.step_order - b.step_order
       ),
+      files: (itemFiles ?? []) as ItemFile[],
     });
     setMessage(null);
   }, []);
@@ -389,6 +406,50 @@ export default function ScanPage() {
               {scannedOrder.itemDescription}
             </p>
           </div>
+
+          {/* Pliki pozycji */}
+          {scannedOrder.files.length > 0 && (
+            <div className="border-b border-zinc-100 px-5 py-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Pliki
+              </p>
+              <div className="space-y-1.5">
+                {scannedOrder.files.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2"
+                  >
+                    {file.mime_type.startsWith("image/") ? (
+                      <ImageIcon size={14} className="flex-shrink-0 text-blue-500" />
+                    ) : (
+                      <FileText size={14} className="flex-shrink-0 text-red-500" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-zinc-900">
+                      {file.file_name}
+                    </span>
+                    <span className="flex-shrink-0 text-[11px] text-zinc-400">
+                      {file.file_size < 1024 * 1024
+                        ? `${(file.file_size / 1024).toFixed(0)} KB`
+                        : `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
+                    <button
+                      onClick={async () => {
+                        const supabase = createClient();
+                        const { data } = await supabase.storage
+                          .from("order-files")
+                          .createSignedUrl(file.file_path, 60);
+                        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                      }}
+                      className="flex-shrink-0 rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                      title="Pobierz"
+                    >
+                      <Download size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="p-4">
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
