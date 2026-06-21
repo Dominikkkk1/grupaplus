@@ -140,7 +140,12 @@ export async function DELETE(
       .remove([fileRecord.file_path]);
   }
 
-  await supabase.from("order_files").delete().eq("id", fileId).eq("order_id", orderId);
+  const { error: deleteError } = await supabase.from("order_files").delete().eq("id", fileId).eq("order_id", orderId);
+
+  if (deleteError) {
+    console.error("[FILE DELETE] error:", deleteError.message);
+    return NextResponse.json({ error: "Blad usuwania pliku" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

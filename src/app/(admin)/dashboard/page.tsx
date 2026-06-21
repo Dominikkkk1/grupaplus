@@ -42,19 +42,20 @@ export default async function DashboardPage() {
     sourceCounts[row.source] = (sourceCounts[row.source] ?? 0) + 1;
   }
 
-  // Statystyki operatorow (ostatnie 30 dni)
-  const { data: operatorData } = await supabase
-    .from("order_item_progress")
-    .select("completed_by, started_at, completed_at, status")
-    .in("status", ["completed", "in_progress"])
-    .gte("completed_at", thirtyDaysAgo.toISOString())
-    .not("completed_by", "is", null);
-
-  const { data: operatorUsers } = await supabase
-    .from("users")
-    .select("id, full_name")
-    .in("role", ["admin", "operator"])
-    .eq("is_active", true);
+  // Statystyki operatorow (ostatnie 30 dni) — rownolegle
+  const [{ data: operatorData }, { data: operatorUsers }] = await Promise.all([
+    supabase
+      .from("order_item_progress")
+      .select("completed_by, started_at, completed_at, status")
+      .in("status", ["completed", "in_progress"])
+      .gte("completed_at", thirtyDaysAgo.toISOString())
+      .not("completed_by", "is", null),
+    supabase
+      .from("users")
+      .select("id, full_name")
+      .in("role", ["admin", "operator"])
+      .eq("is_active", true),
+  ]);
 
   const userMap = new Map<string, string>();
   for (const u of operatorUsers ?? []) {
