@@ -44,6 +44,20 @@ export async function POST(
     );
   }
 
+  if (reason.length > 5000) {
+    return NextResponse.json(
+      { error: "Powód zgłoszenia jest za długi (max 5000 znaków)" },
+      { status: 400 }
+    );
+  }
+
+  if (notes && notes.length > 5000) {
+    return NextResponse.json(
+      { error: "Uwagi są za długie (max 5000 znaków)" },
+      { status: 400 }
+    );
+  }
+
   // Utworz zgłoszenie
   const { data: complaint, error } = await supabase
     .from("complaints")

@@ -45,8 +45,16 @@ export async function POST(
     );
   }
 
-  // Upload do Supabase Storage
-  const ext = file.name.split(".").pop() ?? "bin";
+  // Walidacja rozszerzenia server-side
+  const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "tiff", "tif"];
+  const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return NextResponse.json(
+      { error: "Niedozwolony typ pliku (dozwolone: PDF, JPG, PNG, TIFF)" },
+      { status: 400 }
+    );
+  }
+
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const filePath = `${id}/${Date.now()}-${safeName}`;
 

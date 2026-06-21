@@ -30,6 +30,11 @@ export async function PATCH(
 
   const { status, notes } = await request.json();
 
+  const ALLOWED_STATUSES = ["open", "in_progress", "resolved", "rejected"];
+  if (!status || !ALLOWED_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Nieprawidłowy status" }, { status: 400 });
+  }
+
   const updateData: Record<string, unknown> = { status };
   if (notes !== undefined) updateData.notes = notes;
   if (status === "resolved") updateData.resolved_at = new Date().toISOString();
