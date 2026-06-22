@@ -98,8 +98,16 @@ export function FileUpload({
     });
 
     if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "Blad uploadu");
+      if (res.status === 413) {
+        setError("Plik za duży — maksymalny rozmiar to 4.5 MB");
+      } else {
+        try {
+          const data = await res.json();
+          setError(data.error || "Błąd uploadu");
+        } catch {
+          setError(`Błąd serwera (${res.status})`);
+        }
+      }
     }
 
     setUploading(false);
@@ -133,6 +141,8 @@ export function FileUpload({
       router.refresh();
     } else {
       setDeleteLoading(false);
+      setDeleteFile(null);
+      setError("Nie udało się usunąć pliku");
     }
   }
 

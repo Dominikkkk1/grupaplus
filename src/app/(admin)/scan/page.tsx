@@ -149,7 +149,7 @@ export default function ScanPage() {
   }
 
   // Przetworz zeskanowany QR
-  const handleQrScanned = useCallback(async (url: string) => {
+  const handleQrScanned = useCallback(async (url: string, keepMessage = false) => {
     const match = url.match(/\/orders\/([a-f0-9-]+)/i);
     if (!match) {
       setMessage({ type: "error", text: "Nieprawidłowy kod QR" });
@@ -213,7 +213,7 @@ export default function ScanPage() {
       ),
       files: allFiles as ItemFile[],
     });
-    setMessage(null);
+    if (!keepMessage) setMessage(null);
   }, []);
 
   // Rozpocznij / zakończ etap
@@ -250,10 +250,9 @@ export default function ScanPage() {
       return;
     }
 
-    // Odśwież dane zamówienia NAJPIERW, potem ustaw message
-    // (żeby message nie został nadpisany przez re-render)
+    // Odśwież dane zamówienia — keepMessage=true żeby nie nadpisać komunikatu
     if (scannedOrder) {
-      await handleQrScanned(`/orders/${scannedOrder.orderId}`);
+      await handleQrScanned(`/orders/${scannedOrder.orderId}`, true);
     }
 
     if (action === "complete") {

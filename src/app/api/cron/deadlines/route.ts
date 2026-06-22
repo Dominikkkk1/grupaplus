@@ -102,10 +102,39 @@ export async function GET(request: NextRequest) {
     await sendEmail({ to: email, subject, html });
   }
 
+  // Auto-delivered: shipped > 7 dni → delivered
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const { count: deliveredCount } = await supabase
+    .from("orders")
+    .update({ status: "delivered" }, { count: "exact" })
+    .eq("status", "shipped")
+    .lt("updated_at", sevenDaysAgo.toISOString());
+
+  if (deliveredCount && deliveredCount > 0) {
+    console.log("[CRON DEADLINES] auto-delivered: %d zamówień", deliveredCount);
+  }
+
+  // Auto-close complaints: in_progress > 14 dni → resolved
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const { count: closedComplaints } = await supabase
+    .from("complaints")
+    .update(
+      { status: "resolved", resolved_at: now.toISOString() },
+      { count: "exact" }
+    )
+    .eq("status", "in_progress")
+    .lt("created_at", fourteenDaysAgo.toISOString());
+
+  if (closedComplaints && closedComplaints > 0) {
+    console.log("[CRON DEADLINES] auto-closed complaints: %d", closedComplaints);
+  }
+
   return NextResponse.json({
     ok: true,
     overdue: overdueCount,
     approaching: approachingCount,
     notified: adminEmails.length,
+    autoDelivered: deliveredCount ?? 0,
+    autoClosedComplaints: closedComplaints ?? 0,
   });
 }
