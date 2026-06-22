@@ -187,12 +187,21 @@ export default function ScanPage() {
     const item = items[0];
     const product = item.product as unknown as { name: string } | null;
 
-    // Pobierz pliki przypisane do tej pozycji
-    const { data: itemFiles } = await supabase
-      .from("order_files")
-      .select("id, file_name, file_size, mime_type, file_path")
-      .eq("order_item_id", item.id)
-      .order("created_at", { ascending: false });
+    // Pobierz pliki: przypisane do pozycji + ogolne zamowienia
+    const [{ data: itemFiles }, { data: orderFiles }] = await Promise.all([
+      supabase
+        .from("order_files")
+        .select("id, file_name, file_size, mime_type, file_path")
+        .eq("order_item_id", item.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("order_files")
+        .select("id, file_name, file_size, mime_type, file_path")
+        .eq("order_id", orderId)
+        .is("order_item_id", null)
+        .order("created_at", { ascending: false }),
+    ]);
+    const allFiles = [...(itemFiles ?? []), ...(orderFiles ?? [])];
 
     setScannedOrder({
       orderId: order.id,
@@ -202,7 +211,7 @@ export default function ScanPage() {
       steps: ((item.progress ?? []) as unknown as ProgressStep[]).sort(
         (a, b) => a.step_order - b.step_order
       ),
-      files: (itemFiles ?? []) as ItemFile[],
+      files: allFiles as ItemFile[],
     });
     setMessage(null);
   }, []);
@@ -576,15 +585,21 @@ export default function ScanPage() {
                       )}
                     </div>
                     {groupMismatch && (isPending || isInProgress) && (
-                      <p className="mt-1 flex items-center gap-1 px-1 text-[11px] text-red-500">
-                        <AlertTriangle size={11} />
-                        Wymaga stanowiska: <strong>{stepGroupName}</strong>
-                        {selectedGroupNames.length > 0 && (
-                          <span className="text-zinc-400">
-                            {" "}— Twoje: {selectedGroupNames.join(", ")}
-                          </span>
-                        )}
-                      </p>
+                      <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-500" />
+                          <div className="text-[12px]">
+                            <p className="font-medium text-red-700">
+                              Inne stanowisko: {stepGroupName}
+                            </p>
+                            {selectedGroupNames.length > 0 && (
+                              <p className="mt-0.5 text-red-500">
+                                Twoje: {selectedGroupNames.join(", ")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 );

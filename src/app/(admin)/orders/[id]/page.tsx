@@ -104,22 +104,23 @@ export default async function OrderDetailPage({
           <ArrowLeft size={14} />
           Zamówienia
         </Link>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-zinc-900">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-semibold text-zinc-900 sm:text-lg">
               {order.order_number}
             </h1>
-            <span className="rounded bg-zinc-100 px-2 py-0.5 text-[12px] text-zinc-500">
+            <span className="rounded bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-500 sm:text-[12px]">
               {SOURCE_LABELS[order.source] ?? order.source}
             </span>
           </div>
           <a
             href={`/orders/${id}/print`}
             target="_blank"
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50"
+            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
           >
             <Printer size={14} />
-            Drukuj kartę
+            <span className="hidden sm:inline">Drukuj kartę</span>
+            <span className="sm:hidden">Drukuj</span>
           </a>
         </div>
         <OrderActions
