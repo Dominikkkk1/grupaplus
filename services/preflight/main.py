@@ -226,13 +226,16 @@ def analyze_pdf(data: bytes, filename: str) -> dict:
 
     metadata = {}
     if page_count > 0:
-        page = fitz.open(stream=data, filetype="pdf")[0]
+        # Reuse first page rect from earlier (doc already closed, recalculate)
+        doc2 = fitz.open(stream=data, filetype="pdf")
+        p0 = doc2[0]
         metadata = {
             "page_count": page_count,
-            "width_mm": round(page.rect.width * MM_PER_INCH / 72, 1),
-            "height_mm": round(page.rect.height * MM_PER_INCH / 72, 1),
+            "width_mm": round(p0.rect.width * MM_PER_INCH / 72, 1),
+            "height_mm": round(p0.rect.height * MM_PER_INCH / 72, 1),
             "min_image_dpi": round(min_img_dpi) if min_img_dpi else None,
         }
+        doc2.close()
 
     return {
         "status": worst,
@@ -279,6 +282,15 @@ async def validate(
                 "metadata": {},
             }
     except Exception as e:
+        # Sanitize error message — hide internal Python details
+        raw_msg = str(e)
+        if "<" in raw_msg:
+            clean_msg = raw_msg.split("<")[0].strip()
+        else:
+            clean_msg = raw_msg
+        if not clean_msg:
+            clean_msg = "Nieczytelny lub uszkodzony plik"
+
         result = {
             "status": "failed",
             "file_type": "error",
@@ -286,7 +298,7 @@ async def validate(
                 "label": "Analiza",
                 "status": "failed",
                 "value": "error",
-                "message": f"Nie udało się przeanalizować pliku: {str(e)}",
+                "message": f"Nie udało się przeanalizować pliku: {clean_msg}",
             }],
             "metadata": {},
         }
