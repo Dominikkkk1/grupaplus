@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { validateFile } from "@/services/file-validation.service";
 
-// Vercel domyslnie 4.5MB — podnosimy do 20MB (max plik)
-export const config = {
-  api: { bodyParser: false },
-};
-export const maxDuration = 60; // sekundy (Vercel serverless timeout)
+export const maxDuration = 60;
 
 /**
  * POST /api/orders/[id]/files — upload pliku do zamówienia

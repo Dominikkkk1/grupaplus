@@ -1,12 +1,14 @@
-import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
 
 /**
  * Preflight — walidacja plikow do druku.
  *
  * Strategia:
- * 1. Jesli PREFLIGHT_SERVICE_URL ustawiony → wywolaj Python microservice (pelna analiza)
- * 2. Fallback → lokalna walidacja JS (podstawowa)
+ * 1. Jesli PREFLIGHT_SERVICE_URL ustawiony → Python microservice (pelna analiza: DPI, CMYK, czcionki)
+ * 2. Fallback → lokalna walidacja JS (tylko PDF wymiary, bez sharp)
+ *
+ * sharp usuniety — nie dziala na Vercel serverless (brak libvips).
+ * Cala analiza obrazkow delegowana do Python service.
  */
 
 interface PreflightCheck {
@@ -22,8 +24,6 @@ export interface PreflightResult {
   validatedAt: string;
 }
 
-const MIN_DPI = 150;
-const WARN_DPI = 300;
 const PT_TO_MM = 0.3528;
 
 /**
@@ -49,7 +49,7 @@ export async function validateFile(
 }
 
 /**
- * Python microservice preflight (FastAPI).
+ * Python microservice preflight (FastAPI on Railway).
  */
 async function validateViaPython(
   serviceUrl: string,
@@ -92,7 +92,8 @@ async function validateViaPython(
 }
 
 /**
- * Lokalna walidacja JS (fallback).
+ * Lokalna walidacja JS (fallback — bez sharp, tylko PDF).
+ * Obrazki: zwraca warning ze nie mozna sprawdzic bez Python service.
  */
 async function validateLocally(
   buffer: Buffer,
@@ -102,59 +103,13 @@ async function validateLocally(
 
   try {
     if (mimeType.startsWith("image/")) {
-      const metadata = await sharp(buffer).metadata();
-
-      const dpi = metadata.density ?? 72;
-      if (dpi < MIN_DPI) {
-        checks.push({
-          status: "failed",
-          label: "DPI",
-          value: `${dpi}`,
-          message: `Za niska rozdzielczość (${dpi} DPI). Minimum do druku: ${MIN_DPI} DPI.`,
-        });
-      } else if (dpi < WARN_DPI) {
-        checks.push({
-          status: "warning",
-          label: "DPI",
-          value: `${dpi}`,
-          message: `Rozdzielczość ${dpi} DPI — poniżej zalecanego 300 DPI.`,
-        });
-      } else {
-        checks.push({ status: "passed", label: "DPI", value: `${dpi}` });
-      }
-
-      const w = metadata.width ?? 0;
-      const h = metadata.height ?? 0;
-      if (w < 200 || h < 200) {
-        checks.push({
-          status: "failed",
-          label: "Wymiary",
-          value: `${w}x${h} px`,
-          message: "Plik za mały do druku (mniej niż 200px).",
-        });
-      } else {
-        const widthMm = Math.round((w / dpi) * 25.4);
-        const heightMm = Math.round((h / dpi) * 25.4);
-        checks.push({
-          status: "passed",
-          label: "Wymiary",
-          value: `${w}x${h} px (${widthMm}x${heightMm} mm @ ${dpi} DPI)`,
-        });
-      }
-
-      const space = metadata.space ?? "unknown";
-      if (space === "cmyk") {
-        checks.push({ status: "passed", label: "Profil", value: "CMYK" });
-      } else if (space === "srgb" || space === "rgb") {
-        checks.push({
-          status: "warning",
-          label: "Profil",
-          value: "RGB",
-          message: "Plik w profilu RGB — zalecana konwersja do CMYK.",
-        });
-      } else {
-        checks.push({ status: "passed", label: "Profil", value: space.toUpperCase() });
-      }
+      // Bez sharp nie mozemy sprawdzic DPI/profilu — info dla usera
+      checks.push({
+        status: "warning",
+        label: "Analiza",
+        value: "Ograniczona",
+        message: "Serwis preflight niedostępny — DPI i profil kolorów nie zostały sprawdzone.",
+      });
     } else if (mimeType === "application/pdf") {
       const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
       const pages = pdfDoc.getPages();
