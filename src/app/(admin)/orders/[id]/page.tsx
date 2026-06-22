@@ -18,7 +18,7 @@ import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { FileUpload } from "@/components/orders/file-upload";
 import { OrderActions } from "@/components/orders/order-actions";
 import { DeleteOrderButton } from "@/components/orders/delete-order-button";
-import { STATUS_CONFIG, SOURCE_LABELS } from "@/lib/order-constants";
+import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
 
 export default async function OrderDetailPage({
   params,
@@ -39,6 +39,16 @@ export default async function OrderDetailPage({
     .single();
 
   if (!order) notFound();
+
+  // Rola uzytkownika
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+  const userRole = profile?.role ?? "client";
+  const isClient = userRole === "client";
 
   const { data: items, error: itemsError } = await supabase
     .from("order_items")
@@ -113,17 +123,27 @@ export default async function OrderDetailPage({
               {SOURCE_LABELS[order.source] ?? order.source}
             </span>
           </div>
-          <a
-            href={`/orders/${id}/print`}
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
-          >
-            <Printer size={14} />
-            <span className="hidden sm:inline">Drukuj kartę</span>
-            <span className="sm:hidden">Drukuj</span>
-          </a>
+          {!isClient && (
+            <a
+              href={`/orders/${id}/print`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
+            >
+              <Printer size={14} />
+              <span className="hidden sm:inline">Drukuj kartę</span>
+              <span className="sm:hidden">Drukuj</span>
+            </a>
+          )}
         </div>
-        <OrderActions
+
+        {/* Status bar dla klienta */}
+        {isClient && (
+          <div className="mt-3">
+            <ClientStatusBar status={order.status} />
+          </div>
+        )}
+
+        {!isClient && <OrderActions
           orderId={id}
           currentStatus={order.status}
           assignedTo={order.assigned_to as string | null}
@@ -134,7 +154,7 @@ export default async function OrderDetailPage({
             progress: ((i.progress ?? []) as unknown as { step_id: string; step_order: number; step: { name: string } }[]),
           }))}
           complaints={(complaints ?? []) as unknown as { id: string; type: string; reason: string; status: string; reprint_quantity: number | null; notes: string | null; created_at: string; resolved_at: string | null; reported_by_user: { full_name: string } | null; revert_step: { name: string } | null }[]}
-        />
+        />}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -187,16 +207,18 @@ export default async function OrderDetailPage({
                     )}
                   </div>
 
-                  {/* Checklista workflow */}
-                  {progress && progress.length > 0 ? (
-                    <WorkflowChecklist
-                      orderItemId={item.id}
-                      steps={progress}
-                    />
-                  ) : (
-                    <div className="px-4 py-6 text-center text-[13px] text-zinc-400">
-                      Brak przypisanego workflow (zlecenie bez produktu)
-                    </div>
+                  {/* Checklista workflow — tylko admin/operator */}
+                  {!isClient && (
+                    progress && progress.length > 0 ? (
+                      <WorkflowChecklist
+                        orderItemId={item.id}
+                        steps={progress}
+                      />
+                    ) : (
+                      <div className="px-4 py-6 text-center text-[13px] text-zinc-400">
+                        Brak przypisanego workflow (zlecenie bez produktu)
+                      </div>
+                    )
                   )}
 
                   {/* Pliki per pozycje */}
@@ -331,8 +353,8 @@ export default async function OrderDetailPage({
             </div>
           </div>
 
-          {/* Usun zamówienie */}
-          <DeleteOrderButton orderId={id} />
+          {/* Usun zamówienie — tylko admin */}
+          {userRole === "admin" && <DeleteOrderButton orderId={id} />}
 
           {/* Uwagi */}
           {order.notes && (
@@ -361,6 +383,64 @@ export default async function OrderDetailPage({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Wizualny pasek statusu dla klienta (4 kroki) */
+function ClientStatusBar({ status }: { status: string }) {
+  const steps = [
+    { key: "accepted", label: "Przyjęte" },
+    { key: "production", label: "W realizacji" },
+    { key: "shipped", label: "Wysłane" },
+  ];
+
+  let activeIndex = 0;
+  if (status === "in_production" || status === "ready") activeIndex = 1;
+  if (status === "shipped" || status === "delivered") activeIndex = 2;
+  if (status === "cancelled") activeIndex = -1;
+
+  if (status === "cancelled") {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[13px] font-medium text-red-700">
+        Zamówienie anulowane
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      {steps.map((step, i) => (
+        <div key={step.key} className="flex flex-1 items-center gap-1">
+          <div className="flex flex-1 flex-col items-center">
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold ${
+                i <= activeIndex
+                  ? "bg-emerald-600 text-white"
+                  : "bg-zinc-200 text-zinc-500"
+              }`}
+            >
+              {i + 1}
+            </div>
+            <span
+              className={`mt-1 text-center text-[11px] ${
+                i <= activeIndex
+                  ? "font-medium text-emerald-700"
+                  : "text-zinc-400"
+              }`}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className={`mt-[-16px] h-0.5 flex-1 ${
+                i < activeIndex ? "bg-emerald-400" : "bg-zinc-200"
+              }`}
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
