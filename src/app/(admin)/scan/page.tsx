@@ -250,6 +250,12 @@ export default function ScanPage() {
       return;
     }
 
+    // Odśwież dane zamówienia NAJPIERW, potem ustaw message
+    // (żeby message nie został nadpisany przez re-render)
+    if (scannedOrder) {
+      await handleQrScanned(`/orders/${scannedOrder.orderId}`);
+    }
+
     if (action === "complete") {
       setMessage({
         type: "success",
@@ -264,9 +270,6 @@ export default function ScanPage() {
       });
     }
 
-    if (scannedOrder) {
-      handleQrScanned(`/orders/${scannedOrder.orderId}`);
-    }
     setActionLoading(null);
   }
 
@@ -607,7 +610,25 @@ export default function ScanPage() {
             </div>
           </div>
 
-          <div className="border-t border-zinc-100 px-5 py-3">
+          <div className="border-t border-zinc-100 px-5 py-3 space-y-2">
+            {/* Przycisk re-scan: zakoncz biezacy in_progress etap */}
+            {scannedOrder.steps.some((s) => s.status === "in_progress") && (
+              <button
+                onClick={() => {
+                  const inProgressStep = scannedOrder.steps.find(
+                    (s) => s.status === "in_progress"
+                  );
+                  if (inProgressStep) {
+                    handleAction(inProgressStep.id, "complete");
+                  }
+                }}
+                disabled={!!actionLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2.5 text-[13px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Scan size={16} />
+                Zakończ i skanuj dalej
+              </button>
+            )}
             <button
               onClick={() => {
                 setScannedOrder(null);
