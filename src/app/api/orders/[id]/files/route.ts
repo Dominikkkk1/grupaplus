@@ -68,7 +68,7 @@ export async function POST(
 
   // Preflight — walidacja pliku (DPI, wymiary, profil)
   const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const preflight = await validateFile(fileBuffer, file.type);
+  const preflight = await validateFile(fileBuffer, file.type, file.name);
 
   // Zapisz rekord w tabeli order_files z wynikiem preflight
   const { data: record, error: dbError } = await supabase

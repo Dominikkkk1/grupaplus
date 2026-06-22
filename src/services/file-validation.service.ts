@@ -4,12 +4,9 @@ import { PDFDocument } from "pdf-lib";
 /**
  * Preflight — walidacja plikow do druku.
  *
- * Sprawdza:
- * - DPI (rozdzielczosc) — minimum 300 dla druku
- * - Wymiary — czy plik ma sensowny rozmiar
- * - Profil kolorystyczny — RGB vs CMYK
- *
- * Uniwersalny check (nie per produkt) — te same reguly dla kazdego pliku.
+ * Strategia:
+ * 1. Jesli PREFLIGHT_SERVICE_URL ustawiony → wywolaj Python microservice (pelna analiza)
+ * 2. Fallback → lokalna walidacja JS (podstawowa)
  */
 
 interface PreflightCheck {
@@ -25,15 +22,79 @@ export interface PreflightResult {
   validatedAt: string;
 }
 
-const MIN_DPI = 150; // ponizej = failed (za niskie do druku)
-const WARN_DPI = 300; // ponizej = warning (moze byc rozmyty)
-const PT_TO_MM = 0.3528; // 1 punkt PDF = 0.3528 mm
+const MIN_DPI = 150;
+const WARN_DPI = 300;
+const PT_TO_MM = 0.3528;
 
 /**
- * Waliduje plik uploadowany do zamówienia.
- * Obsluguje obrazki (JPG/PNG/TIFF) i PDF.
+ * Waliduje plik — preferuje Python service, fallback na lokalna walidacje.
  */
 export async function validateFile(
+  buffer: Buffer,
+  mimeType: string,
+  fileName?: string
+): Promise<PreflightResult> {
+  const serviceUrl = process.env.PREFLIGHT_SERVICE_URL;
+
+  if (serviceUrl) {
+    try {
+      const result = await validateViaPython(serviceUrl, buffer, fileName ?? "file");
+      if (result) return result;
+    } catch (err) {
+      console.warn("[PREFLIGHT] Python service error, falling back to JS:", err);
+    }
+  }
+
+  return validateLocally(buffer, mimeType);
+}
+
+/**
+ * Python microservice preflight (FastAPI).
+ */
+async function validateViaPython(
+  serviceUrl: string,
+  buffer: Buffer,
+  fileName: string
+): Promise<PreflightResult | null> {
+  const url = `${serviceUrl}/validate`;
+  const secret = process.env.PREFLIGHT_SECRET;
+
+  const formData = new FormData();
+  formData.append("file", new Blob([new Uint8Array(buffer)]), fileName);
+
+  const headers: Record<string, string> = {};
+  if (secret) headers["Authorization"] = `Bearer ${secret}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: formData,
+    headers,
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    console.error("[PREFLIGHT] Python service returned %d", res.status);
+    return null;
+  }
+
+  const data = await res.json();
+
+  return {
+    status: data.status,
+    checks: (data.checks ?? []).map((c: Record<string, unknown>) => ({
+      status: c.status,
+      label: c.label,
+      value: c.value,
+      message: c.message ?? undefined,
+    })),
+    validatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Lokalna walidacja JS (fallback).
+ */
+async function validateLocally(
   buffer: Buffer,
   mimeType: string
 ): Promise<PreflightResult> {
@@ -41,34 +102,27 @@ export async function validateFile(
 
   try {
     if (mimeType.startsWith("image/")) {
-      // === OBRAZEK ===
       const metadata = await sharp(buffer).metadata();
 
-      // DPI
-      const dpi = metadata.density ?? 72; // domyslnie 72 jesli brak EXIF
+      const dpi = metadata.density ?? 72;
       if (dpi < MIN_DPI) {
         checks.push({
           status: "failed",
           label: "DPI",
           value: `${dpi}`,
-          message: `Za niska rozdzielczosc (${dpi} DPI). Minimum do druku: ${MIN_DPI} DPI.`,
+          message: `Za niska rozdzielczość (${dpi} DPI). Minimum do druku: ${MIN_DPI} DPI.`,
         });
       } else if (dpi < WARN_DPI) {
         checks.push({
           status: "warning",
           label: "DPI",
           value: `${dpi}`,
-          message: `Rozdzielczosc ${dpi} DPI — ponizej zalecanego 300 DPI. Moze byc lekko rozmyty.`,
+          message: `Rozdzielczość ${dpi} DPI — poniżej zalecanego 300 DPI.`,
         });
       } else {
-        checks.push({
-          status: "passed",
-          label: "DPI",
-          value: `${dpi}`,
-        });
+        checks.push({ status: "passed", label: "DPI", value: `${dpi}` });
       }
 
-      // Wymiary
       const w = metadata.width ?? 0;
       const h = metadata.height ?? 0;
       if (w < 200 || h < 200) {
@@ -76,10 +130,9 @@ export async function validateFile(
           status: "failed",
           label: "Wymiary",
           value: `${w}x${h} px`,
-          message: "Plik za maly do druku (mniej niz 200px).",
+          message: "Plik za mały do druku (mniej niż 200px).",
         });
       } else {
-        // Oblicz rozmiar w mm przy danym DPI
         const widthMm = Math.round((w / dpi) * 25.4);
         const heightMm = Math.round((h / dpi) * 25.4);
         checks.push({
@@ -89,106 +142,53 @@ export async function validateFile(
         });
       }
 
-      // Profil kolorystyczny
       const space = metadata.space ?? "unknown";
       if (space === "cmyk") {
-        checks.push({
-          status: "passed",
-          label: "Profil",
-          value: "CMYK",
-        });
+        checks.push({ status: "passed", label: "Profil", value: "CMYK" });
       } else if (space === "srgb" || space === "rgb") {
         checks.push({
           status: "warning",
           label: "Profil",
           value: "RGB",
-          message:
-            "Plik w profilu RGB — kolory moga wygladac inaczej na wydruku. Zalecany: CMYK.",
+          message: "Plik w profilu RGB — zalecana konwersja do CMYK.",
         });
       } else {
-        checks.push({
-          status: "passed",
-          label: "Profil",
-          value: space.toUpperCase(),
-        });
+        checks.push({ status: "passed", label: "Profil", value: space.toUpperCase() });
       }
     } else if (mimeType === "application/pdf") {
-      // === PDF ===
-      const pdfDoc = await PDFDocument.load(buffer, {
-        ignoreEncryption: true,
-      });
+      const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
       const pages = pdfDoc.getPages();
 
-      // Ilosc stron
-      checks.push({
-        status: "passed",
-        label: "Strony",
-        value: `${pages.length}`,
-      });
+      checks.push({ status: "passed", label: "Strony", value: `${pages.length}` });
 
-      // Wymiary pierwszej strony
       if (pages.length > 0) {
-        const page = pages[0];
-        const { width, height } = page.getSize();
+        const { width, height } = pages[0].getSize();
         const widthMm = Math.round(width * PT_TO_MM);
         const heightMm = Math.round(height * PT_TO_MM);
-
-        if (widthMm < 30 || heightMm < 30) {
-          checks.push({
-            status: "warning",
-            label: "Wymiary",
-            value: `${widthMm}x${heightMm} mm`,
-            message: "Strona bardzo mala — sprawdz czy to poprawny rozmiar.",
-          });
-        } else {
-          checks.push({
-            status: "passed",
-            label: "Wymiary",
-            value: `${widthMm}x${heightMm} mm`,
-          });
-        }
+        checks.push({ status: "passed", label: "Wymiary", value: `${widthMm}x${heightMm} mm` });
       }
-
-      // PDF nie pozwala latwo sprawdzic DPI osadzonych obrazkow — info
-      checks.push({
-        status: "passed",
-        label: "Format",
-        value: "PDF",
-        message: "DPI obrazkow wewnatrz PDF nie jest sprawdzane automatycznie.",
-      });
     } else {
-      // Nieobslugiwany format
       checks.push({
         status: "warning",
         label: "Format",
         value: mimeType,
-        message: "Ten format pliku nie jest sprawdzany automatycznie.",
+        message: "Ten format nie jest sprawdzany automatycznie.",
       });
     }
   } catch (err) {
     checks.push({
       status: "failed",
-      label: "Blad",
-      value: "Nie udalo sie przeczytac pliku",
-      message: err instanceof Error ? err.message : "Nieznany blad",
+      label: "Błąd",
+      value: "Nie udało się przeczytać pliku",
+      message: err instanceof Error ? err.message : "Nieznany błąd",
     });
   }
 
-  // Okresl ogolny status — najgorszy z checkow
   let overall: "passed" | "warning" | "failed" = "passed";
   for (const check of checks) {
-    if (check.status === "failed") {
-      overall = "failed";
-      break;
-    }
-    if (check.status === "warning") {
-      overall = "warning";
-    }
+    if (check.status === "failed") { overall = "failed"; break; }
+    if (check.status === "warning") overall = "warning";
   }
 
-  return {
-    status: overall,
-    checks,
-    validatedAt: new Date().toISOString(),
-  };
+  return { status: overall, checks, validatedAt: new Date().toISOString() };
 }
