@@ -114,6 +114,8 @@ export default function ScanPage() {
   const [message, setMessage] = useState<{
     type: "success" | "error" | "warning";
     text: string;
+    nextStep?: { name: string; group: string | null } | null;
+    allDone?: boolean;
   } | null>(null);
   const [confirmSkip, setConfirmSkip] = useState<{
     progressId: string;
@@ -239,13 +241,19 @@ export default function ScanPage() {
       return;
     }
 
-    setMessage({
-      type: "success",
-      text:
-        action === "start"
-          ? `Rozpoczęto: ${data.stepName}`
-          : `Ukończono: ${data.stepName}`,
-    });
+    if (action === "complete") {
+      setMessage({
+        type: "success",
+        text: `Ukończono: ${data.stepName}`,
+        nextStep: data.nextStep ?? null,
+        allDone: data.allDone ?? false,
+      });
+    } else {
+      setMessage({
+        type: "success",
+        text: `Rozpoczęto: ${data.stepName}`,
+      });
+    }
 
     if (scannedOrder) {
       handleQrScanned(`/orders/${scannedOrder.orderId}`);
@@ -335,15 +343,53 @@ export default function ScanPage() {
       {/* Komunikat */}
       {message && (
         <div
-          className={`mb-4 rounded-lg border px-4 py-3 text-[13px] ${
+          className={`mb-4 rounded-lg border ${
             message.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-emerald-200 bg-emerald-50"
               : message.type === "warning"
-                ? "border-amber-200 bg-amber-50 text-amber-700"
-                : "border-red-200 bg-red-50 text-red-700"
+                ? "border-amber-200 bg-amber-50"
+                : "border-red-200 bg-red-50"
           }`}
         >
-          {message.text}
+          <div
+            className={`px-4 py-3 text-[13px] ${
+              message.type === "success"
+                ? "text-emerald-700"
+                : message.type === "warning"
+                  ? "text-amber-700"
+                  : "text-red-700"
+            }`}
+          >
+            {message.text}
+          </div>
+
+          {/* Kolejny krok — po zakończeniu etapu */}
+          {message.type === "success" && message.allDone && (
+            <div className="border-t border-emerald-200 bg-emerald-100/50 px-4 py-4 text-center">
+              <p className="text-[15px] font-semibold text-emerald-800">
+                Wszystkie etapy ukończone!
+              </p>
+              <p className="mt-1 text-[13px] text-emerald-600">
+                Przekaż do pakowania i wysyłki
+              </p>
+            </div>
+          )}
+
+          {message.type === "success" && message.nextStep && !message.allDone && (
+            <div className="border-t border-emerald-200 bg-white px-4 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Kolejny krok
+              </p>
+              <p className="mt-1 text-[16px] font-semibold text-zinc-900">
+                {message.nextStep.name}
+              </p>
+              {message.nextStep.group && (
+                <p className="mt-0.5 text-[13px] text-zinc-500">
+                  Stanowisko: <span className="font-medium text-zinc-700">{message.nextStep.group}</span>
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

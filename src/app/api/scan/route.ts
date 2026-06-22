@@ -237,12 +237,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("[SCAN] COMPLETED: %s, allDone=%s", stepName, allDone);
+    // Pobierz info o nastepnym kroku (jesli nie wszystko done)
+    let nextStep: { name: string; group: string | null } | null = null;
+    if (!allDone) {
+      const { data: next } = await supabase
+        .from("order_item_progress")
+        .select("step:workflow_steps(name, machine_group:machine_groups(name))")
+        .eq("order_item_id", progress.order_item_id)
+        .eq("step_order", progress.step_order + 1)
+        .maybeSingle();
+
+      const stepData = next?.step as unknown as { name: string; machine_group: { name: string } | null } | null;
+      if (stepData) {
+        nextStep = {
+          name: stepData.name,
+          group: stepData.machine_group?.name ?? null,
+        };
+      }
+    }
+
+    console.log("[SCAN] COMPLETED: %s, allDone=%s, nextStep=%j", stepName, allDone, nextStep);
     return NextResponse.json({
       ok: true,
       action: "completed",
       stepName,
       allDone,
+      nextStep,
     });
   }
 
