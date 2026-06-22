@@ -69,7 +69,7 @@ async function validateViaPython(
     method: "POST",
     body: formData,
     headers,
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(30000),
   });
 
   if (!res.ok) {
