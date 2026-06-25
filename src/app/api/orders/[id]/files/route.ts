@@ -68,9 +68,24 @@ export async function POST(
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  // Preflight — walidacja pliku (DPI, wymiary, profil)
+  // Pobierz docelowe wymiary produktu (jeśli pozycja ma produkt)
+  let targetWidth: number | null = null;
+  let targetHeight: number | null = null;
+
+  if (orderItemId) {
+    const { data: itemData } = await supabase
+      .from("order_items")
+      .select("product:products(width_mm, height_mm)")
+      .eq("id", orderItemId)
+      .maybeSingle();
+    const prod = itemData?.product as unknown as { width_mm: number | null; height_mm: number | null } | null;
+    targetWidth = prod?.width_mm ? Number(prod.width_mm) : null;
+    targetHeight = prod?.height_mm ? Number(prod.height_mm) : null;
+  }
+
+  // Preflight — walidacja pliku (DPI, wymiary, profil, proporcje)
   const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const preflight = await validateFile(fileBuffer, file.type, file.name);
+  const preflight = await validateFile(fileBuffer, file.type, file.name, targetWidth, targetHeight);
 
   // Zapisz rekord w tabeli order_files z wynikiem preflight
   const { data: record, error: dbError } = await supabase

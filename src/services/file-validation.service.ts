@@ -32,13 +32,15 @@ const PT_TO_MM = 0.3528;
 export async function validateFile(
   buffer: Buffer,
   mimeType: string,
-  fileName?: string
+  fileName?: string,
+  targetWidth?: number | null,
+  targetHeight?: number | null,
 ): Promise<PreflightResult> {
   const serviceUrl = process.env.PREFLIGHT_SERVICE_URL;
 
   if (serviceUrl) {
     try {
-      const result = await validateViaPython(serviceUrl, buffer, fileName ?? "file");
+      const result = await validateViaPython(serviceUrl, buffer, fileName ?? "file", targetWidth, targetHeight);
       if (result) return result;
     } catch (err) {
       console.warn("[PREFLIGHT] Python service error, falling back to JS:", err);
@@ -54,9 +56,15 @@ export async function validateFile(
 async function validateViaPython(
   serviceUrl: string,
   buffer: Buffer,
-  fileName: string
+  fileName: string,
+  targetWidth?: number | null,
+  targetHeight?: number | null,
 ): Promise<PreflightResult | null> {
-  const url = `${serviceUrl}/validate`;
+  let url = `${serviceUrl}/validate`;
+  const params = new URLSearchParams();
+  if (targetWidth) params.set("target_width_mm", String(targetWidth));
+  if (targetHeight) params.set("target_height_mm", String(targetHeight));
+  if (params.toString()) url += `?${params.toString()}`;
   const secret = process.env.PREFLIGHT_SECRET;
 
   const formData = new FormData();
