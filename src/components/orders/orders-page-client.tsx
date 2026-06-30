@@ -214,6 +214,7 @@ export function OrdersPageClient({
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>}
                 <th onClick={() => toggleSort("status")} className="cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Status {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}</th>
                 {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 lg:table-cell">Płatność</th>}
+                {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 lg:table-cell">Termin</th>}
                 <th onClick={() => toggleSort("date")} className="hidden cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 sm:table-cell">Data {sortBy === "date" ? (sortAsc ? "↑" : "↓") : ""}</th>
               </tr>
             </thead>
@@ -270,6 +271,22 @@ export function OrdersPageClient({
                           : order.payment_status === "cod"
                             ? "Za pobraniem"
                             : "Oczekuje"}
+                      </td>
+                    )}
+                    {!isClient && (
+                      <td className="hidden px-4 py-3 text-[13px] lg:table-cell">
+                        {order.deadline ? (() => {
+                          const dl = new Date(order.deadline);
+                          const isOverdue = dl < now;
+                          const isUrgent = !isOverdue && dl < in24h;
+                          return (
+                            <span className={`font-medium ${isOverdue ? "text-red-600" : isUrgent ? "text-amber-600" : "text-zinc-600"}`}>
+                              {dl.toLocaleDateString("pl-PL")}
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-zinc-300">—</span>
+                        )}
                       </td>
                     )}
                     <td className="hidden px-4 py-3 text-[13px] text-zinc-500 sm:table-cell">
