@@ -26,6 +26,7 @@ export interface OrderInput {
   paymentStatus: "pending" | "paid" | "cod";
   deadline?: Date;
   isPriority?: boolean;
+  deliveryType?: "shipping" | "pickup";
   items: OrderItemInput[];
   notes?: string;
 }

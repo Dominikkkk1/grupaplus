@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       paymentStatus: body.paymentStatus || "pending",
       deadline: body.deadline ? new Date(body.deadline) : undefined,
       isPriority: body.isPriority ?? false,
+      deliveryType: body.deliveryType ?? "shipping",
       items: body.items,
       notes: body.notes,
     });

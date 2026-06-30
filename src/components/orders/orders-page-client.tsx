@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, Package, Star, MessageSquare } from "lucide-react";
+import { Plus, Search, Package, Star, MessageSquare, Store } from "lucide-react";
 import { NewOrderForm } from "./new-order-form";
 import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
 
@@ -22,6 +22,7 @@ export interface Order {
   payment_status: string;
   deadline: string | null;
   is_priority: boolean;
+  delivery_type: string;
   notes: string | null;
   created_at: string;
   contact: { full_name: string } | null;
@@ -255,7 +256,12 @@ export function OrdersPageClient({
                     )}
                     {!isClient && (
                       <td className="px-4 py-3 text-[13px] text-zinc-900">
-                        {order.company?.name ?? order.contact?.full_name ?? "\u2014"}
+                        <span className="flex items-center gap-1.5">
+                          {order.company?.name ?? order.contact?.full_name ?? "\u2014"}
+                          {order.delivery_type === "pickup" && (
+                            <Store size={12} className="flex-shrink-0 text-emerald-500" />
+                          )}
+                        </span>
                       </td>
                     )}
                     <td className="px-4 py-3">

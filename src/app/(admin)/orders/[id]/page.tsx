@@ -18,6 +18,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
+import { ItemWorkflowBuilder } from "@/components/orders/item-workflow-builder";
 import { FileUpload } from "@/components/orders/file-upload";
 import { OrderActions } from "@/components/orders/order-actions";
 import { DeleteOrderButton } from "@/components/orders/delete-order-button";
@@ -98,6 +99,13 @@ export default async function OrderDetailPage({
   const files = filesRes.data ?? [];
   const complaints = complaintsRes.data ?? [];
   const teamUsers = usersRes.data ?? [];
+
+  // Workflow steps — do buildera recznego workflow
+  const { data: workflowStepsData } = await supabase
+    .from("workflow_steps")
+    .select("id, name, color")
+    .order("name");
+  const allWorkflowSteps = (workflowStepsData ?? []) as { id: string; name: string; color: string }[];
 
   const status = STATUS_CONFIG[order.status] ?? {
     label: order.status,
@@ -223,9 +231,11 @@ export default async function OrderDetailPage({
                         steps={progress}
                       />
                     ) : (
-                      <div className="px-4 py-6 text-center text-[13px] text-zinc-400">
-                        Brak przypisanego workflow (zlecenie bez produktu)
-                      </div>
+                      <ItemWorkflowBuilder
+                        orderId={id}
+                        orderItemId={item.id}
+                        allSteps={allWorkflowSteps}
+                      />
                     )
                   )}
 
@@ -316,6 +326,13 @@ export default async function OrderDetailPage({
                     : order.payment_status === "cod"
                       ? "Za pobraniem"
                       : "Oczekuje"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Odbiór</span>
+                <span className={`font-medium ${order.delivery_type === "pickup" ? "text-emerald-700" : "text-zinc-900"}`}>
+                  {order.delivery_type === "pickup" ? "Odbiór osobisty" : "Wysyłka"}
                 </span>
               </div>
 

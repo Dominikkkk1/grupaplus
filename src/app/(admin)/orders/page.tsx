@@ -30,6 +30,7 @@ export default async function OrdersPage() {
       payment_status,
       deadline,
       is_priority,
+      delivery_type,
       notes,
       created_at,
       contact:contacts(full_name),

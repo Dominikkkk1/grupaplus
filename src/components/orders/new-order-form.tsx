@@ -96,6 +96,7 @@ export function NewOrderForm({
   const [source, setSource] = useState<string>("stacjonarne");
   const [paymentStatus, setPaymentStatus] = useState<string>("cod");
   const [isPriority, setIsPriority] = useState(false);
+  const [deliveryType, setDeliveryType] = useState<string>("shipping");
   const [deadline, setDeadline] = useState("");
   const [isBlacklisted, setIsBlacklisted] = useState(false);
   const [notes, setNotes] = useState("");
@@ -182,6 +183,7 @@ export function NewOrderForm({
         nip: nip || undefined,
         paymentStatus,
         isPriority,
+        deliveryType,
         deadline: deadline || undefined,
         notes: notes || undefined,
         items: orderItems,
@@ -336,8 +338,21 @@ export function NewOrderForm({
             </div>
           )}
 
-          {/* Priorytet + Deadline */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Delivery + Deadline + Priorytet */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
+                Odbiór
+              </label>
+              <select
+                value={deliveryType}
+                onChange={(e) => setDeliveryType(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              >
+                <option value="shipping">Wysyłka</option>
+                <option value="pickup">Odbiór osobisty</option>
+              </select>
+            </div>
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
                 Termin realizacji

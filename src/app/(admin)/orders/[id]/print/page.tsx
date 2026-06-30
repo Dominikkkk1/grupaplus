@@ -9,6 +9,7 @@ interface OrderData {
   order_number: string;
   status: string;
   payment_status: string;
+  delivery_type: string;
   shipping_method: string | null;
   total_price: number | null;
   notes: string | null;
@@ -42,7 +43,7 @@ export default function PrintPage() {
       supabase
         .from("orders")
         .select(
-          "order_number, status, payment_status, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
+          "order_number, status, payment_status, delivery_type, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
         )
         .eq("id", id)
         .single(),
@@ -136,6 +137,9 @@ export default function PrintPage() {
                 Termin: {new Date(order.deadline).toLocaleDateString("pl-PL")}
               </span>
             )}
+            <span style={{ fontWeight: "bold", color: order.delivery_type === "pickup" ? "#059669" : "#52525b" }}>
+              {order.delivery_type === "pickup" ? "ODBIÓR OSOBISTY" : "WYSYŁKA"}
+            </span>
           </div>
 
           <h2 style={{ fontSize: "0.9rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em", color: "#71717a", marginBottom: "0.75rem" }}>
