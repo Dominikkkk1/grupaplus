@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, UserPlus } from "lucide-react";
+import { AlertTriangle, UserPlus, Star } from "lucide-react";
 import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 import { ComplaintForm } from "./complaint-form";
 
@@ -28,6 +28,7 @@ interface OrderItem {
 export function OrderActions({
   orderId,
   currentStatus,
+  isPriority: initialPriority,
   assignedTo,
   teamUsers,
   items,
@@ -35,6 +36,7 @@ export function OrderActions({
 }: {
   orderId: string;
   currentStatus: string;
+  isPriority: boolean;
   assignedTo: string | null;
   teamUsers: { id: string; full_name: string; role: string }[];
   items: OrderItem[];
@@ -43,6 +45,8 @@ export function OrderActions({
   const router = useRouter();
   const [statusLoading, setStatusLoading] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
+  const [priorityFlag, setPriorityFlag] = useState(initialPriority);
+  const [priorityLoading, setPriorityLoading] = useState(false);
   const [showComplaintForm, setShowComplaintForm] = useState(false);
 
   const statusConfig = STATUS_CONFIG[currentStatus] ?? {
@@ -70,6 +74,19 @@ export function OrderActions({
       body: JSON.stringify({ assignedTo: userId }),
     });
     setAssignLoading(false);
+    router.refresh();
+  }
+
+  async function togglePriority() {
+    setPriorityLoading(true);
+    const newVal = !priorityFlag;
+    await fetch(`/api/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPriority: newVal }),
+    });
+    setPriorityFlag(newVal);
+    setPriorityLoading(false);
     router.refresh();
   }
 
@@ -137,6 +154,20 @@ export function OrderActions({
             ))}
           </select>
         </div>
+
+        {/* Toggle priorytetu */}
+        <button
+          onClick={togglePriority}
+          disabled={priorityLoading}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1 text-[12px] font-medium transition-colors ${
+            priorityFlag
+              ? "border-amber-300 bg-amber-50 text-amber-700"
+              : "border-zinc-200 text-zinc-500 hover:border-zinc-300"
+          }`}
+        >
+          <Star size={12} className={priorityFlag ? "fill-amber-400 text-amber-400" : ""} />
+          {priorityFlag ? "Priorytet" : "Nadaj priorytet"}
+        </button>
 
         {/* Przycisk zgłoszenia */}
         <button

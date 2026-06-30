@@ -78,6 +78,11 @@ export async function PATCH(
     updateData.assigned_to = body.assignedTo || null;
   }
 
+  // Priorytet
+  if (body.isPriority !== undefined) {
+    updateData.is_priority = !!body.isPriority;
+  }
+
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json(
       { error: "Brak danych do aktualizacji" },
