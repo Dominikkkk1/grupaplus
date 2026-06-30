@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 interface OrderData {
   order_number: string;
+  source: string;
   status: string;
   payment_status: string;
   delivery_type: string;
@@ -20,11 +21,20 @@ interface OrderData {
 }
 
 interface OrderItem {
+  id: string;
   description: string;
   quantity: number;
   unit_price: number | null;
   product: { name: string; sku: string | null } | null;
   progress: { step_order: number; step: { name: string } }[];
+}
+
+interface OrderFile {
+  file_name: string;
+  file_path: string;
+  mime_type: string;
+  preflight_status: string | null;
+  order_item_id: string | null;
 }
 
 export default function PrintPage() {
@@ -33,31 +43,57 @@ export default function PrintPage() {
 
   const [order, setOrder] = useState<OrderData | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
+  const [files, setFiles] = useState<OrderFile[]>([]);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     const supabase = createClient();
 
-    const [orderRes, itemsRes] = await Promise.all([
+    const [orderRes, itemsRes, filesRes] = await Promise.all([
       supabase
         .from("orders")
         .select(
-          "order_number, status, payment_status, delivery_type, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
+          "order_number, source, status, payment_status, delivery_type, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
         )
         .eq("id", id)
         .single(),
       supabase
         .from("order_items")
         .select(
-          "description, quantity, unit_price, product:products(name, sku), progress:order_item_progress(step_order, step:workflow_steps(name))"
+          "id, description, quantity, unit_price, product:products(name, sku), progress:order_item_progress(step_order, step:workflow_steps(name))"
         )
         .eq("order_id", id)
         .order("created_at"),
+      supabase
+        .from("order_files")
+        .select("file_name, file_path, mime_type, preflight_status, order_item_id")
+        .eq("order_id", id),
     ]);
 
     setOrder(orderRes.data as unknown as OrderData);
-    setItems((itemsRes.data ?? []) as unknown as OrderItem[]);
+    const fetchedItems = (itemsRes.data ?? []) as unknown as OrderItem[];
+    setItems(fetchedItems);
+    const fetchedFiles = (filesRes.data ?? []) as unknown as OrderFile[];
+    setFiles(fetchedFiles);
+
+    // Generuj signed URLs dla miniaturek (tylko obrazy)
+    const thumbMap: Record<string, string> = {};
+    for (const item of fetchedItems) {
+      const itemFile = fetchedFiles.find(
+        (f) => f.order_item_id === item.id && f.mime_type.startsWith("image/")
+      );
+      if (itemFile) {
+        const { data: signed } = await supabase.storage
+          .from("order-files")
+          .createSignedUrl(itemFile.file_path, 300);
+        if (signed?.signedUrl) {
+          thumbMap[item.id] = signed.signedUrl;
+        }
+      }
+    }
+    setThumbnails(thumbMap);
 
     // Generuj QR kod
     const url = `${window.location.origin}/orders/${id}`;
@@ -89,6 +125,8 @@ export default function PrintPage() {
       : order.payment_status === "cod"
         ? "Za pobraniem"
         : "Oczekuje";
+
+  const isAllegro = order.source === "allegro";
 
   return (
     <>
@@ -130,9 +168,9 @@ export default function PrintPage() {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: "2rem", fontSize: "0.85rem", color: "#52525b", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", gap: "2rem", fontSize: "0.85rem", color: "#52525b", marginBottom: "1rem", flexWrap: "wrap" }}>
             <span>Data: {new Date(order.created_at).toLocaleDateString("pl-PL")}</span>
-            {order.deadline && (
+            {order.deadline && !isAllegro && (
               <span style={{ fontWeight: "bold", color: "#dc2626" }}>
                 Termin: {new Date(order.deadline).toLocaleDateString("pl-PL")}
               </span>
@@ -142,6 +180,29 @@ export default function PrintPage() {
             </span>
           </div>
 
+          {/* Termin Allegro — prominentny box */}
+          {isAllegro && order.deadline && (
+            <div style={{
+              marginBottom: "1rem",
+              padding: "0.5rem 0.75rem",
+              border: "2px solid #dc2626",
+              borderRadius: "6px",
+              background: "#fef2f2",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              WebkitPrintColorAdjust: "exact",
+              printColorAdjust: "exact",
+            } as React.CSSProperties}>
+              <span style={{ fontWeight: "bold", color: "#dc2626", fontSize: "0.95rem" }}>
+                TERMIN ALLEGRO
+              </span>
+              <span style={{ fontWeight: "bold", color: "#dc2626", fontSize: "1.1rem", fontFamily: "monospace" }}>
+                {new Date(order.deadline).toLocaleDateString("pl-PL")}
+              </span>
+            </div>
+          )}
+
           <h2 style={{ fontSize: "0.9rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em", color: "#71717a", marginBottom: "0.75rem" }}>
             Pozycje
           </h2>
@@ -150,21 +211,67 @@ export default function PrintPage() {
             const steps = [...(item.progress ?? [])].sort(
               (a, b) => a.step_order - b.step_order
             );
+            const thumbUrl = thumbnails[item.id];
+            const itemFiles = files.filter((f) => f.order_item_id === item.id);
+            const firstFile = itemFiles[0];
+            const hasPdf = itemFiles.some((f) => f.mime_type === "application/pdf");
+            const preflightStatus = firstFile?.preflight_status;
+
             return (
               <div key={idx} style={{ marginBottom: "1rem", padding: "0.75rem", border: "1px solid #e4e4e7", borderRadius: "6px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                  <strong style={{ fontSize: "0.9rem" }}>
-                    {idx + 1}. {item.product?.name ?? item.description}
-                  </strong>
-                  <span style={{ fontSize: "0.85rem", color: "#71717a" }}>
-                    {item.quantity} szt.
-                  </span>
+                <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                  {/* Miniaturka */}
+                  {thumbUrl ? (
+                    <img
+                      src={thumbUrl}
+                      alt=""
+                      style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "4px", border: "1px solid #e4e4e7", flexShrink: 0 }}
+                    />
+                  ) : hasPdf ? (
+                    <div style={{
+                      width: "60px", height: "60px", borderRadius: "4px", border: "1px solid #e4e4e7",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "#fafafa", flexShrink: 0, fontSize: "0.65rem", color: "#a1a1aa", fontWeight: "bold",
+                    }}>
+                      PDF
+                    </div>
+                  ) : null}
+
+                  {/* Nazwa + ilosc + preflight */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <strong style={{ fontSize: "0.9rem" }}>
+                        {idx + 1}. {item.product?.name ?? item.description}
+                      </strong>
+                      <span style={{ fontSize: "0.85rem", color: "#71717a" }}>
+                        {item.quantity} szt.
+                      </span>
+                    </div>
+                    {item.product?.sku && (
+                      <p style={{ fontSize: "0.75rem", color: "#a1a1aa", fontFamily: "monospace", margin: "0.15rem 0" }}>
+                        SKU: {item.product.sku}
+                      </p>
+                    )}
+                    {/* Preflight badge */}
+                    {preflightStatus && preflightStatus !== "pending" && (
+                      <span style={{
+                        display: "inline-block",
+                        padding: "0.1rem 0.4rem",
+                        borderRadius: "3px",
+                        fontSize: "0.7rem",
+                        fontWeight: "bold",
+                        marginTop: "0.15rem",
+                        background: preflightStatus === "passed" ? "#dcfce7" : preflightStatus === "warning" ? "#fef9c3" : "#fee2e2",
+                        color: preflightStatus === "passed" ? "#166534" : preflightStatus === "warning" ? "#854d0e" : "#991b1b",
+                        WebkitPrintColorAdjust: "exact",
+                        printColorAdjust: "exact",
+                      } as React.CSSProperties}>
+                        {preflightStatus === "passed" ? "✓ Zweryfikowany" : preflightStatus === "warning" ? "⚠ Ostrzeżenia" : "✗ Błędy"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {item.product?.sku && (
-                  <p style={{ fontSize: "0.75rem", color: "#a1a1aa", fontFamily: "monospace", marginBottom: "0.5rem" }}>
-                    SKU: {item.product.sku}
-                  </p>
-                )}
+
                 {steps.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                     {steps.map((s, si) => (
