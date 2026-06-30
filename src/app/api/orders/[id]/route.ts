@@ -66,6 +66,17 @@ export async function PATCH(
 
     console.log("[ORDER PATCH] status: %s → %s", order.status, body.status);
     updateData.status = body.status;
+
+    // Tracking akceptacji
+    if (body.status === "awaiting_approval") {
+      updateData.sent_for_approval_at = new Date().toISOString();
+      updateData.approval_reminder_sent = false;
+    }
+    // Reset przy powrocie z awaiting_approval (odrzucenie → projektowanie od nowa)
+    if (order.status === "awaiting_approval" && body.status === "confirmed") {
+      updateData.sent_for_approval_at = null;
+      updateData.approval_reminder_sent = false;
+    }
   }
 
   // Tracking number

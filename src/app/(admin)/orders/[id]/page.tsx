@@ -153,6 +153,7 @@ export default async function OrderDetailPage({
           orderId={id}
           currentStatus={order.status}
           isPriority={order.is_priority ?? false}
+          sentForApprovalAt={order.sent_for_approval_at as string | null}
           assignedTo={order.assigned_to as string | null}
           teamUsers={(teamUsers ?? []) as unknown as { id: string; full_name: string; role: string }[]}
           items={(items ?? []).map((i) => ({

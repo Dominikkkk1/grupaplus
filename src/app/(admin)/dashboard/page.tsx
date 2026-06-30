@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   // Kafelki podsumowania
-  const [newTodayRes, inProductionRes, readyRes, overdueRes] = await Promise.all([
+  const [newTodayRes, inProductionRes, readyRes, overdueRes, awaitingApprovalRes] = await Promise.all([
     supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
@@ -29,6 +29,10 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .lt("deadline", new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString())
       .not("status", "in", "(shipped,delivered,cancelled)"),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "awaiting_approval"),
   ]);
 
   // Zamowienia wg zrodla (ostatnie 30 dni)
@@ -156,6 +160,7 @@ export default async function DashboardPage() {
           inProduction: inProductionRes.count ?? 0,
           ready: readyRes.count ?? 0,
           atRisk: overdueRes.count ?? 0,
+          awaitingApproval: awaitingApprovalRes.count ?? 0,
         }}
         sourceCounts={sourceCounts}
         operators={operators}

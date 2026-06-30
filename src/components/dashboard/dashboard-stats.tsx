@@ -6,6 +6,7 @@ import {
   Factory,
   PackageCheck,
   AlertTriangle,
+  Hourglass,
   Clock,
   Users,
   Wrench,
@@ -17,6 +18,7 @@ interface Props {
     inProduction: number;
     ready: number;
     atRisk: number;
+    awaitingApproval: number;
   };
   sourceCounts: Record<string, number>;
   operators: {
@@ -57,7 +59,7 @@ export function DashboardStats({
   return (
     <div className="space-y-6">
       {/* Kafelki podsumowania */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard
           icon={<Package size={18} className="text-blue-600" />}
           iconBg="bg-blue-50"
@@ -85,6 +87,13 @@ export function DashboardStats({
           value={summary.atRisk}
           label="Zagrożony termin"
           href="/orders?filter=at_risk"
+        />
+        <StatCard
+          icon={<Hourglass size={18} className="text-purple-600" />}
+          iconBg="bg-purple-50"
+          value={summary.awaitingApproval}
+          label="Oczekuje na akceptację"
+          href="/orders?filter=awaiting_approval"
         />
       </div>
 

@@ -6,6 +6,7 @@
 export const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   new: { label: "Nowe", color: "bg-blue-50 text-blue-700 border-blue-200" },
   confirmed: { label: "Potwierdzone", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
+  awaiting_approval: { label: "Oczekuje na akceptację", color: "bg-purple-50 text-purple-700 border-purple-200" },
   in_production: { label: "W produkcji", color: "bg-amber-50 text-amber-700 border-amber-200" },
   ready: { label: "Gotowe", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   shipped: { label: "Wysłane", color: "bg-violet-50 text-violet-700 border-violet-200" },
@@ -22,6 +23,8 @@ export function getClientStatus(dbStatus: string): { label: string; color: strin
     case "new":
     case "confirmed":
       return { label: "Przyjęte do realizacji", color: "bg-blue-50 text-blue-700 border-blue-200" };
+    case "awaiting_approval":
+      return { label: "Oczekuje na akceptację", color: "bg-purple-50 text-purple-700 border-purple-200" };
     case "in_production":
     case "ready":
       return { label: "W realizacji", color: "bg-amber-50 text-amber-700 border-amber-200" };
@@ -41,7 +44,8 @@ export function getClientStatus(dbStatus: string): { label: string; color: strin
  */
 export const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   new: ["confirmed", "cancelled"],
-  confirmed: ["in_production", "new", "cancelled"],
+  confirmed: ["awaiting_approval", "in_production", "new", "cancelled"],
+  awaiting_approval: ["confirmed", "in_production", "cancelled"],
   in_production: ["ready", "cancelled"],
   ready: ["shipped", "cancelled"],
   shipped: ["delivered"],

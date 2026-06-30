@@ -102,6 +102,39 @@ export async function GET(request: NextRequest) {
     await sendEmail({ to: email, subject, html });
   }
 
+  // Auto-notify: awaiting_approval > 3 dni
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const { data: staleApprovals } = await supabase
+    .from("orders")
+    .select("id, order_number, sent_for_approval_at, contact:contacts(full_name)")
+    .eq("status", "awaiting_approval")
+    .eq("approval_reminder_sent", false)
+    .lt("sent_for_approval_at", threeDaysAgo.toISOString());
+
+  if (staleApprovals && staleApprovals.length > 0) {
+    console.log("[CRON DEADLINES] stale approvals: %d", staleApprovals.length);
+
+    // Dodaj do digest emaila (wyslij osobny email o akceptacjach)
+    const approvalList = staleApprovals.map((o) => {
+      const days = Math.floor((now.getTime() - new Date(o.sent_for_approval_at!).getTime()) / (1000 * 60 * 60 * 24));
+      const customer = (o.contact as unknown as { full_name: string } | null)?.full_name ?? "—";
+      return `${o.order_number} — ${customer} (${days} dni)`;
+    }).join("<br>");
+
+    for (const email of adminEmails) {
+      await sendEmail({
+        to: email,
+        subject: `Zamówienia oczekujące na akceptację (${staleApprovals.length})`,
+        html: `<h2>Zamówienia oczekujące na akceptację klienta powyżej 3 dni</h2><p>${approvalList}</p><p>Prosimy o kontakt z klientami.</p>`,
+      });
+    }
+
+    await supabase
+      .from("orders")
+      .update({ approval_reminder_sent: true })
+      .in("id", staleApprovals.map((o) => o.id));
+  }
+
   // Auto-delivered: shipped > 7 dni → delivered
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const { count: deliveredCount } = await supabase
@@ -136,5 +169,6 @@ export async function GET(request: NextRequest) {
     notified: adminEmails.length,
     autoDelivered: deliveredCount ?? 0,
     autoClosedComplaints: closedComplaints ?? 0,
+    staleApprovals: staleApprovals?.length ?? 0,
   });
 }

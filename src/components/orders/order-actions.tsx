@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, UserPlus, Star } from "lucide-react";
+import { AlertTriangle, UserPlus, Star, Hourglass } from "lucide-react";
 import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 import { ComplaintForm } from "./complaint-form";
 
@@ -29,6 +29,7 @@ export function OrderActions({
   orderId,
   currentStatus,
   isPriority: initialPriority,
+  sentForApprovalAt,
   assignedTo,
   teamUsers,
   items,
@@ -37,6 +38,7 @@ export function OrderActions({
   orderId: string;
   currentStatus: string;
   isPriority: boolean;
+  sentForApprovalAt: string | null;
   assignedTo: string | null;
   teamUsers: { id: string; full_name: string; role: string }[];
   items: OrderItem[];
@@ -117,6 +119,16 @@ export function OrderActions({
           >
             {statusConfig.label}
           </span>
+          {currentStatus === "awaiting_approval" && sentForApprovalAt && (() => {
+            const days = Math.floor((Date.now() - new Date(sentForApprovalAt).getTime()) / (1000 * 60 * 60 * 24));
+            const isOverdue = days >= 3;
+            return (
+              <span className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${isOverdue ? "border-red-200 bg-red-50 text-red-700" : "border-purple-200 bg-purple-50 text-purple-700"}`}>
+                <Hourglass size={11} />
+                {days === 0 ? "Wysłano dzisiaj" : `Oczekuje ${days} ${days === 1 ? "dzień" : "dni"}`}
+              </span>
+            );
+          })()}
           {allowedNext.length > 0 && (
             <select
               disabled={statusLoading}

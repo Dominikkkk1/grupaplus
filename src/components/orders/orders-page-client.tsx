@@ -58,7 +58,7 @@ export function OrdersPageClient({
 }) {
   const isClient = userRole === "client";
   const searchParams = useSearchParams();
-  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "in_production", "ready", "finished"];
+  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "awaiting_approval", "in_production", "ready", "finished"];
   const rawFilter = searchParams.get("filter") || "active";
   const initialFilter = VALID_FILTERS.includes(rawFilter) ? rawFilter : "active";
   const [showForm, setShowForm] = useState(false);
@@ -68,7 +68,7 @@ export function OrdersPageClient({
   const [sortAsc, setSortAsc] = useState(false);
 
   // Statusy aktywne vs zakończone
-  const ACTIVE_STATUSES = ["new", "confirmed", "in_production", "ready"];
+  const ACTIVE_STATUSES = ["new", "confirmed", "awaiting_approval", "in_production", "ready"];
   const FINISHED_STATUSES = ["shipped", "delivered", "cancelled"];
 
   // Daty do filtrow
@@ -177,6 +177,7 @@ export function OrdersPageClient({
             { key: "at_risk", label: "Zagrożony termin", count: atRiskCount },
             { key: "new", label: "Nowe", count: statusCounts["new"] ?? 0 },
             { key: "confirmed", label: "Potwierdzone", count: statusCounts["confirmed"] ?? 0 },
+            { key: "awaiting_approval", label: "Oczekuje na akceptację", count: statusCounts["awaiting_approval"] ?? 0 },
             { key: "in_production", label: "W produkcji", count: statusCounts["in_production"] ?? 0 },
             { key: "ready", label: "Gotowe", count: statusCounts["ready"] ?? 0 },
             { key: "finished", label: "Zakończone", count: finishedCount },

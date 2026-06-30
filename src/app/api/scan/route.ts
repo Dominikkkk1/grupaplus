@@ -162,6 +162,10 @@ export async function POST(request: NextRequest) {
           .update({ status: "in_production" })
           .eq("id", scannedItem.order_id);
       }
+      // NIE auto-advance z awaiting_approval — projekt musi byc zaakceptowany recznie
+      if (scannedOrder?.status === "awaiting_approval") {
+        console.log("[SCAN] BLOCKED: order %s is awaiting_approval — scan allowed but no auto-advance", scannedItem.order_id);
+      }
     }
 
     console.log("[SCAN] STARTED: %s (progressId=%s, machine=%s)", stepName, progressId, machineId || "brak");
