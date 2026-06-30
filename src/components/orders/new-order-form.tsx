@@ -266,6 +266,7 @@ export function NewOrderForm({
               onChange={(e) => {
                 setCustomerName(e.target.value);
                 setShowSuggestions(true);
+                setIsBlacklisted(false);
               }}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}

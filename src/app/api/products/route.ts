@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       category: category || "maly_format",
       base_price: basePrice ?? null,
       description: description?.trim() || null,
-      lead_time_days: leadTimeDays ?? null,
+      lead_time_days: leadTimeDays && leadTimeDays > 0 ? leadTimeDays : null,
     })
     .select("id, name")
     .single();

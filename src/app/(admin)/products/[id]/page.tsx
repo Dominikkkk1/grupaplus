@@ -157,6 +157,9 @@ export default function ProductDetailPage() {
                 {product.base_price
                   ? ` · ${product.base_price} zl`
                   : ""}
+                {product.lead_time_days
+                  ? ` · ${product.lead_time_days} dni`
+                  : ""}
               </p>
             </div>
           </div>

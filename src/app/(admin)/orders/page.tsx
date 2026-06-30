@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { OrdersPageClient, type Order } from "@/components/orders/orders-page-client";
 
@@ -66,7 +67,7 @@ export default async function OrdersPage() {
   }
 
   return (
-    <div>
+    <Suspense>
       <OrdersPageClient
         products={products}
         orders={(orders ?? []) as unknown as Order[]}
@@ -74,6 +75,6 @@ export default async function OrdersPage() {
         companies={companies}
         userRole={userRole}
       />
-    </div>
+    </Suspense>
   );
 }
