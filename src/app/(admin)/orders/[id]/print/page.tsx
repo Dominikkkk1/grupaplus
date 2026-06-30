@@ -187,7 +187,7 @@ export default function PrintPage() {
           })}
 
           {order.notes && (
-            <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", background: "#fef3c7", border: "2px solid #f59e0b", borderRadius: "4px", fontSize: "0.95rem", color: "#78350f" }}>
+            <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", background: "#fef3c7", border: "2px solid #f59e0b", borderRadius: "4px", fontSize: "0.95rem", color: "#78350f", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" } as React.CSSProperties}>
               <strong>UWAGI:</strong> {order.notes}
             </div>
           )}

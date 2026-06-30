@@ -35,7 +35,7 @@ export async function PATCH(
   if (body.description !== undefined)
     updateData.description = body.description?.trim() || null;
   if (body.isActive !== undefined) updateData.is_active = body.isActive;
-  if (body.leadTimeDays !== undefined) updateData.lead_time_days = body.leadTimeDays;
+  if (body.leadTimeDays !== undefined) updateData.lead_time_days = body.leadTimeDays && body.leadTimeDays > 0 ? body.leadTimeDays : null;
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json(

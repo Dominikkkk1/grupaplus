@@ -58,7 +58,9 @@ export function OrdersPageClient({
 }) {
   const isClient = userRole === "client";
   const searchParams = useSearchParams();
-  const initialFilter = searchParams.get("filter") || "active";
+  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new", "confirmed", "in_production", "ready", "finished"];
+  const rawFilter = searchParams.get("filter") || "active";
+  const initialFilter = VALID_FILTERS.includes(rawFilter) ? rawFilter : "active";
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);

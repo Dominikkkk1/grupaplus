@@ -109,7 +109,18 @@ export function NewOrderForm({
 
   function removeItem(index: number) {
     if (items.length === 1) return;
-    setItems(items.filter((_, i) => i !== index));
+    const remaining = items.filter((_, i) => i !== index);
+    setItems(remaining);
+    // Przelicz deadline z remaining items
+    const maxLeadTime = remaining.reduce((max, item) => {
+      const p = products.find((pr) => pr.id === item.productId);
+      return Math.max(max, p?.lead_time_days ?? 0);
+    }, 0);
+    if (maxLeadTime > 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + maxLeadTime);
+      setDeadline(d.toISOString().split("T")[0]);
+    }
   }
 
   function updateItem(index: number, field: string, value: string | number) {
