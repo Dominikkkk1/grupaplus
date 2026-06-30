@@ -11,6 +11,7 @@ interface ContactData {
   email: string | null;
   phone: string | null;
   is_primary: boolean;
+  is_blacklisted: boolean;
 }
 
 export function ContactForm({
@@ -31,6 +32,7 @@ export function ContactForm({
   const [email, setEmail] = useState(contact?.email ?? "");
   const [phone, setPhone] = useState(contact?.phone ?? "");
   const [isPrimary, setIsPrimary] = useState(contact?.is_primary ?? false);
+  const [isBlacklistedFlag, setIsBlacklistedFlag] = useState(contact?.is_blacklisted ?? false);
 
   const handleEsc = useCallback(
     (e: KeyboardEvent) => {
@@ -61,6 +63,7 @@ export function ContactForm({
         phone,
         companyId,
         isPrimary,
+        isBlacklisted: isBlacklistedFlag,
       }),
     });
 
@@ -138,15 +141,26 @@ export function ContactForm({
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-[13px] text-zinc-700">
-            <input
-              type="checkbox"
-              checked={isPrimary}
-              onChange={(e) => setIsPrimary(e.target.checked)}
-              className="rounded border-zinc-300"
-            />
-            Glowna osoba kontaktowa
-          </label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-[13px] text-zinc-700">
+              <input
+                type="checkbox"
+                checked={isPrimary}
+                onChange={(e) => setIsPrimary(e.target.checked)}
+                className="rounded border-zinc-300"
+              />
+              Glowna osoba kontaktowa
+            </label>
+            <label className="flex items-center gap-2 text-[13px] text-red-600">
+              <input
+                type="checkbox"
+                checked={isBlacklistedFlag}
+                onChange={(e) => setIsBlacklistedFlag(e.target.checked)}
+                className="rounded border-red-300"
+              />
+              Klient problematyczny (czarna lista)
+            </label>
+          </div>
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">

@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       shippingMethod: body.shippingMethod,
       paymentStatus: body.paymentStatus || "pending",
       deadline: body.deadline ? new Date(body.deadline) : undefined,
+      isPriority: body.isPriority ?? false,
       items: body.items,
       notes: body.notes,
     });

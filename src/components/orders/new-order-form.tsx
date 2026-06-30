@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Loader2, X, Star, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ProductOption {
   id: string;
   name: string;
   sku: string | null;
+  lead_time_days: number | null;
 }
 
 interface ContactOption {
@@ -17,6 +18,7 @@ interface ContactOption {
   email: string | null;
   phone: string | null;
   company_id: string | null;
+  is_blacklisted: boolean;
 }
 
 interface CompanyOption {
@@ -73,6 +75,7 @@ export function NewOrderForm({
     setCustomerName(contact.full_name);
     setCustomerEmail(contact.email ?? "");
     setCustomerPhone(contact.phone ?? "");
+    setIsBlacklisted(contact.is_blacklisted ?? false);
     setShowSuggestions(false);
     // Znajdz firme kontaktu
     if (contact.company_id) {
@@ -92,6 +95,9 @@ export function NewOrderForm({
   const [nip, setNip] = useState("");
   const [source, setSource] = useState<string>("stacjonarne");
   const [paymentStatus, setPaymentStatus] = useState<string>("cod");
+  const [isPriority, setIsPriority] = useState(false);
+  const [deadline, setDeadline] = useState("");
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState([
     { productId: "", description: "", quantity: 1 },
@@ -117,6 +123,19 @@ export function NewOrderForm({
       }
     }
     setItems(updated);
+
+    // Auto-fill deadline z max lead_time_days
+    if (field === "productId") {
+      const maxLeadTime = updated.reduce((max, item) => {
+        const p = products.find((pr) => pr.id === item.productId);
+        return Math.max(max, p?.lead_time_days ?? 0);
+      }, 0);
+      if (maxLeadTime > 0) {
+        const d = new Date();
+        d.setDate(d.getDate() + maxLeadTime);
+        setDeadline(d.toISOString().split("T")[0]);
+      }
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,6 +170,8 @@ export function NewOrderForm({
         customerPhone: customerPhone || undefined,
         nip: nip || undefined,
         paymentStatus,
+        isPriority,
+        deadline: deadline || undefined,
         notes: notes || undefined,
         items: orderItems,
       }),
@@ -268,6 +289,9 @@ export function NewOrderForm({
                       {s.type === "contact" ? "Kontakt" : "Firma"}
                     </span>
                     <span className="font-medium text-zinc-900">{s.label}</span>
+                    {s.type === "contact" && s.contact.is_blacklisted && (
+                      <span className="rounded bg-red-100 px-1 py-0.5 text-[10px] font-medium text-red-600">Czarna lista</span>
+                    )}
                     {s.sub && <span className="text-zinc-400">{s.sub}</span>}
                   </button>
                 ))}
@@ -290,6 +314,43 @@ export function NewOrderForm({
               placeholder="Telefon (opcjonalnie)"
               className="rounded-lg border border-zinc-300 px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
+          </div>
+
+          {/* Blacklist warning */}
+          {isBlacklisted && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
+              <AlertTriangle size={16} className="flex-shrink-0" />
+              <span><strong>Uwaga:</strong> Ten klient jest na czarnej liście!</span>
+            </div>
+          )}
+
+          {/* Priorytet + Deadline */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
+                Termin realizacji
+              </label>
+              <input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+            </div>
+            <div className="flex items-end pb-0.5">
+              <button
+                type="button"
+                onClick={() => setIsPriority(!isPriority)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors ${
+                  isPriority
+                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                    : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400"
+                }`}
+              >
+                <Star size={14} className={isPriority ? "fill-amber-400 text-amber-400" : ""} />
+                Priorytet
+              </button>
+            </div>
           </div>
 
           {/* Pozycje */}

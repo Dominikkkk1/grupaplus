@@ -13,6 +13,8 @@ import {
   CreditCard,
   FileText,
   Printer,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { FileUpload } from "@/components/orders/file-upload";
@@ -116,6 +118,9 @@ export default async function OrderDetailPage({
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            {order.is_priority && (
+              <Star size={18} className="fill-amber-400 text-amber-400" />
+            )}
             <h1 className="text-base font-semibold text-zinc-900 sm:text-lg">
               {order.order_number}
             </h1>
@@ -358,11 +363,12 @@ export default async function OrderDetailPage({
 
           {/* Uwagi */}
           {order.notes && (
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
+            <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 shadow-sm">
+              <h3 className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wider text-amber-700">
+                <MessageSquare size={14} />
                 Uwagi
               </h3>
-              <p className="text-[13px] text-zinc-700 whitespace-pre-wrap">
+              <p className="text-[14px] font-medium text-amber-900 whitespace-pre-wrap">
                 {order.notes}
               </p>
             </div>

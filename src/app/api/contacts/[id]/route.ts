@@ -40,6 +40,7 @@ export async function PATCH(
   if (body.companyId !== undefined)
     updateData.company_id = body.companyId || null;
   if (body.isPrimary !== undefined) updateData.is_primary = body.isPrimary;
+  if (body.isBlacklisted !== undefined) updateData.is_blacklisted = body.isBlacklisted;
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json(

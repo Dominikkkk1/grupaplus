@@ -12,6 +12,7 @@ interface ProductData {
   category: string;
   base_price: number | null;
   description: string | null;
+  lead_time_days: number | null;
 }
 
 export function ProductForm({
@@ -33,6 +34,7 @@ export function ProductForm({
     product?.base_price?.toString() ?? ""
   );
   const [description, setDescription] = useState(product?.description ?? "");
+  const [leadTimeDays, setLeadTimeDays] = useState(product?.lead_time_days?.toString() ?? "");
 
   const handleEsc = useCallback(
     (e: KeyboardEvent) => {
@@ -63,6 +65,7 @@ export function ProductForm({
         category,
         basePrice: basePrice ? parseFloat(basePrice) : null,
         description,
+        leadTimeDays: leadTimeDays ? parseInt(leadTimeDays) : null,
       }),
     });
 
@@ -156,6 +159,19 @@ export function ProductForm({
                 value={basePrice}
                 onChange={(e) => setBasePrice(e.target.value)}
                 placeholder="0.80"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
+                Czas realizacji (dni robocze)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={leadTimeDays}
+                onChange={(e) => setLeadTimeDays(e.target.value)}
+                placeholder="3"
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
               />
             </div>

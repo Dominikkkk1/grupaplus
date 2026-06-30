@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, sku, category, basePrice, description } = body;
+  const { name, sku, category, basePrice, description, leadTimeDays } = body;
 
   if (!name || !name.trim()) {
     return NextResponse.json(
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       category: category || "maly_format",
       base_price: basePrice ?? null,
       description: description?.trim() || null,
+      lead_time_days: leadTimeDays ?? null,
     })
     .select("id, name")
     .single();

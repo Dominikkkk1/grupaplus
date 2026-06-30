@@ -19,6 +19,7 @@ interface Contact {
   full_name: string;
   email: string | null;
   phone: string | null;
+  is_blacklisted: boolean;
 }
 
 export function CrmPageClient({
@@ -160,7 +161,12 @@ export function CrmPageClient({
                     className="border-b border-zinc-100 last:border-0 transition-colors hover:bg-zinc-50/50"
                   >
                     <td className="px-4 py-3 text-[13px] font-medium text-zinc-900">
-                      {contact.full_name}
+                      <span className="flex items-center gap-1.5">
+                        {contact.full_name}
+                        {contact.is_blacklisted && (
+                          <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Czarna lista</span>
+                        )}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-[13px] text-zinc-600">
                       {contact.email ?? "\u2014"}

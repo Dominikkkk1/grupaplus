@@ -187,8 +187,8 @@ export default function PrintPage() {
           })}
 
           {order.notes && (
-            <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", background: "#fafafa", border: "1px solid #e4e4e7", borderRadius: "4px", fontSize: "0.85rem", color: "#52525b" }}>
-              <strong>Uwagi:</strong> {order.notes}
+            <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", background: "#fef3c7", border: "2px solid #f59e0b", borderRadius: "4px", fontSize: "0.95rem", color: "#78350f" }}>
+              <strong>UWAGI:</strong> {order.notes}
             </div>
           )}
         </div>

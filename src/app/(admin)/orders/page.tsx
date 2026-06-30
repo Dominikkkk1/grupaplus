@@ -27,6 +27,9 @@ export default async function OrdersPage() {
       source,
       status,
       payment_status,
+      deadline,
+      is_priority,
+      notes,
       created_at,
       contact:contacts(full_name),
       company:companies(name)
@@ -35,20 +38,20 @@ export default async function OrdersPage() {
     .limit(200);
 
   // Dodatkowe dane tylko dla admin (klient nie potrzebuje)
-  let products: { id: string; name: string; sku: string | null }[] = [];
-  let contacts: { id: string; full_name: string; email: string | null; phone: string | null; company_id: string | null }[] = [];
+  let products: { id: string; name: string; sku: string | null; lead_time_days: number | null }[] = [];
+  let contacts: { id: string; full_name: string; email: string | null; phone: string | null; company_id: string | null; is_blacklisted: boolean }[] = [];
   let companies: { id: string; name: string; nip: string | null }[] = [];
 
   if (userRole === "admin") {
     const [productsRes, contactsRes, companiesRes] = await Promise.all([
       supabase
         .from("products")
-        .select("id, name, sku")
+        .select("id, name, sku, lead_time_days")
         .eq("is_active", true)
         .order("name"),
       supabase
         .from("contacts")
-        .select("id, full_name, email, phone, company_id")
+        .select("id, full_name, email, phone, company_id, is_blacklisted")
         .order("full_name")
         .limit(200),
       supabase

@@ -27,7 +27,7 @@ export default async function DashboardPage() {
     supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
-      .lt("deadline", now.toISOString())
+      .lt("deadline", new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString())
       .not("status", "in", "(shipped,delivered,cancelled)"),
   ]);
 
@@ -155,7 +155,7 @@ export default async function DashboardPage() {
           newToday: newTodayRes.count ?? 0,
           inProduction: inProductionRes.count ?? 0,
           ready: readyRes.count ?? 0,
-          overdue: overdueRes.count ?? 0,
+          atRisk: overdueRes.count ?? 0,
         }}
         sourceCounts={sourceCounts}
         operators={operators}

@@ -126,6 +126,7 @@ export async function ingestOrder(
       status: "new",
       payment_status: input.paymentStatus,
       deadline: input.deadline?.toISOString() ?? null,
+      is_priority: input.isPriority ?? false,
       shipping_method: input.shippingMethod ?? null,
       notes: input.notes ?? null,
       total_price: totalPrice > 0 ? totalPrice : null,

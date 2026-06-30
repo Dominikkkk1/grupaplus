@@ -23,6 +23,7 @@ interface Product {
   category: string;
   base_price: number | null;
   description: string | null;
+  lead_time_days: number | null;
 }
 
 interface Step {
@@ -63,7 +64,7 @@ export default function ProductDetailPage() {
     const [productRes, stepsRes, workflowRes, groupsRes] = await Promise.all([
       supabase
         .from("products")
-        .select("id, name, sku, category, base_price, description")
+        .select("id, name, sku, category, base_price, description, lead_time_days")
         .eq("id", id)
         .single(),
       supabase.from("workflow_steps").select("id, name, color").order("name"),

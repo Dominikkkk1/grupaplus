@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Package,
   Factory,
@@ -15,7 +16,7 @@ interface Props {
     newToday: number;
     inProduction: number;
     ready: number;
-    overdue: number;
+    atRisk: number;
   };
   sourceCounts: Record<string, number>;
   operators: {
@@ -62,24 +63,28 @@ export function DashboardStats({
           iconBg="bg-blue-50"
           value={summary.newToday}
           label="Nowe dzisiaj"
+          href="/orders?filter=new"
         />
         <StatCard
           icon={<Factory size={18} className="text-amber-600" />}
           iconBg="bg-amber-50"
           value={summary.inProduction}
           label="W produkcji"
+          href="/orders?filter=in_production"
         />
         <StatCard
           icon={<PackageCheck size={18} className="text-emerald-600" />}
           iconBg="bg-emerald-50"
           value={summary.ready}
           label="Gotowe"
+          href="/orders?filter=ready"
         />
         <StatCard
-          icon={<AlertTriangle size={18} className="text-red-600" />}
-          iconBg="bg-red-50"
-          value={summary.overdue}
-          label="Po terminie"
+          icon={<AlertTriangle size={18} className="text-amber-600" />}
+          iconBg="bg-amber-50"
+          value={summary.atRisk}
+          label="Zagrożony termin"
+          href="/orders?filter=at_risk"
         />
       </div>
 
@@ -254,25 +259,42 @@ function StatCard({
   iconBg,
   value,
   label,
+  href,
 }: {
   icon: React.ReactNode;
   iconBg: string;
   value: number;
   label: string;
+  href?: string;
 }) {
+  const content = (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}
+      >
+        {icon}
+      </div>
+      <div>
+        <p className="text-2xl font-semibold text-zinc-900">{value}</p>
+        <p className="text-[12px] text-zinc-500">{label}</p>
+      </div>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="block rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md"
+      >
+        {content}
+      </Link>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div
-          className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}
-        >
-          {icon}
-        </div>
-        <div>
-          <p className="text-2xl font-semibold text-zinc-900">{value}</p>
-          <p className="text-[12px] text-zinc-500">{label}</p>
-        </div>
-      </div>
+      {content}
     </div>
   );
 }

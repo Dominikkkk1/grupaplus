@@ -13,7 +13,7 @@ export default async function CrmPage() {
 
   const { data: privateContacts } = await supabase
     .from("contacts")
-    .select("id, full_name, email, phone")
+    .select("id, full_name, email, phone, is_blacklisted")
     .is("company_id", null)
     .order("full_name");
 
@@ -21,7 +21,7 @@ export default async function CrmPage() {
     <div>
       <CrmPageClient
         companies={(companies ?? []) as unknown as { id: string; name: string; nip: string | null; address: string | null; notes: string | null; contacts: { id: string }[] }[]}
-        privateContacts={(privateContacts ?? []) as unknown as { id: string; full_name: string; email: string | null; phone: string | null }[]}
+        privateContacts={(privateContacts ?? []) as unknown as { id: string; full_name: string; email: string | null; phone: string | null; is_blacklisted: boolean }[]}
       />
     </div>
   );

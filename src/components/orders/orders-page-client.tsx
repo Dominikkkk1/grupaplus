@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Package } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Plus, Search, Package, Star, MessageSquare } from "lucide-react";
 import { NewOrderForm } from "./new-order-form";
 import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
 
@@ -10,6 +11,7 @@ interface ProductOption {
   id: string;
   name: string;
   sku: string | null;
+  lead_time_days: number | null;
 }
 
 export interface Order {
@@ -18,6 +20,9 @@ export interface Order {
   source: string;
   status: string;
   payment_status: string;
+  deadline: string | null;
+  is_priority: boolean;
+  notes: string | null;
   created_at: string;
   contact: { full_name: string } | null;
   company: { name: string } | null;
@@ -29,6 +34,7 @@ interface ContactOption {
   email: string | null;
   phone: string | null;
   company_id: string | null;
+  is_blacklisted: boolean;
 }
 
 interface CompanyOption {
@@ -51,15 +57,27 @@ export function OrdersPageClient({
   userRole?: string;
 }) {
   const isClient = userRole === "client";
+  const searchParams = useSearchParams();
+  const initialFilter = searchParams.get("filter") || "active";
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
   const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");
   const [sortAsc, setSortAsc] = useState(false);
 
   // Statusy aktywne vs zakończone
   const ACTIVE_STATUSES = ["new", "confirmed", "in_production", "ready"];
   const FINISHED_STATUSES = ["shipped", "delivered", "cancelled"];
+
+  // Zamówienia z zagrożonym terminem (deadline < 24h od teraz, nie zakończone)
+  const now = new Date();
+  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const atRiskCount = orders.filter((o) => {
+    if (!o.deadline) return false;
+    if (FINISHED_STATUSES.includes(o.status)) return false;
+    return new Date(o.deadline) < in24h;
+  }).length;
+  const priorityCount = orders.filter((o) => o.is_priority).length;
 
   // Liczniki per status
   const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
@@ -74,7 +92,12 @@ export function OrdersPageClient({
       // Filtr statusu
       if (statusFilter === "active" && !ACTIVE_STATUSES.includes(o.status)) return false;
       if (statusFilter === "finished" && !FINISHED_STATUSES.includes(o.status)) return false;
-      if (statusFilter !== "all" && statusFilter !== "active" && statusFilter !== "finished" && o.status !== statusFilter) return false;
+      if (statusFilter === "priority" && !o.is_priority) return false;
+      if (statusFilter === "at_risk") {
+        if (!o.deadline || FINISHED_STATUSES.includes(o.status)) return false;
+        if (new Date(o.deadline) >= in24h) return false;
+      }
+      if (!["all", "active", "finished", "priority", "at_risk"].includes(statusFilter) && o.status !== statusFilter) return false;
       // Wyszukiwarka
       if (!query) return true;
       const q = query.toLowerCase();
@@ -85,6 +108,8 @@ export function OrdersPageClient({
       );
     })
     .sort((a, b) => {
+      // Priorytetowe zawsze na gorze
+      if (a.is_priority !== b.is_priority) return a.is_priority ? -1 : 1;
       let cmp = 0;
       if (sortBy === "date") cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       else if (sortBy === "status") cmp = a.status.localeCompare(b.status);
@@ -141,6 +166,8 @@ export function OrdersPageClient({
           {[
             { key: "active", label: "Aktywne", count: activeCount },
             { key: "all", label: "Wszystkie", count: orders.length },
+            { key: "priority", label: "Priorytetowe", count: priorityCount },
+            { key: "at_risk", label: "Zagrożony termin", count: atRiskCount },
             { key: "new", label: "Nowe", count: statusCounts["new"] ?? 0 },
             { key: "confirmed", label: "Potwierdzone", count: statusCounts["confirmed"] ?? 0 },
             { key: "in_production", label: "W produkcji", count: statusCounts["in_production"] ?? 0 },
@@ -197,12 +224,20 @@ export function OrdersPageClient({
                     className="border-b border-zinc-100 last:border-0 transition-colors hover:bg-zinc-50/50"
                   >
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="font-mono text-[13px] font-medium text-zinc-900 hover:text-blue-600"
-                      >
-                        {order.order_number}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        {order.is_priority && (
+                          <Star size={13} className="flex-shrink-0 fill-amber-400 text-amber-400" />
+                        )}
+                        <Link
+                          href={`/orders/${order.id}`}
+                          className="font-mono text-[13px] font-medium text-zinc-900 hover:text-blue-600"
+                        >
+                          {order.order_number}
+                        </Link>
+                        {order.notes && (
+                          <MessageSquare size={12} className="flex-shrink-0 text-amber-500" />
+                        )}
+                      </div>
                     </td>
                     {!isClient && (
                       <td className="hidden px-4 py-3 text-[13px] text-zinc-600 sm:table-cell">

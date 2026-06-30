@@ -34,6 +34,7 @@ interface Contact {
   email: string | null;
   phone: string | null;
   is_primary: boolean;
+  is_blacklisted: boolean;
 }
 
 interface Order {
@@ -74,7 +75,7 @@ export default function CompanyDetailPage() {
         .single(),
       supabase
         .from("contacts")
-        .select("id, full_name, email, phone, is_primary")
+        .select("id, full_name, email, phone, is_primary, is_blacklisted")
         .eq("company_id", id)
         .order("is_primary", { ascending: false })
         .order("full_name"),

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { fullName, email, phone, companyId, isPrimary } = body;
+  const { fullName, email, phone, companyId, isPrimary, isBlacklisted } = body;
 
   if (!fullName || !fullName.trim()) {
     return NextResponse.json(
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       phone: phone?.trim() || null,
       company_id: companyId || null,
       is_primary: isPrimary ?? false,
+      is_blacklisted: isBlacklisted ?? false,
     })
     .select("id, full_name")
     .single();
