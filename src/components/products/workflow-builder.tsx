@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
   X,
   Plus,
   Save,
@@ -40,6 +39,8 @@ export function WorkflowBuilder({
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(true);
   const [justSaved, setJustSaved] = useState(false);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   // Etapy dostepne = te ktore NIE sa jeszcze przypisane
   const assignedIds = new Set(assigned.map((a) => a.stepId));
@@ -71,24 +72,16 @@ export function WorkflowBuilder({
     setSaved(false);
   }
 
-  function moveUp(index: number) {
-    if (index <= 0) return;
+  function handleDragEnd() {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
     const newArr = [...assigned];
-    [newArr[index - 1], newArr[index]] = [newArr[index], newArr[index - 1]];
-    setAssigned(
-      newArr.map((a, i) => ({ ...a, stepOrder: i + 1 }))
-    );
+    const [dragged] = newArr.splice(dragItem.current, 1);
+    newArr.splice(dragOverItem.current, 0, dragged);
+    setAssigned(newArr.map((a, i) => ({ ...a, stepOrder: i + 1 })));
     setSaved(false);
-  }
-
-  function moveDown(index: number) {
-    if (index >= assigned.length - 1) return;
-    const newArr = [...assigned];
-    [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
-    setAssigned(
-      newArr.map((a, i) => ({ ...a, stepOrder: i + 1 }))
-    );
-    setSaved(false);
+    dragItem.current = null;
+    dragOverItem.current = null;
   }
 
   async function handleSave() {
@@ -164,43 +157,31 @@ export function WorkflowBuilder({
           {assigned.map((step, i) => (
             <div
               key={step.stepId}
-              className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 shadow-sm"
+              draggable
+              onDragStart={() => { dragItem.current = i; }}
+              onDragEnter={() => { dragOverItem.current = i; }}
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnd={handleDragEnd}
+              className="flex cursor-grab items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 shadow-sm transition-colors active:cursor-grabbing active:border-zinc-400 active:bg-zinc-50"
             >
+              <GripVertical size={14} className="flex-shrink-0 text-zinc-300" />
               <span className="w-5 text-center text-[12px] font-semibold text-zinc-400">
                 {step.stepOrder}
               </span>
               <div
-                className="h-3 w-3 rounded-full"
+                className="h-3 w-3 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: step.color }}
               />
               <span className="flex-1 text-[13px] font-medium text-zinc-900">
                 {step.name}
               </span>
-              <div className="flex gap-0.5">
-                <button
-                  onClick={() => moveUp(i)}
-                  disabled={i === 0}
-                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-30"
-                  title="W gore"
-                >
-                  <ArrowUp size={14} />
-                </button>
-                <button
-                  onClick={() => moveDown(i)}
-                  disabled={i === assigned.length - 1}
-                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-30"
-                  title="W dol"
-                >
-                  <ArrowDown size={14} />
-                </button>
-                <button
-                  onClick={() => removeStep(step.stepId)}
-                  className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-                  title="Usuń"
-                >
-                  <X size={14} />
-                </button>
-              </div>
+              <button
+                onClick={() => removeStep(step.stepId)}
+                className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                title="Usuń"
+              >
+                <X size={14} />
+              </button>
             </div>
           ))}
         </div>
