@@ -38,8 +38,8 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // Blokada: nie mozna complete krokow jesli zamowienie oczekuje na akceptacje projektu
-  if (status === "completed") {
+  // Blokada: nie mozna startowac ani konczyc krokow jesli zamowienie oczekuje na akceptacje projektu
+  if (status === "completed" || status === "in_progress") {
     const { data: blockCheck } = await supabase
       .from("order_item_progress")
       .select("order_item_id, step:workflow_steps(name)")
@@ -151,6 +151,41 @@ export async function PATCH(request: NextRequest) {
   }
 
   console.log("[PROGRESS] updated progressId=%s → %s", progressId, status);
+
+  // Auto-revert: cofniecie kroku "Projektowanie" → zamowienie wraca z awaiting_approval do confirmed
+  if (status !== "completed") {
+    const { data: revertCheck } = await supabase
+      .from("order_item_progress")
+      .select("order_item_id, step:workflow_steps(name)")
+      .eq("id", progressId)
+      .single();
+    const revertStepName = (revertCheck?.step as unknown as { name: string })?.name;
+    if (revertStepName === "Projektowanie" && revertCheck) {
+      const { data: revertItem } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("id", revertCheck.order_item_id)
+        .single();
+      if (revertItem) {
+        const { data: revertOrder } = await supabase
+          .from("orders")
+          .select("status")
+          .eq("id", revertItem.order_id)
+          .single();
+        if (revertOrder?.status === "awaiting_approval") {
+          console.log("[PROGRESS] AUTO-REVERT: Projektowanie cofniete → order %s → confirmed", revertItem.order_id);
+          await supabase
+            .from("orders")
+            .update({
+              status: "confirmed",
+              sent_for_approval_at: null,
+              approval_reminder_sent: false,
+            })
+            .eq("id", revertItem.order_id);
+        }
+      }
+    }
+  }
 
   // Auto-awaiting_approval: po zakonczeniu kroku "Projektowanie"
   if (status === "completed") {

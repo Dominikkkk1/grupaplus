@@ -72,8 +72,8 @@ export async function PATCH(
       updateData.sent_for_approval_at = new Date().toISOString();
       updateData.approval_reminder_sent = false;
     }
-    // Reset przy powrocie z awaiting_approval (odrzucenie → projektowanie od nowa)
-    if (order.status === "awaiting_approval" && body.status === "confirmed") {
+    // Reset przy wyjsciu z awaiting_approval (odrzucenie LUB akceptacja)
+    if (order.status === "awaiting_approval" && body.status !== "awaiting_approval") {
       updateData.sent_for_approval_at = null;
       updateData.approval_reminder_sent = false;
     }
