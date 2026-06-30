@@ -87,7 +87,7 @@ export default function PrintPage() {
       if (itemFile) {
         const { data: signed } = await supabase.storage
           .from("order-files")
-          .createSignedUrl(itemFile.file_path, 300);
+          .createSignedUrl(itemFile.file_path, 600);
         if (signed?.signedUrl) {
           thumbMap[item.id] = signed.signedUrl;
         }
@@ -213,9 +213,10 @@ export default function PrintPage() {
             );
             const thumbUrl = thumbnails[item.id];
             const itemFiles = files.filter((f) => f.order_item_id === item.id);
-            const firstFile = itemFiles[0];
             const hasPdf = itemFiles.some((f) => f.mime_type === "application/pdf");
-            const preflightStatus = firstFile?.preflight_status;
+            // Preflight: wez status z pierwszego pliku ktory ma wynik (nie pending/null)
+            const preflightFile = itemFiles.find((f) => f.preflight_status && f.preflight_status !== "pending") ?? itemFiles[0];
+            const preflightStatus = preflightFile?.preflight_status;
 
             return (
               <div key={idx} style={{ marginBottom: "1rem", padding: "0.75rem", border: "1px solid #e4e4e7", borderRadius: "6px" }}>
