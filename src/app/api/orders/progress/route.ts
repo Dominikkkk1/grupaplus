@@ -38,6 +38,39 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  // Blokada: nie mozna complete krokow jesli zamowienie oczekuje na akceptacje projektu
+  if (status === "completed") {
+    const { data: blockCheck } = await supabase
+      .from("order_item_progress")
+      .select("order_item_id, step:workflow_steps(name)")
+      .eq("id", progressId)
+      .single();
+    if (blockCheck) {
+      const blockStepName = (blockCheck.step as unknown as { name: string })?.name;
+      // Krok "Projektowanie" mozna zakonczyc — ale inne kroki nie jesli awaiting_approval
+      if (blockStepName !== "Projektowanie") {
+        const { data: blockItem } = await supabase
+          .from("order_items")
+          .select("order_id")
+          .eq("id", blockCheck.order_item_id)
+          .single();
+        if (blockItem) {
+          const { data: blockOrder } = await supabase
+            .from("orders")
+            .select("status")
+            .eq("id", blockItem.order_id)
+            .single();
+          if (blockOrder?.status === "awaiting_approval") {
+            return NextResponse.json(
+              { error: "Zamówienie oczekuje na akceptację projektu. Nie można kontynuować produkcji." },
+              { status: 409 }
+            );
+          }
+        }
+      }
+    }
+  }
+
   // Walidacja kolejnosci: nie mozna oznaczyc etapu jako completed
   // jesli poprzedni etap nie jest ukończony
   if (status === "completed") {
@@ -118,6 +151,41 @@ export async function PATCH(request: NextRequest) {
   }
 
   console.log("[PROGRESS] updated progressId=%s → %s", progressId, status);
+
+  // Auto-awaiting_approval: po zakonczeniu kroku "Projektowanie"
+  if (status === "completed") {
+    const { data: completedStep } = await supabase
+      .from("order_item_progress")
+      .select("order_item_id, step:workflow_steps(name)")
+      .eq("id", progressId)
+      .single();
+    const completedStepName = (completedStep?.step as unknown as { name: string })?.name;
+    if (completedStepName === "Projektowanie" && completedStep) {
+      const { data: projItem } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("id", completedStep.order_item_id)
+        .single();
+      if (projItem) {
+        const { data: projOrder } = await supabase
+          .from("orders")
+          .select("status")
+          .eq("id", projItem.order_id)
+          .single();
+        if (projOrder && ["confirmed", "in_production"].includes(projOrder.status)) {
+          console.log("[PROGRESS] AUTO: Projektowanie zakonczone → order %s → awaiting_approval", projItem.order_id);
+          await supabase
+            .from("orders")
+            .update({
+              status: "awaiting_approval",
+              sent_for_approval_at: new Date().toISOString(),
+              approval_reminder_sent: false,
+            })
+            .eq("id", projItem.order_id);
+        }
+      }
+    }
+  }
 
   // Sprawdz czy wszystkie etapy pozycji sa ukończone
   const { data: progress } = await supabase

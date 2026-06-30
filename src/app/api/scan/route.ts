@@ -70,6 +70,27 @@ export async function POST(request: NextRequest) {
   console.log("[SCAN] etap: %s (order %d), krok: %s, obecny status: %s", stepName, progress.step_order, progressId, progress.status);
 
   if (action === "start") {
+    // Blokada: nie mozna startowac krokow jesli zamowienie oczekuje na akceptacje projektu
+    const { data: startCheckItem } = await supabase
+      .from("order_items")
+      .select("order_id")
+      .eq("id", progress.order_item_id)
+      .single();
+    if (startCheckItem) {
+      const { data: startCheckOrder } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", startCheckItem.order_id)
+        .single();
+      if (startCheckOrder?.status === "awaiting_approval") {
+        console.log("[SCAN] BLOCKED: order %s awaiting_approval — nie mozna startowac kolejnych krokow", startCheckItem.order_id);
+        return NextResponse.json(
+          { error: "Zamówienie oczekuje na akceptację projektu. Nie można rozpocząć kolejnych etapów." },
+          { status: 409 }
+        );
+      }
+    }
+
     // Sprawdz czy poprzedni krok jest completed
     if (progress.step_order > 1) {
       const { data: prev } = await supabase
@@ -162,10 +183,7 @@ export async function POST(request: NextRequest) {
           .update({ status: "in_production" })
           .eq("id", scannedItem.order_id);
       }
-      // NIE auto-advance z awaiting_approval — projekt musi byc zaakceptowany recznie
-      if (scannedOrder?.status === "awaiting_approval") {
-        console.log("[SCAN] BLOCKED: order %s is awaiting_approval — scan allowed but no auto-advance", scannedItem.order_id);
-      }
+      // awaiting_approval — blokada jest na poczatku action=start, tu nie robimy nic
     }
 
     console.log("[SCAN] STARTED: %s (progressId=%s, machine=%s)", stepName, progressId, machineId || "brak");
@@ -192,6 +210,34 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Auto-awaiting_approval: po zakonczeniu kroku "Projektowanie"
+    if (stepName === "Projektowanie") {
+      const { data: projItem } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("id", progress.order_item_id)
+        .single();
+      if (projItem) {
+        const { data: projOrder } = await supabase
+          .from("orders")
+          .select("status")
+          .eq("id", projItem.order_id)
+          .single();
+        // Tylko jesli zamowienie jest confirmed lub in_production (nie juz awaiting_approval)
+        if (projOrder && ["confirmed", "in_production"].includes(projOrder.status)) {
+          console.log("[SCAN] AUTO: Projektowanie zakonczone → order %s → awaiting_approval", projItem.order_id);
+          await supabase
+            .from("orders")
+            .update({
+              status: "awaiting_approval",
+              sent_for_approval_at: new Date().toISOString(),
+              approval_reminder_sent: false,
+            })
+            .eq("id", projItem.order_id);
+        }
+      }
     }
 
     // Sprawdz czy wszystkie etapy pozycji ukończone
