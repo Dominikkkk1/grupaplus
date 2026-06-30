@@ -332,7 +332,7 @@ export function NewOrderForm({
           {isBlacklisted && (
             <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
               <AlertTriangle size={16} className="flex-shrink-0" />
-              <span><strong>Uwaga:</strong> Ten klient jest na czarnej liście!</span>
+              <span><strong>Czarna lista:</strong> Nie można utworzyć zamówienia dla tego klienta.</span>
             </div>
           )}
 
@@ -456,8 +456,8 @@ export function NewOrderForm({
             </Button>
             <Button
               type="submit"
-              disabled={loading}
-              className="bg-zinc-900 text-[13px] text-white hover:bg-zinc-800"
+              disabled={loading || isBlacklisted}
+              className="bg-zinc-900 text-[13px] text-white hover:bg-zinc-800 disabled:opacity-50"
             >
               {loading ? (
                 <span className="flex items-center gap-2">

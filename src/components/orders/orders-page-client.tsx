@@ -58,7 +58,7 @@ export function OrdersPageClient({
 }) {
   const isClient = userRole === "client";
   const searchParams = useSearchParams();
-  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new", "confirmed", "in_production", "ready", "finished"];
+  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "in_production", "ready", "finished"];
   const rawFilter = searchParams.get("filter") || "active";
   const initialFilter = VALID_FILTERS.includes(rawFilter) ? rawFilter : "active";
   const [showForm, setShowForm] = useState(false);
@@ -71,9 +71,10 @@ export function OrdersPageClient({
   const ACTIVE_STATUSES = ["new", "confirmed", "in_production", "ready"];
   const FINISHED_STATUSES = ["shipped", "delivered", "cancelled"];
 
-  // Zamówienia z zagrożonym terminem (deadline < 24h od teraz, nie zakończone)
+  // Daty do filtrow
   const now = new Date();
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const atRiskCount = orders.filter((o) => {
     if (!o.deadline) return false;
     if (FINISHED_STATUSES.includes(o.status)) return false;
@@ -95,11 +96,15 @@ export function OrdersPageClient({
       if (statusFilter === "active" && !ACTIVE_STATUSES.includes(o.status)) return false;
       if (statusFilter === "finished" && !FINISHED_STATUSES.includes(o.status)) return false;
       if (statusFilter === "priority" && !o.is_priority) return false;
+      if (statusFilter === "new_today") {
+        if (o.status !== "new") return false;
+        if (new Date(o.created_at) < todayStart) return false;
+      }
       if (statusFilter === "at_risk") {
         if (!o.deadline || FINISHED_STATUSES.includes(o.status)) return false;
         if (new Date(o.deadline) >= in24h) return false;
       }
-      if (!["all", "active", "finished", "priority", "at_risk"].includes(statusFilter) && o.status !== statusFilter) return false;
+      if (!["all", "active", "finished", "priority", "at_risk", "new_today"].includes(statusFilter) && o.status !== statusFilter) return false;
       // Wyszukiwarka
       if (!query) return true;
       const q = query.toLowerCase();

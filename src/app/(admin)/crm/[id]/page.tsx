@@ -267,6 +267,9 @@ export default function CompanyDetailPage() {
                           className="fill-amber-400 text-amber-400"
                         />
                       )}
+                      {contact.is_blacklisted && (
+                        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Czarna lista</span>
+                      )}
                     </p>
                     <p className="text-[12px] text-zinc-500">
                       {[contact.email, contact.phone]

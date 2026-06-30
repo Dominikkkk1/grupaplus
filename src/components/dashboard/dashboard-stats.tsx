@@ -63,7 +63,7 @@ export function DashboardStats({
           iconBg="bg-blue-50"
           value={summary.newToday}
           label="Nowe dzisiaj"
-          href="/orders?filter=new"
+          href="/orders?filter=new_today"
         />
         <StatCard
           icon={<Factory size={18} className="text-amber-600" />}

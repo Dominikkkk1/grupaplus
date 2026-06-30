@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Building2, User } from "lucide-react";
+import { Plus, Search, Building2, User, Pencil } from "lucide-react";
 import { CompanyForm } from "./company-form";
+import { ContactForm } from "./contact-form";
 
 interface Company {
   id: string;
@@ -19,6 +20,7 @@ interface Contact {
   full_name: string;
   email: string | null;
   phone: string | null;
+  is_primary: boolean;
   is_blacklisted: boolean;
 }
 
@@ -31,6 +33,7 @@ export function CrmPageClient({
 }) {
   const [query, setQuery] = useState("");
   const [showCompanyForm, setShowCompanyForm] = useState(false);
+  const [editContact, setEditContact] = useState<Contact | null>(null);
 
   const filteredCompanies = companies.filter((c) => {
     if (!query) return true;
@@ -152,6 +155,7 @@ export function CrmPageClient({
                   <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
                     Telefon
                   </th>
+                  <th className="w-10 px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -174,6 +178,15 @@ export function CrmPageClient({
                     <td className="px-4 py-3 text-[13px] text-zinc-600">
                       {contact.phone ?? "\u2014"}
                     </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setEditContact(contact)}
+                        className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                        title="Edytuj"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -186,9 +199,17 @@ export function CrmPageClient({
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal firma */}
       {showCompanyForm && (
         <CompanyForm onClose={() => setShowCompanyForm(false)} />
+      )}
+
+      {/* Modal kontakt */}
+      {editContact && (
+        <ContactForm
+          contact={editContact}
+          onClose={() => setEditContact(null)}
+        />
       )}
     </>
   );

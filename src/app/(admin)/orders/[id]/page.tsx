@@ -15,6 +15,7 @@ import {
   Printer,
   Star,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { FileUpload } from "@/components/orders/file-upload";
@@ -34,7 +35,7 @@ export default async function OrderDetailPage({
     .from("orders")
     .select(`
       *,
-      contact:contacts(full_name, email, phone),
+      contact:contacts(full_name, email, phone, is_blacklisted),
       company:companies(name, nip, address)
     `)
     .eq("id", id)
@@ -102,7 +103,7 @@ export default async function OrderDetailPage({
     label: order.status,
     color: "bg-zinc-50 text-zinc-600 border-zinc-200",
   };
-  const contact = order.contact as { full_name: string; email: string; phone: string } | null;
+  const contact = order.contact as { full_name: string; email: string; phone: string; is_blacklisted: boolean } | null;
   const company = order.company as { name: string; nip: string; address: string } | null;
 
   return (
@@ -264,6 +265,12 @@ export default async function OrderDetailPage({
                 )}
                 {contact.phone && (
                   <p className="text-zinc-500">{contact.phone}</p>
+                )}
+                {contact.is_blacklisted && (
+                  <div className="mt-2 flex items-center gap-1.5 rounded border border-red-200 bg-red-50 px-2.5 py-1.5 text-[12px] font-medium text-red-700">
+                    <AlertTriangle size={13} />
+                    Klient na czarnej liście
+                  </div>
                 )}
               </div>
             ) : (
