@@ -55,6 +55,21 @@ export async function PUT(
     );
   }
 
+  // Sprawdz czy item nie ma juz rozpoczetych/ukonczonych krokow
+  const { data: existingNonPending } = await supabase
+    .from("order_item_progress")
+    .select("id")
+    .eq("order_item_id", itemId)
+    .in("status", ["in_progress", "completed"])
+    .limit(1);
+
+  if (existingNonPending && existingNonPending.length > 0) {
+    return NextResponse.json(
+      { error: "Nie można zmienić marszruty — produkcja już rozpoczęta" },
+      { status: 409 }
+    );
+  }
+
   // Usun istniejace pending progress rows
   const { error: deleteError } = await supabase
     .from("order_item_progress")
