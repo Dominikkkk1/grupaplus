@@ -78,20 +78,22 @@ export default function PrintPage() {
     const fetchedFiles = (filesRes.data ?? []) as unknown as OrderFile[];
     setFiles(fetchedFiles);
 
-    // Generuj signed URLs dla miniaturek (tylko obrazy)
-    const thumbMap: Record<string, string> = {};
-    for (const item of fetchedItems) {
-      const itemFile = fetchedFiles.find(
-        (f) => f.order_item_id === item.id && f.mime_type.startsWith("image/")
-      );
-      if (itemFile) {
+    // Generuj signed URLs dla miniaturek (rownolegle)
+    const thumbEntries = await Promise.all(
+      fetchedItems.map(async (item) => {
+        const itemFile = fetchedFiles.find(
+          (f) => f.order_item_id === item.id && f.mime_type.startsWith("image/")
+        );
+        if (!itemFile) return null;
         const { data: signed } = await supabase.storage
           .from("order-files")
           .createSignedUrl(itemFile.file_path, 600);
-        if (signed?.signedUrl) {
-          thumbMap[item.id] = signed.signedUrl;
-        }
-      }
+        return signed?.signedUrl ? [item.id, signed.signedUrl] as const : null;
+      })
+    );
+    const thumbMap: Record<string, string> = {};
+    for (const entry of thumbEntries) {
+      if (entry) thumbMap[entry[0]] = entry[1];
     }
     setThumbnails(thumbMap);
 

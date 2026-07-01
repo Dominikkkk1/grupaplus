@@ -50,10 +50,12 @@ export function FileUpload({
   const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
 
   // Generuj miniaturki dla obrazow (rownolegle, nie blokujace)
+  const fileIds = files.map((f) => f.id).join(",");
   useEffect(() => {
     const supabase = createClient();
     const imageFiles = files.filter((f) => f.mime_type.startsWith("image/"));
     if (imageFiles.length === 0) return;
+    let cancelled = false;
     Promise.all(
       imageFiles.map(async (f) => {
         const { data } = await supabase.storage
@@ -62,13 +64,16 @@ export function FileUpload({
         return [f.id, data?.signedUrl] as const;
       })
     ).then((results) => {
+      if (cancelled) return;
       const urls: Record<string, string> = {};
       for (const [id, url] of results) {
         if (url) urls[id] = url;
       }
       setThumbUrls(urls);
     });
-  }, [files]);
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileIds]);
 
   // Prosty preflight: sprawdz rozmiar obrazka i DPI
   async function checkImageDpi(file: File): Promise<string | null> {
