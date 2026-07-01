@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Building2, User, Pencil } from "lucide-react";
+import { Plus, Search, Building2, User, Pencil, ShieldOff } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { CompanyForm } from "./company-form";
 import { ContactForm } from "./contact-form";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface Company {
   id: string;
@@ -22,6 +24,7 @@ interface Contact {
   phone: string | null;
   is_primary: boolean;
   is_blacklisted: boolean;
+  anonymized_at: string | null;
 }
 
 export function CrmPageClient({
@@ -31,9 +34,27 @@ export function CrmPageClient({
   companies: Company[];
   privateContacts: Contact[];
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [showCompanyForm, setShowCompanyForm] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [anonymizeContact, setAnonymizeContact] = useState<Contact | null>(null);
+  const [anonymizeLoading, setAnonymizeLoading] = useState(false);
+
+  async function handleAnonymize() {
+    if (!anonymizeContact) return;
+    setAnonymizeLoading(true);
+    const res = await fetch(`/api/contacts/${anonymizeContact.id}/anonymize`, { method: "POST" });
+    if (res.ok) {
+      setAnonymizeContact(null);
+      setAnonymizeLoading(false);
+      router.refresh();
+    } else {
+      const data = await res.json();
+      alert(data.error || "Blad anonimizacji");
+      setAnonymizeLoading(false);
+    }
+  }
 
   const filteredCompanies = companies.filter((c) => {
     if (!query) return true;
@@ -170,6 +191,9 @@ export function CrmPageClient({
                         {contact.is_blacklisted && (
                           <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Czarna lista</span>
                         )}
+                        {contact.anonymized_at && (
+                          <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">Zanonimizowany</span>
+                        )}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-[13px] text-zinc-600">
@@ -179,13 +203,26 @@ export function CrmPageClient({
                       {contact.phone ?? "\u2014"}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setEditContact(contact)}
-                        className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-                        title="Edytuj"
-                      >
-                        <Pencil size={14} />
-                      </button>
+                      <div className="flex gap-0.5">
+                        {!contact.anonymized_at && (
+                          <>
+                            <button
+                              onClick={() => setEditContact(contact)}
+                              className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                              title="Edytuj"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => setAnonymizeContact(contact)}
+                              className="rounded-md p-1.5 text-zinc-400 hover:bg-purple-50 hover:text-purple-500"
+                              title="Anonimizuj dane (RODO)"
+                            >
+                              <ShieldOff size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -209,6 +246,17 @@ export function CrmPageClient({
         <ContactForm
           contact={editContact}
           onClose={() => setEditContact(null)}
+        />
+      )}
+
+      {/* RODO dialog */}
+      {anonymizeContact && (
+        <ConfirmDialog
+          title="Anonimizacja danych (RODO)"
+          message={`Czy na pewno chcesz zanonimizować dane "${anonymizeContact.full_name}"? Imię, email, telefon zostaną usunięte. Zamówienia pozostaną bez danych osobowych. Pliki klienta zostaną usunięte. Tej operacji NIE MOŻNA cofnąć.`}
+          loading={anonymizeLoading}
+          onConfirm={handleAnonymize}
+          onCancel={() => setAnonymizeContact(null)}
         />
       )}
     </>
