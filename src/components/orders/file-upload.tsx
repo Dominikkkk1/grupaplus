@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
   FileText,
-  Image as ImageIcon,
   Download,
   Trash2,
   Loader2,
@@ -48,6 +47,25 @@ export function FileUpload({
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [preflightWarning, setPreflightWarning] = useState("");
+  const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
+
+  // Generuj miniaturki dla obrazow
+  useEffect(() => {
+    async function loadThumbs() {
+      const supabase = createClient();
+      const imageFiles = files.filter((f) => f.mime_type.startsWith("image/"));
+      if (imageFiles.length === 0) return;
+      const urls: Record<string, string> = {};
+      for (const f of imageFiles) {
+        const { data } = await supabase.storage
+          .from("order-files")
+          .createSignedUrl(f.file_path, 600);
+        if (data?.signedUrl) urls[f.id] = data.signedUrl;
+      }
+      setThumbUrls(urls);
+    }
+    loadThumbs();
+  }, [files]);
 
   // Prosty preflight: sprawdz rozmiar obrazka i DPI
   async function checkImageDpi(file: File): Promise<string | null> {
@@ -152,12 +170,23 @@ export function FileUpload({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  const FileIcon = ({ mime }: { mime: string }) =>
-    mime.startsWith("image/") ? (
-      <ImageIcon size={16} className="text-blue-500" />
-    ) : (
-      <FileText size={16} className="text-red-500" />
+  const FileThumbnail = ({ file }: { file: OrderFile }) => {
+    const thumbUrl = thumbUrls[file.id];
+    if (file.mime_type.startsWith("image/") && thumbUrl) {
+      return (
+        <img
+          src={thumbUrl}
+          alt=""
+          className="h-10 w-10 flex-shrink-0 rounded border border-zinc-200 object-cover"
+        />
+      );
+    }
+    return (
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded border border-zinc-200 bg-zinc-50">
+        <FileText size={16} className="text-zinc-400" />
+      </div>
     );
+  };
 
   return (
     <div>
@@ -170,7 +199,7 @@ export function FileUpload({
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2"
             >
               <div className="flex items-center gap-2">
-                <FileIcon mime={file.mime_type} />
+                <FileThumbnail file={file} />
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-[12px] font-medium text-zinc-900">
                     {file.file_name}
