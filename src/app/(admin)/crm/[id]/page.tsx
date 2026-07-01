@@ -13,6 +13,7 @@ import {
   Trash2,
   Package,
   Star,
+  ShieldOff,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CompanyForm } from "@/components/crm/company-form";
@@ -35,6 +36,7 @@ interface Contact {
   phone: string | null;
   is_primary: boolean;
   is_blacklisted: boolean;
+  anonymized_at: string | null;
 }
 
 interface Order {
@@ -65,6 +67,8 @@ export default function CompanyDetailPage() {
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [deleteContact, setDeleteContact] = useState<Contact | null>(null);
   const [deleteContactLoading, setDeleteContactLoading] = useState(false);
+  const [anonymizeContact, setAnonymizeContact] = useState<Contact | null>(null);
+  const [anonymizeLoading, setAnonymizeLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [companyRes, contactsRes, ordersRes] = await Promise.all([
@@ -75,7 +79,7 @@ export default function CompanyDetailPage() {
         .single(),
       supabase
         .from("contacts")
-        .select("id, full_name, email, phone, is_primary, is_blacklisted")
+        .select("id, full_name, email, phone, is_primary, is_blacklisted, anonymized_at")
         .eq("company_id", id)
         .order("is_primary", { ascending: false })
         .order("full_name"),
@@ -123,6 +127,23 @@ export default function CompanyDetailPage() {
       const data = await res.json();
       alert(data.error || "Blad usuwania");
       setDeleteContactLoading(false);
+    }
+  }
+
+  async function handleAnonymize() {
+    if (!anonymizeContact) return;
+    setAnonymizeLoading(true);
+    const res = await fetch(`/api/contacts/${anonymizeContact.id}/anonymize`, {
+      method: "POST",
+    });
+    if (res.ok) {
+      setAnonymizeContact(null);
+      setAnonymizeLoading(false);
+      fetchData();
+    } else {
+      const data = await res.json();
+      alert(data.error || "Blad anonimizacji");
+      setAnonymizeLoading(false);
     }
   }
 
@@ -270,6 +291,9 @@ export default function CompanyDetailPage() {
                       {contact.is_blacklisted && (
                         <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Czarna lista</span>
                       )}
+                      {contact.anonymized_at && (
+                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">Zanonimizowany</span>
+                      )}
                     </p>
                     <p className="text-[12px] text-zinc-500">
                       {[contact.email, contact.phone]
@@ -279,13 +303,24 @@ export default function CompanyDetailPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button
-                    onClick={() => setEditContact(contact)}
-                    className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-                    title="Edytuj"
-                  >
-                    <Pencil size={14} />
-                  </button>
+                  {!contact.anonymized_at && (
+                    <>
+                      <button
+                        onClick={() => setEditContact(contact)}
+                        className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                        title="Edytuj"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setAnonymizeContact(contact)}
+                        className="rounded-md p-1.5 text-zinc-400 hover:bg-purple-50 hover:text-purple-500"
+                        title="Anonimizuj dane (RODO)"
+                      >
+                        <ShieldOff size={14} />
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => setDeleteContact(contact)}
                     className="rounded-md p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500"
@@ -429,6 +464,16 @@ export default function CompanyDetailPage() {
           loading={deleteContactLoading}
           onConfirm={handleDeleteContact}
           onCancel={() => setDeleteContact(null)}
+        />
+      )}
+
+      {anonymizeContact && (
+        <ConfirmDialog
+          title="Anonimizacja danych (RODO)"
+          message={`Czy na pewno chcesz zanonimizować dane "${anonymizeContact.full_name}"? Imię, email, telefon zostaną usunięte. Zamówienia pozostaną w systemie bez danych osobowych. Pliki klienta zostaną usunięte. Tej operacji NIE MOŻNA cofnąć.`}
+          loading={anonymizeLoading}
+          onConfirm={handleAnonymize}
+          onCancel={() => setAnonymizeContact(null)}
         />
       )}
     </div>
