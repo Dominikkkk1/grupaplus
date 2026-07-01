@@ -49,22 +49,25 @@ export function FileUpload({
   const [preflightWarning, setPreflightWarning] = useState("");
   const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
 
-  // Generuj miniaturki dla obrazow
+  // Generuj miniaturki dla obrazow (rownolegle, nie blokujace)
   useEffect(() => {
-    async function loadThumbs() {
-      const supabase = createClient();
-      const imageFiles = files.filter((f) => f.mime_type.startsWith("image/"));
-      if (imageFiles.length === 0) return;
-      const urls: Record<string, string> = {};
-      for (const f of imageFiles) {
+    const supabase = createClient();
+    const imageFiles = files.filter((f) => f.mime_type.startsWith("image/"));
+    if (imageFiles.length === 0) return;
+    Promise.all(
+      imageFiles.map(async (f) => {
         const { data } = await supabase.storage
           .from("order-files")
           .createSignedUrl(f.file_path, 600);
-        if (data?.signedUrl) urls[f.id] = data.signedUrl;
+        return [f.id, data?.signedUrl] as const;
+      })
+    ).then((results) => {
+      const urls: Record<string, string> = {};
+      for (const [id, url] of results) {
+        if (url) urls[id] = url;
       }
       setThumbUrls(urls);
-    }
-    loadThumbs();
+    });
   }, [files]);
 
   // Prosty preflight: sprawdz rozmiar obrazka i DPI
