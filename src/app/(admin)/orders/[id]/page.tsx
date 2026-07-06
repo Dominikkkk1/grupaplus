@@ -16,6 +16,7 @@ import {
   Star,
   MessageSquare,
   AlertTriangle,
+  Copy,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { ItemWorkflowBuilder } from "@/components/orders/item-workflow-builder";
@@ -138,15 +139,24 @@ export default async function OrderDetailPage({
             </span>
           </div>
           {!isClient && (
-            <a
-              href={`/orders/${id}/print`}
-              target="_blank"
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
-            >
-              <Printer size={14} />
-              <span className="hidden sm:inline">Drukuj kartę</span>
-              <span className="sm:hidden">Drukuj</span>
-            </a>
+            <div className="flex gap-2">
+              <a
+                href={`/orders?newOrder=1&desc=${encodeURIComponent((items ?? []).map(i => (i.product as {name:string}|null)?.name ?? i.description).join(", "))}&qty=${(items ?? [])[0]?.quantity ?? 1}&unitPrice=${(items ?? [])[0]?.unit_price ?? ""}`}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
+              >
+                <Copy size={14} />
+                <span className="hidden sm:inline">Powiel</span>
+              </a>
+              <a
+                href={`/orders/${id}/print`}
+                target="_blank"
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
+              >
+                <Printer size={14} />
+                <span className="hidden sm:inline">Drukuj kartę</span>
+                <span className="sm:hidden">Drukuj</span>
+              </a>
+            </div>
           )}
         </div>
 
@@ -212,7 +222,10 @@ export default async function OrderDetailPage({
                           <span className="font-mono">{product.sku}</span>
                         )}
                         {item.unit_price && (
-                          <span>{item.unit_price} zl/szt.</span>
+                          <span>{item.unit_price} zł/szt.</span>
+                        )}
+                        {item.unit_price && item.quantity > 0 && (
+                          <span className="font-medium text-zinc-700">= {(Number(item.unit_price) * item.quantity).toFixed(2)} zł</span>
                         )}
                       </div>
                     </div>

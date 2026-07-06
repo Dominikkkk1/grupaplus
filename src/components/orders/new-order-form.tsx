@@ -238,7 +238,7 @@ export function NewOrderForm({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white shadow-xl"
+        className="mx-3 w-full max-w-lg rounded-xl border border-zinc-200 bg-white shadow-xl sm:mx-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -255,6 +255,14 @@ export function NewOrderForm({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Blacklist warning — na gorze, zawsze widoczny */}
+          {isBlacklisted && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
+              <AlertTriangle size={16} className="flex-shrink-0" />
+              <span><strong>Czarna lista:</strong> Nie można utworzyć zamówienia dla tego klienta.</span>
+            </div>
+          )}
+
           {/* Źródło + platnosc */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -348,13 +356,6 @@ export function NewOrderForm({
             />
           </div>
 
-          {/* Blacklist warning */}
-          {isBlacklisted && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
-              <AlertTriangle size={16} className="flex-shrink-0" />
-              <span><strong>Czarna lista:</strong> Nie można utworzyć zamówienia dla tego klienta.</span>
-            </div>
-          )}
 
           {/* Delivery + Deadline + Priorytet */}
           <div className="grid grid-cols-3 gap-3">
@@ -407,11 +408,11 @@ export function NewOrderForm({
               {items.map((item, i) => (
                 <div key={i} className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-3 space-y-2">
                   {/* Rząd 1: Produkt + Opis */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <select
                       value={item.productId}
                       onChange={(e) => updateItem(i, "productId", e.target.value)}
-                      className="w-40 flex-shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                      className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 sm:w-40 sm:flex-shrink-0"
                     >
                       <option value="">— Produkt —</option>
                       {products.map((p) => (
@@ -431,7 +432,7 @@ export function NewOrderForm({
                     />
                   </div>
                   {/* Rząd 2: Ilość + Cena + Usuń */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[11px] text-zinc-500">Ilość:</span>
                       <input

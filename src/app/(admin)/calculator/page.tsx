@@ -216,27 +216,42 @@ export default function CalculatorPage() {
         </p>
       </div>
 
-      {/* Tryb */}
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        {([
-          { value: "small" as const, label: "Maly format" },
-          { value: "large" as const, label: "Duzy format" },
-          { value: "brochure" as const, label: "Broszury" },
-          { value: "sticker" as const, label: "Naklejki" },
-          { value: "gadget" as const, label: "Kubki / Gadzety" },
-        ]).map((m) => (
-          <button
-            key={m.value}
-            onClick={() => setMode(m.value)}
-            className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${
-              mode === m.value
-                ? "bg-zinc-900 text-white"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
+      {/* Tryb — dropdown na mobile, taby na desktop */}
+      <div className="mb-6">
+        {/* Mobile: dropdown */}
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as Mode)}
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-[13px] font-medium focus:border-zinc-900 focus:outline-none sm:hidden"
+        >
+          <option value="small">Mały format (do A3)</option>
+          <option value="large">Duży format (m²)</option>
+          <option value="brochure">Broszury / Książki</option>
+          <option value="sticker">Naklejki / Etykiety</option>
+          <option value="gadget">Kubki / Gadżety</option>
+        </select>
+        {/* Desktop: taby */}
+        <div className="hidden gap-2 sm:flex">
+          {([
+            { value: "small" as const, label: "Mały format" },
+            { value: "large" as const, label: "Duży format" },
+            { value: "brochure" as const, label: "Broszury" },
+            { value: "sticker" as const, label: "Naklejki" },
+            { value: "gadget" as const, label: "Kubki / Gadżety" },
+          ]).map((m) => (
+            <button
+              key={m.value}
+              onClick={() => setMode(m.value)}
+              className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors whitespace-nowrap ${
+                mode === m.value
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Edycja stawek — per tab */}
