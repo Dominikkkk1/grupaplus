@@ -49,7 +49,7 @@ export async function PATCH(
 
   if (error) {
     console.error("[COMPLAINT PATCH] error:", error.message);
-    return NextResponse.json({ error: "Blad aktualizacji" }, { status: 500 });
+    return NextResponse.json({ error: "Błąd aktualizacji" }, { status: 500 });
   }
 
   if (!data) {

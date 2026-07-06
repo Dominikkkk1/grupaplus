@@ -159,7 +159,7 @@ export function ProductsPageClient({
       ) : (
         <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-12 text-center">
           <p className="text-[13px] text-zinc-500">
-            {query ? "Brak wynikow" : "Brak produktow — dodaj pierwszy"}
+            {query ? "Brak wyników" : "Brak produktów — dodaj pierwszy"}
           </p>
         </div>
       )}

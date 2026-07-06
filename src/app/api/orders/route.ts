@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   // Walidacja
   if (!body.items || body.items.length === 0) {
     return NextResponse.json(
-      { error: "Zamówienie musi miec przynajmniej jedna pozycje" },
+      { error: "Zamówienie musi mieć przynajmniej jedną pozycję" },
       { status: 400 }
     );
   }

@@ -266,7 +266,7 @@ function UserForm({
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Blad zapisu");
+        setError(data.error || "Błąd zapisu");
         setLoading(false);
         return;
       }
@@ -278,7 +278,7 @@ function UserForm({
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Blad tworzenia");
+        setError(data.error || "Błąd tworzenia");
         setLoading(false);
         return;
       }

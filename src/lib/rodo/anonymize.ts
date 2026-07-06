@@ -22,7 +22,7 @@ export async function anonymizeContact(
 
   const orderIds = (orders ?? []).map((o) => o.id);
 
-  // 2. Usun pliki z Storage i DB
+  // 2. Usuń pliki z Storage i DB
   let filesDeleted = 0;
   if (orderIds.length > 0) {
     const { data: files } = await supabase
@@ -31,7 +31,7 @@ export async function anonymizeContact(
       .in("order_id", orderIds);
 
     if (files && files.length > 0) {
-      // Usun z Storage
+      // Usuń z Storage
       const filePaths = files.map((f) => f.file_path);
       const { error: storageError } = await supabase.storage
         .from("order-files")
@@ -41,7 +41,7 @@ export async function anonymizeContact(
         console.error("[RODO] Storage delete error:", storageError.message);
       }
 
-      // Usun rekordy z DB
+      // Usuń rekordy z DB
       await supabase
         .from("order_files")
         .delete()

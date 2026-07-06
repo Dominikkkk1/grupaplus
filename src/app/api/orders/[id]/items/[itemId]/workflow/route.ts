@@ -70,7 +70,7 @@ export async function PUT(
     );
   }
 
-  // Usun istniejace pending progress rows
+  // Usuń istniejace pending progress rows
   const { error: deleteError } = await supabase
     .from("order_item_progress")
     .delete()

@@ -51,7 +51,7 @@ export function CrmPageClient({
       router.refresh();
     } else {
       const data = await res.json();
-      alert(data.error || "Blad anonimizacji");
+      alert(data.error || "Błąd anonimizacji");
       setAnonymizeLoading(false);
     }
   }
@@ -142,14 +142,14 @@ export function CrmPageClient({
                 )}
                 <p className="mt-2 text-[11px] text-zinc-400">
                   {company.contacts.length}{" "}
-                  {company.contacts.length === 1 ? "kontakt" : "kontaktow"}
+                  {company.contacts.length === 1 ? "kontakt" : "kontaktów"}
                 </p>
               </Link>
             ))}
           </div>
         ) : (
           <p className="py-4 text-center text-[13px] text-zinc-400">
-            {query ? "Brak wynikow" : "Brak firm"}
+            {query ? "Brak wyników" : "Brak firm"}
           </p>
         )}
       </div>
@@ -231,7 +231,7 @@ export function CrmPageClient({
           </div>
         ) : (
           <p className="py-4 text-center text-[13px] text-zinc-400">
-            {query ? "Brak wynikow" : "Brak klientow prywatnych"}
+            {query ? "Brak wyników" : "Brak klientów prywatnych"}
           </p>
         )}
       </div>

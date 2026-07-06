@@ -320,7 +320,7 @@ export default function ScanPage() {
             })}
           </div>
         ) : (
-          <p className="text-[12px] text-zinc-400">Ladowanie...</p>
+          <p className="text-[12px] text-zinc-400">Ładowanie...</p>
         )}
 
         {/* Dropdown maszyny — filtrowany po grupach */}

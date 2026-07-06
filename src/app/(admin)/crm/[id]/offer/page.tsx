@@ -96,7 +96,7 @@ export default function OfferPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-[13px] text-zinc-400">Ladowanie...</p>
+        <p className="text-[13px] text-zinc-400">Ładowanie...</p>
       </div>
     );
   }
@@ -175,7 +175,7 @@ export default function OfferPage() {
                 Cena jed.
               </th>
               <th className="py-2 text-right text-[12px] font-semibold text-zinc-500">
-                Wartosc
+                Wartość
               </th>
               <th className="w-8 print:hidden"></th>
             </tr>

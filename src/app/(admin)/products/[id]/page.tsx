@@ -109,7 +109,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-[13px] text-zinc-400">Ladowanie...</p>
+        <p className="text-[13px] text-zinc-400">Ładowanie...</p>
       </div>
     );
   }
@@ -220,8 +220,8 @@ export default function ProductDetailPage() {
 
       {showDelete && (
         <ConfirmDialog
-          title="Usun produkt"
-          message={`Czy na pewno chcesz usunac "${product.name}"? Workflow zostanie usuniety. Istniejace zamówienia zachowaja swoje etapy.`}
+          title="Usuń produkt"
+          message={`Czy na pewno chcesz usunąć "${product.name}"? Workflow zostanie usunięty. Istniejące zamówienia zachowają swoje etapy.`}
           loading={deleteLoading}
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}

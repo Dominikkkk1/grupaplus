@@ -35,7 +35,7 @@ export async function PUT(
   const body = await request.json();
   const steps: { stepId: string; stepOrder: number }[] = body.steps ?? [];
 
-  // Usun stare przypisania
+  // Usuń stare przypisania
   const { error: deleteError } = await supabase
     .from("product_workflow")
     .delete()

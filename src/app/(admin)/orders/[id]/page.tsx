@@ -365,9 +365,9 @@ export default async function OrderDetailPage({
 
               {order.total_price && (
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Wartosc</span>
+                  <span className="text-zinc-500">Wartość</span>
                   <span className="font-medium text-zinc-900">
-                    {Number(order.total_price).toFixed(2)} zl
+                    {Number(order.total_price).toFixed(2)} zł
                   </span>
                 </div>
               )}
@@ -376,7 +376,7 @@ export default async function OrderDetailPage({
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-zinc-500">
                     <MapPin size={14} />
-                    Wysylka
+                    Wysyłka
                   </span>
                   <span className="font-medium text-zinc-900">
                     {order.shipping_method}
@@ -411,7 +411,7 @@ export default async function OrderDetailPage({
             </div>
           </div>
 
-          {/* Usun zamówienie — tylko admin */}
+          {/* Usuń zamówienie — tylko admin */}
           {userRole === "admin" && <DeleteOrderButton orderId={id} />}
 
           {/* Uwagi */}

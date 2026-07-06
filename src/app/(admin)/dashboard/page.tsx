@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     sourceCounts[row.source] = (sourceCounts[row.source] ?? 0) + 1;
   }
 
-  // Statystyki operatorow (ostatnie 30 dni) — rownolegle
+  // Statystyki operatorów (ostatnie 30 dni) — rownolegle
   const [{ data: operatorData }, { data: operatorUsers }] = await Promise.all([
     supabase
       .from("order_item_progress")
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
     userMap.set(u.id, u.full_name);
   }
 
-  // Agreguj dane operatorow
+  // Agreguj dane operatorów
   const operatorMap = new Map<
     string,
     { completed: number; totalSeconds: number; inProgress: number }

@@ -66,7 +66,7 @@ export function MachineForm({
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Blad zapisu");
+      setError(data.error || "Błąd zapisu");
       setLoading(false);
       return;
     }

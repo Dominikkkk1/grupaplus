@@ -346,10 +346,10 @@ export function OrdersPageClient({
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
             <Package size={22} className="text-zinc-400" />
           </div>
-          <p className="text-sm font-medium text-zinc-900">Brak zamowien</p>
+          <p className="text-sm font-medium text-zinc-900">Brak zamówień</p>
           <p className="mt-1 text-[13px] text-zinc-500">
-            Kliknij &quot;Nowe zamówienie&quot; aby dodac reczne zlecenie lub
-            podlacz WooCommerce.
+            Kliknij &quot;Nowe zamówienie&quot; aby dodać ręczne zlecenie lub
+            podłącz WooCommerce.
           </p>
         </div>
       )}

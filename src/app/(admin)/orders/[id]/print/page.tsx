@@ -344,13 +344,13 @@ export default function PrintPage() {
             </div>
             {order.total_price && (
               <div>
-                <span style={{ color: "#71717a" }}>Wartosc: </span>
-                <strong>{order.total_price.toLocaleString("pl-PL")} zl</strong>
+                <span style={{ color: "#71717a" }}>Wartość: </span>
+                <strong>{order.total_price.toLocaleString("pl-PL")} zł</strong>
               </div>
             )}
             {order.shipping_method && (
               <div>
-                <span style={{ color: "#71717a" }}>Wysylka: </span>
+                <span style={{ color: "#71717a" }}>Wysyłka: </span>
                 {order.shipping_method}
               </div>
             )}

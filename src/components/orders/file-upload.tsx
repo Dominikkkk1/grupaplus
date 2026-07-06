@@ -347,8 +347,8 @@ export function FileUpload({
 
       {deleteFile && (
         <ConfirmDialog
-          title="Usun plik"
-          message={`Usunac "${deleteFile.file_name}"?`}
+          title="Usuń plik"
+          message={`Usunąć "${deleteFile.file_name}"?`}
           loading={deleteLoading}
           onConfirm={handleDelete}
           onCancel={() => setDeleteFile(null)}

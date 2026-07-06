@@ -165,7 +165,7 @@ export async function DELETE(
 
   if (deleteError) {
     console.error("[FILE DELETE] error:", deleteError.message);
-    return NextResponse.json({ error: "Blad usuwania pliku" }, { status: 500 });
+    return NextResponse.json({ error: "Błąd usuwania pliku" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

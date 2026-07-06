@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     Date.now() - 90 * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  // Usun przetworzone webhook_events starsze niz 90 dni
+  // Usuń przetworzone webhook_events starsze niz 90 dni
   const { count, error } = await supabase
     .from("webhook_events")
     .delete({ count: "exact" })

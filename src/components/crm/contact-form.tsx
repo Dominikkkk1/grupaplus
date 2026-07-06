@@ -69,7 +69,7 @@ export function ContactForm({
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Blad zapisu");
+      setError(data.error || "Błąd zapisu");
       setLoading(false);
       return;
     }
@@ -149,7 +149,7 @@ export function ContactForm({
                 onChange={(e) => setIsPrimary(e.target.checked)}
                 className="rounded border-zinc-300"
               />
-              Glowna osoba kontaktowa
+              Główna osoba kontaktowa
             </label>
             <label className="flex items-center gap-2 text-[13px] text-red-600">
               <input

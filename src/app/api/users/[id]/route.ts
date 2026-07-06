@@ -77,7 +77,7 @@ export async function PATCH(
     const adminClient = createAdminClient();
 
     if (oldRole === "client" && body.role !== "client") {
-      // Usun contact TYLKO jesli nie ma przypisanych zamowien
+      // Usuń contact TYLKO jesli nie ma przypisanych zamowien
       const { data: contact } = await adminClient
         .from("contacts")
         .select("id")

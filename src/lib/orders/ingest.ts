@@ -137,7 +137,7 @@ export async function ingestOrder(
 
   if (orderError || !order) {
     console.error("[INGEST] order INSERT error:", orderError?.message);
-    throw new Error(`Blad tworzenia zamówienia: ${orderError?.message}`);
+    throw new Error(`Błąd tworzenia zamówienia: ${orderError?.message}`);
   }
 
   console.log("[INGEST] order created: %s (%s), contact=%s, company=%s", order.order_number, order.id, contactId, companyId);
@@ -161,7 +161,7 @@ export async function ingestOrder(
 
   if (itemsError) {
     console.error("[INGEST] items INSERT error:", itemsError.message);
-    throw new Error(`Blad tworzenia pozycji: ${itemsError.message}`);
+    throw new Error(`Błąd tworzenia pozycji: ${itemsError.message}`);
   }
 
   console.log("[INGEST] items inserted: %j", insertedItems);

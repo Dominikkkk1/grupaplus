@@ -69,6 +69,7 @@ export default function CompanyDetailPage() {
   const [deleteContactLoading, setDeleteContactLoading] = useState(false);
   const [anonymizeContact, setAnonymizeContact] = useState<Contact | null>(null);
   const [anonymizeLoading, setAnonymizeLoading] = useState(false);
+  const [showAllOrders, setShowAllOrders] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [companyRes, contactsRes, ordersRes] = await Promise.all([
@@ -88,7 +89,7 @@ export default function CompanyDetailPage() {
         .select("id, order_number, status, payment_status, total_price, created_at")
         .eq("company_id", id)
         .order("created_at", { ascending: false })
-        .limit(20),
+        .limit(100),
     ]);
 
     setCompany(companyRes.data);
@@ -125,7 +126,7 @@ export default function CompanyDetailPage() {
       fetchData();
     } else {
       const data = await res.json();
-      alert(data.error || "Blad usuwania");
+      alert(data.error || "Błąd usuwania");
       setDeleteContactLoading(false);
     }
   }
@@ -142,7 +143,7 @@ export default function CompanyDetailPage() {
       fetchData();
     } else {
       const data = await res.json();
-      alert(data.error || "Blad anonimizacji");
+      alert(data.error || "Błąd anonimizacji");
       setAnonymizeLoading(false);
     }
   }
@@ -157,7 +158,7 @@ export default function CompanyDetailPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-[13px] text-zinc-400">Ladowanie...</p>
+        <p className="text-[13px] text-zinc-400">Ładowanie...</p>
       </div>
     );
   }
@@ -243,13 +244,13 @@ export default function CompanyDetailPage() {
           <p className="text-2xl font-semibold text-zinc-900">
             {totalRevenue.toLocaleString("pl-PL")} zl
           </p>
-          <p className="text-[12px] text-zinc-500">Obrot</p>
+          <p className="text-[12px] text-zinc-500">Obrót</p>
         </div>
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <p className="text-2xl font-semibold text-zinc-900">
-            {avgOrder > 0 ? `${Math.round(avgOrder)} zl` : "\u2014"}
+            {avgOrder > 0 ? `${Math.round(avgOrder)} zł` : "\u2014"}
           </p>
-          <p className="text-[12px] text-zinc-500">Srednia wartosc</p>
+          <p className="text-[12px] text-zinc-500">Średnia wartość</p>
         </div>
       </div>
 
@@ -335,7 +336,7 @@ export default function CompanyDetailPage() {
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
             <p className="text-[13px] text-zinc-500">
-              Brak kontaktow — dodaj pierwsza osobe
+              Brak kontaktów — dodaj pierwszą osobę
             </p>
           </div>
         )}
@@ -348,6 +349,7 @@ export default function CompanyDetailPage() {
           Historia zamówień ({orders.length})
         </h2>
         {orders.length > 0 ? (
+          <>
           <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead>
@@ -359,7 +361,7 @@ export default function CompanyDetailPage() {
                     Status
                   </th>
                   <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
-                    Wartosc
+                    Wartość
                   </th>
                   <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">
                     Data
@@ -367,7 +369,7 @@ export default function CompanyDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => {
+                {(showAllOrders ? orders : orders.slice(0, 20)).map((order) => {
                   const status = STATUS_CONFIG[order.status] ?? {
                     label: order.status,
                     color: "bg-zinc-50 text-zinc-600 border-zinc-200",
@@ -394,7 +396,7 @@ export default function CompanyDetailPage() {
                       </td>
                       <td className="px-4 py-3 text-[13px] text-zinc-600">
                         {order.total_price
-                          ? `${order.total_price.toLocaleString("pl-PL")} zl`
+                          ? `${order.total_price.toLocaleString("pl-PL")} zł`
                           : "\u2014"}
                       </td>
                       <td className="px-4 py-3 text-[13px] text-zinc-500">
@@ -406,6 +408,15 @@ export default function CompanyDetailPage() {
               </tbody>
             </table>
           </div>
+          {!showAllOrders && orders.length > 20 && (
+            <button
+              onClick={() => setShowAllOrders(true)}
+              className="mt-3 w-full rounded-lg border border-zinc-200 py-2 text-[12px] font-medium text-zinc-500 hover:bg-zinc-50"
+            >
+              Pokaż wszystkie ({orders.length})
+            </button>
+          )}
+          </>
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
             <p className="text-[13px] text-zinc-500">
@@ -428,8 +439,8 @@ export default function CompanyDetailPage() {
 
       {showDeleteCompany && (
         <ConfirmDialog
-          title="Usun firme"
-          message={`Czy na pewno chcesz usunac "${company.name}"? Kontakty firmy nie zostana usuniete — stana sie klientami prywatnymi.`}
+          title="Usuń firmę"
+          message={`Czy na pewno chcesz usunąć "${company.name}"? Kontakty firmy nie zostaną usunięte — staną się klientami prywatnymi.`}
           loading={deleteLoading}
           onConfirm={handleDeleteCompany}
           onCancel={() => setShowDeleteCompany(false)}
@@ -459,8 +470,8 @@ export default function CompanyDetailPage() {
 
       {deleteContact && (
         <ConfirmDialog
-          title="Usun kontakt"
-          message={`Czy na pewno chcesz usunac "${deleteContact.full_name}"?`}
+          title="Usuń kontakt"
+          message={`Czy na pewno chcesz usunąć "${deleteContact.full_name}"?`}
           loading={deleteContactLoading}
           onConfirm={handleDeleteContact}
           onCancel={() => setDeleteContact(null)}

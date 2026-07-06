@@ -57,7 +57,7 @@ export function NewOrderForm({
   const [customerPhone, setCustomerPhone] = useState(duplicateData?.customerPhone ?? "");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Sugestie kontaktow/firm na podstawie wpisanego tekstu
+  // Sugestie kontaktów/firm na podstawie wpisanego tekstu
   const suggestions = customerName.length >= 2
     ? [
         ...contacts
@@ -219,7 +219,7 @@ export function NewOrderForm({
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Blad tworzenia zamówienia");
+      setError(data.error || "Błąd tworzenia zamówienia");
       setLoading(false);
       return;
     }

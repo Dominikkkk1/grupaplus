@@ -117,7 +117,7 @@ export function MachinesPageClient({
                     <button
                       onClick={() => setDeleteGroup(group)}
                       className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-                      title="Usun grupe"
+                      title="Usuń grupe"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -213,8 +213,8 @@ export function MachinesPageClient({
       )}
       {deleteGroup && (
         <ConfirmDialog
-          title="Usun grupe"
-          message={`Usunac "${deleteGroup.name}"? Wszystkie maszyny w grupie zostana usuniete.`}
+          title="Usuń grupe"
+          message={`Usunąć "${deleteGroup.name}"? Wszystkie maszyny w grupie zostana usuniete.`}
           loading={deleteGroupLoading}
           onConfirm={handleDeleteGroup}
           onCancel={() => setDeleteGroup(null)}
@@ -235,8 +235,8 @@ export function MachinesPageClient({
       )}
       {deleteMachine && (
         <ConfirmDialog
-          title="Usun maszyne"
-          message={`Usunac "${deleteMachine.name}"?`}
+          title="Usuń maszyne"
+          message={`Usunąć "${deleteMachine.name}"?`}
           loading={deleteMachineLoading}
           onConfirm={handleDeleteMachine}
           onCancel={() => setDeleteMachine(null)}

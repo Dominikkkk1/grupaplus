@@ -109,7 +109,7 @@ export function WorkflowBuilder({
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Blad zapisu");
+      setError(data.error || "Błąd zapisu");
       setSaving(false);
       return;
     }
