@@ -227,51 +227,78 @@ export default function CalculatorPage() {
         ))}
       </div>
 
-      {/* Edycja stawek */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowRates(!showRates)}
-          className="text-[12px] font-medium text-zinc-500 hover:text-zinc-900"
-        >
-          {showRates ? "Ukryj stawki bazowe" : "Edytuj stawki bazowe"}
-        </button>
-        {showRates && (
-          <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 lg:grid-cols-4">
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Druk (zl/arkusz)</label>
-              <input type="number" step="0.01" value={printCost} onChange={(e) => setPrintCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
+      {/* Edycja stawek — per tab */}
+      {mode !== "large" && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowRates(!showRates)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+              showRates
+                ? "border-amber-300 bg-amber-50 text-amber-700"
+                : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+            }`}
+          >
+            {showRates ? "Ukryj stawki bazowe" : "Edytuj stawki bazowe"}
+          </button>
+          {showRates && (
+            <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-4 lg:grid-cols-3">
+              {/* Wspolne: druk */}
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-500">Druk (zl/arkusz)</label>
+                <input type="number" step="0.01" value={printCost} onChange={(e) => setPrintCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+              </div>
+
+              {/* Maly format */}
+              {mode === "small" && (
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie (zl/szt)</label>
+                  <input type="number" step="0.01" value={cutCost} onChange={(e) => setCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                </div>
+              )}
+
+              {/* Broszury */}
+              {mode === "brochure" && (
+                <>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Klejenie (zl/szt)</label>
+                    <input type="number" step="0.01" value={glueCost} onChange={(e) => setGlueCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Szycie (zl/szt)</label>
+                    <input type="number" step="0.01" value={stapleCost} onChange={(e) => setStapleCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie broszury (zl/szt)</label>
+                    <input type="number" step="0.01" value={brochureCutCost} onChange={(e) => setBrochureCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                  </div>
+                </>
+              )}
+
+              {/* Naklejki */}
+              {mode === "sticker" && (
+                <>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie prostokat (zl/szt)</label>
+                    <input type="number" step="0.01" value={stickerCutRect} onChange={(e) => setStickerCutRect(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie po obrysie (zl/szt)</label>
+                    <input type="number" step="0.01" value={stickerCutContour} onChange={(e) => setStickerCutContour(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                  </div>
+                </>
+              )}
+
+              {/* Gadzety */}
+              {mode === "gadget" && (
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-500">Setup / przygotowanie (zl)</label>
+                  <input type="number" step="1" value={gadgetSetup} onChange={(e) => setGadgetSetup(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
+                </div>
+              )}
             </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie (zl/szt)</label>
-              <input type="number" step="0.01" value={cutCost} onChange={(e) => setCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Klejenie (zl/szt)</label>
-              <input type="number" step="0.01" value={glueCost} onChange={(e) => setGlueCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Szycie (zl/szt)</label>
-              <input type="number" step="0.01" value={stapleCost} onChange={(e) => setStapleCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie broszury (zl/szt)</label>
-              <input type="number" step="0.01" value={brochureCutCost} onChange={(e) => setBrochureCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie nakl. prostokat (zl/szt)</label>
-              <input type="number" step="0.01" value={stickerCutRect} onChange={(e) => setStickerCutRect(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie nakl. po obrysie (zl/szt)</label>
-              <input type="number" step="0.01" value={stickerCutContour} onChange={(e) => setStickerCutContour(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Setup gadzety (zl jednorazowo)</label>
-              <input type="number" step="1" value={gadgetSetup} onChange={(e) => setGadgetSetup(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {mode === "small" && (
         <div className="grid gap-6 lg:grid-cols-2">
