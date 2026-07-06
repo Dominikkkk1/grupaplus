@@ -140,13 +140,27 @@ export default async function OrderDetailPage({
           </div>
           {!isClient && (
             <div className="flex gap-2">
-              <a
-                href={`/orders?newOrder=1&desc=${encodeURIComponent((items ?? []).map(i => (i.product as {name:string}|null)?.name ?? i.description).join(", "))}&qty=${(items ?? [])[0]?.quantity ?? 1}&unitPrice=${(items ?? [])[0]?.unit_price ?? ""}`}
+              <button
+                onClick={() => {
+                  const dupItems = (items ?? []).map(i => ({
+                    productId: (i.product as {sku:string}|null) ? "" : "",
+                    description: (i.product as {name:string}|null)?.name ?? i.description,
+                    quantity: i.quantity,
+                    unitPrice: i.unit_price ? String(i.unit_price) : "",
+                  }));
+                  sessionStorage.setItem("duplicateOrder", JSON.stringify({
+                    items: dupItems,
+                    customerName: contact?.full_name ?? "",
+                    customerEmail: contact?.email ?? "",
+                    customerPhone: contact?.phone ?? "",
+                  }));
+                  window.location.href = "/orders?newOrder=1&duplicate=1";
+                }}
                 className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
               >
                 <Copy size={14} />
                 <span className="hidden sm:inline">Powiel</span>
-              </a>
+              </button>
               <a
                 href={`/orders/${id}/print`}
                 target="_blank"

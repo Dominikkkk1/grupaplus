@@ -16,11 +16,11 @@ const MATERIALS: Record<string, { label: string; pricePerSheet: number }> = {
 const LAMINATES: Record<string, { label: string; pricePerSheet: number }> = {
   none: { label: "Bez laminatu", pricePerSheet: 0 },
   mat: { label: "Mat", pricePerSheet: 0.6 },
-  bliss: { label: "Blysk", pricePerSheet: 0.6 },
+  bliss: { label: "Błysk", pricePerSheet: 0.6 },
   soft: { label: "Soft touch", pricePerSheet: 1.2 },
 };
 
-// Broszury — materialy wnetrza
+// Broszury — materialy wnętrza
 const INTERIOR_MATERIALS: Record<string, { label: string; pricePerSheet: number }> = {
   "offset_80g": { label: "Offset 80g", pricePerSheet: 0.15 },
   "offset_90g": { label: "Offset 90g", pricePerSheet: 0.2 },
@@ -28,7 +28,7 @@ const INTERIOR_MATERIALS: Record<string, { label: string; pricePerSheet: number 
   "kreda_170g": { label: "Kreda 170g", pricePerSheet: 0.5 },
 };
 
-// Broszury — materialy okladki
+// Broszury — materialy okładki
 const COVER_MATERIALS: Record<string, { label: string; pricePerSheet: number }> = {
   "kreda_300g": { label: "Kreda 300g", pricePerSheet: 1.0 },
   "kreda_350g": { label: "Kreda 350g", pricePerSheet: 1.2 },
@@ -110,7 +110,7 @@ export default function CalculatorPage() {
   const [gadgetSetup, setGadgetSetup] = useState(GADGET_SETUP_COST);
 
   // Maly format
-  const [material, setMaterial] = useState("350g");
+  const [material, setMateriał] = useState("350g");
   const [laminate, setLaminate] = useState("none");
   const [doubleSided, setDoubleSided] = useState(true);
   const [quantity, setQuantity] = useState(100);
@@ -131,7 +131,7 @@ export default function CalculatorPage() {
   const [brQuantity, setBrQuantity] = useState(100);
 
   // Naklejki
-  const [stMaterial, setStMaterial] = useState("folia_biala");
+  const [stMaterial, setStMateriał] = useState("folia_biala");
   const [stWidthMm, setStWidthMm] = useState(50);
   const [stHeightMm, setStHeightMm] = useState(30);
   const [stCutType, setStCutType] = useState<"rect" | "contour">("rect");
@@ -271,14 +271,14 @@ export default function CalculatorPage() {
             <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-4 lg:grid-cols-3">
               {/* Wspolne: druk */}
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-zinc-500">Druk (zl/arkusz)</label>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-500">Druk (zł/arkusz)</label>
                 <input type="number" step="0.01" value={printCost} onChange={(e) => setPrintCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
               </div>
 
               {/* Maly format */}
               {mode === "small" && (
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie (zl/szt)</label>
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-500">Cięcie (zł/szt)</label>
                   <input type="number" step="0.01" value={cutCost} onChange={(e) => setCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                 </div>
               )}
@@ -287,15 +287,15 @@ export default function CalculatorPage() {
               {mode === "brochure" && (
                 <>
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Klejenie (zl/szt)</label>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Klejenie (zł/szt)</label>
                     <input type="number" step="0.01" value={glueCost} onChange={(e) => setGlueCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Szycie (zl/szt)</label>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Szycie (zł/szt)</label>
                     <input type="number" step="0.01" value={stapleCost} onChange={(e) => setStapleCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie broszury (zl/szt)</label>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Cięcie broszury (zł/szt)</label>
                     <input type="number" step="0.01" value={brochureCutCost} onChange={(e) => setBrochureCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                   </div>
                 </>
@@ -305,11 +305,11 @@ export default function CalculatorPage() {
               {mode === "sticker" && (
                 <>
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie prostokat (zl/szt)</label>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Cięcie prostokąt (zł/szt)</label>
                     <input type="number" step="0.01" value={stickerCutRect} onChange={(e) => setStickerCutRect(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie po obrysie (zl/szt)</label>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-500">Cięcie po obrysie (zł/szt)</label>
                     <input type="number" step="0.01" value={stickerCutContour} onChange={(e) => setStickerCutContour(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                   </div>
                 </>
@@ -318,7 +318,7 @@ export default function CalculatorPage() {
               {/* Gadzety */}
               {mode === "gadget" && (
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-zinc-500">Setup / przygotowanie (zl)</label>
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-500">Setup / przygotowanie (zł)</label>
                   <input type="number" step="1" value={gadgetSetup} onChange={(e) => setGadgetSetup(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-[13px]" />
                 </div>
               )}
@@ -331,10 +331,10 @@ export default function CalculatorPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Material</label>
-              <select value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Materiał</label>
+              <select value={material} onChange={(e) => setMateriał(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                 {Object.entries(MATERIALS).map(([key, m]) => (
-                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zl/arkusz)</option>
+                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zł/arkusz)</option>
                 ))}
               </select>
             </div>
@@ -342,7 +342,7 @@ export default function CalculatorPage() {
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Laminat</label>
               <select value={laminate} onChange={(e) => setLaminate(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                 {Object.entries(LAMINATES).map(([key, l]) => (
-                  <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zl/arkusz)` : ""}</option>
+                  <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zł/arkusz)` : ""}</option>
                 ))}
               </select>
             </div>
@@ -351,7 +351,7 @@ export default function CalculatorPage() {
               Druk dwustronny
             </label>
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Ilosc sztuk</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Ilość sztuk</label>
               <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
             </div>
           </div>
@@ -362,15 +362,15 @@ export default function CalculatorPage() {
               <h2 className="text-[14px] font-semibold text-zinc-900">Wycena</h2>
             </div>
             <div className="space-y-3 text-[13px]">
-              <div className="flex justify-between"><span className="text-zinc-500">Material:</span><span>{mat.label}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Materiał:</span><span>{mat.label}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Laminat:</span><span>{lam.label}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Druk:</span><span>{doubleSided ? "Dwustronny" : "Jednostronny"}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Ilosc:</span><span>{quantity} szt.</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Ilość:</span><span>{quantity} szt.</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Arkuszy:</span><span>{sheetsNeeded}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Narzut ({((margin - 1) * 100).toFixed(0)}%):</span><span>x{margin.toFixed(1)}</span></div>
               <div className="border-t border-zinc-200 pt-3">
-                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{totalSmall.toFixed(2)} zl</span></div>
-                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{perPieceSmall.toFixed(2)} zl</span></div>
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{totalSmall.toFixed(2)} zł</span></div>
+                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztukę:</span><span>{perPieceSmall.toFixed(2)} zł</span></div>
                 <button
                   onClick={() => createOrderFromCalc(`${mat.label}${lam.label !== "Bez laminatu" ? ` + ${lam.label}` : ""}, ${doubleSided ? "dwustronny" : "jednostronny"}`, quantity, perPieceSmall)}
                   className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
@@ -389,16 +389,16 @@ export default function CalculatorPage() {
           <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Szerokosc (cm)</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Szerokość (cm)</label>
                 <input type="number" min={1} value={widthCm} onChange={(e) => setWidthCm(parseInt(e.target.value) || 1)} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Wysokosc (cm)</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Wysokość (cm)</label>
                 <input type="number" min={1} value={heightCm} onChange={(e) => setHeightCm(parseInt(e.target.value) || 1)} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Cena za m² (zl)</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Cena za m² (zł)</label>
               <input type="number" step="0.01" value={pricePerM2} onChange={(e) => setPricePerM2(parseFloat(e.target.value) || 0)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
             </div>
           </div>
@@ -411,9 +411,9 @@ export default function CalculatorPage() {
             <div className="space-y-3 text-[13px]">
               <div className="flex justify-between"><span className="text-zinc-500">Wymiary:</span><span>{widthCm} x {heightCm} cm</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Powierzchnia:</span><span>{areaM2.toFixed(2)} m²</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Stawka:</span><span>{pricePerM2.toFixed(2)} zl/m²</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Stawka:</span><span>{pricePerM2.toFixed(2)} zł/m²</span></div>
               <div className="border-t border-zinc-200 pt-3">
-                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{totalLarge.toFixed(2)} zl</span></div>
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{totalLarge.toFixed(2)} zł</span></div>
                 <button
                   onClick={() => createOrderFromCalc(`Duży format ${widthCm}x${heightCm}cm`, 1, totalLarge)}
                   className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
@@ -441,7 +441,7 @@ export default function CalculatorPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Stron wnetrza</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Stron wnętrza</label>
                 <select value={brPages} onChange={(e) => setBrPages(parseInt(e.target.value))} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                   {[4, 8, 12, 16, 24, 32, 48, 64, 96, 128].map((p) => (
                     <option key={p} value={p}>{p} stron</option>
@@ -451,28 +451,28 @@ export default function CalculatorPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Material wnetrza</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Materiał wnętrza</label>
               <select value={brInterior} onChange={(e) => setBrInterior(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                 {Object.entries(INTERIOR_MATERIALS).map(([key, m]) => (
-                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zl/arkusz)</option>
+                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zł/arkusz)</option>
                 ))}
               </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Material okladki</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Materiał okładki</label>
                 <select value={brCover} onChange={(e) => setBrCover(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                   {Object.entries(COVER_MATERIALS).map(([key, m]) => (
-                    <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zl/arkusz)</option>
+                    <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zł/arkusz)</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Laminat okladki</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Laminat okładki</label>
                 <select value={brLaminate} onChange={(e) => setBrLaminate(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                   {Object.entries(LAMINATES).map(([key, l]) => (
-                    <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zl)` : ""}</option>
+                    <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zł)` : ""}</option>
                   ))}
                 </select>
               </div>
@@ -480,7 +480,7 @@ export default function CalculatorPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Druk wnetrza</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Druk wnętrza</label>
                 <select value={brPrint} onChange={(e) => setBrPrint(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                   <option value="4+4">4+4 (kolor obie strony)</option>
                   <option value="4+0">4+0 (kolor jednostronny)</option>
@@ -497,7 +497,7 @@ export default function CalculatorPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Naklad</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Nakład</label>
               <input type="number" min={1} value={brQuantity} onChange={(e) => setBrQuantity(parseInt(e.target.value) || 1)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
             </div>
           </div>
@@ -509,24 +509,24 @@ export default function CalculatorPage() {
               <h2 className="text-[14px] font-semibold text-zinc-900">Wycena broszury</h2>
             </div>
             <div className="space-y-2 text-[13px]">
-              <div className="flex justify-between"><span className="text-zinc-500">Format:</span><span>{brFmt.label}, {brPages} stron + okladka</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Format:</span><span>{brFmt.label}, {brPages} stron + okładka</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Wnetrze:</span><span>{brInt.label}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Okladka:</span><span>{brCov.label} + {brLam.label}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Druk wnetrza:</span><span>{brPrint}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Druk wnętrza:</span><span>{brPrint}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Oprawa:</span><span>{brBinding === "glue" ? "Klejona" : "Zszywana"}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Arkuszy wnetrza:</span><span>{interiorSheets}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Naklad:</span><span>{brQuantity} szt.</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Arkuszy wnętrza:</span><span>{interiorSheets}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Nakład:</span><span>{brQuantity} szt.</span></div>
 
               {/* Breakdown */}
               <div className="mt-2 border-t border-zinc-100 pt-2 text-[12px] text-zinc-400">
-                <p>Papier wnetrze: {costInteriorMaterial.toFixed(2)} zl</p>
-                <p>Druk wnetrze: {costInteriorPrint.toFixed(2)} zl</p>
-                <p>Papier okladka: {costCoverMaterial.toFixed(2)} zl</p>
-                <p>Druk okladka: {costCoverPrint.toFixed(2)} zl</p>
-                <p>Laminat okladka: {costCoverLaminate.toFixed(2)} zl</p>
-                <p>Oprawa: {costBinding.toFixed(2)} zl</p>
-                <p>Ciecie: {costCut.toFixed(2)} zl</p>
-                <p className="font-medium text-zinc-500">Koszt surowca/szt: {brRawPerPiece.toFixed(2)} zl</p>
+                <p>Papier wnętrze: {costInteriorMaterial.toFixed(2)} zł</p>
+                <p>Druk wnętrze: {costInteriorPrint.toFixed(2)} zł</p>
+                <p>Papier okładka: {costCoverMaterial.toFixed(2)} zł</p>
+                <p>Druk okładka: {costCoverPrint.toFixed(2)} zł</p>
+                <p>Laminat okładka: {costCoverLaminate.toFixed(2)} zł</p>
+                <p>Oprawa: {costBinding.toFixed(2)} zł</p>
+                <p>Cięcie: {costCut.toFixed(2)} zł</p>
+                <p className="font-medium text-zinc-500">Koszt surowca/szt: {brRawPerPiece.toFixed(2)} zł</p>
               </div>
 
               <div className="flex justify-between text-zinc-500">
@@ -535,8 +535,8 @@ export default function CalculatorPage() {
               </div>
 
               <div className="border-t border-zinc-200 pt-3">
-                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{brTotal.toFixed(2)} zl</span></div>
-                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{brPerPiece.toFixed(2)} zl</span></div>
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{brTotal.toFixed(2)} zł</span></div>
+                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztukę:</span><span>{brPerPiece.toFixed(2)} zł</span></div>
                 <button
                   onClick={() => createOrderFromCalc(`Broszura ${brFmt.label}, ${brPages} stron, ${brBinding === "glue" ? "klejona" : "zszywana"}`, brQuantity, brPerPiece)}
                   className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
@@ -554,42 +554,42 @@ export default function CalculatorPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Material</label>
-              <select value={stMaterial} onChange={(e) => setStMaterial(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Materiał</label>
+              <select value={stMaterial} onChange={(e) => setStMateriał(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                 {Object.entries(STICKER_MATERIALS).map(([key, m]) => (
-                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zl/arkusz)</option>
+                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zł/arkusz)</option>
                 ))}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Szerokosc (mm)</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Szerokość (mm)</label>
                 <input type="number" min={5} value={stWidthMm} onChange={(e) => setStWidthMm(parseInt(e.target.value) || 5)} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Wysokosc (mm)</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Wysokość (mm)</label>
                 <input type="number" min={5} value={stHeightMm} onChange={(e) => setStHeightMm(parseInt(e.target.value) || 5)} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Ciecie</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Cięcie</label>
                 <select value={stCutType} onChange={(e) => setStCutType(e.target.value as "rect" | "contour")} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
-                  <option value="rect">Prostokątne ({stickerCutRect.toFixed(2)} zl/szt)</option>
-                  <option value="contour">Po obrysie ({stickerCutContour.toFixed(2)} zl/szt)</option>
+                  <option value="rect">Prostokątne ({stickerCutRect.toFixed(2)} zł/szt)</option>
+                  <option value="contour">Po obrysie ({stickerCutContour.toFixed(2)} zł/szt)</option>
                 </select>
               </div>
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Laminat</label>
                 <select value={stLaminate} onChange={(e) => setStLaminate(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                   {Object.entries(LAMINATES).map(([key, l]) => (
-                    <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zl)` : ""}</option>
+                    <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zł)` : ""}</option>
                   ))}
                 </select>
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Naklad</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Nakład</label>
               <input type="number" min={1} value={stQuantity} onChange={(e) => setStQuantity(parseInt(e.target.value) || 1)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
             </div>
           </div>
@@ -600,17 +600,17 @@ export default function CalculatorPage() {
               <h2 className="text-[14px] font-semibold text-zinc-900">Wycena naklejek</h2>
             </div>
             <div className="space-y-2 text-[13px]">
-              <div className="flex justify-between"><span className="text-zinc-500">Material:</span><span>{stMat.label}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Materiał:</span><span>{stMat.label}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Wymiar:</span><span>{stWidthMm} x {stHeightMm} mm</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Szt. na arkuszu:</span><span>{stPerSheet}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Arkuszy potrzebnych:</span><span>{stSheets}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Ciecie:</span><span>{stCutType === "contour" ? "Po obrysie" : "Prostokątne"}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Cięcie:</span><span>{stCutType === "contour" ? "Po obrysie" : "Prostokątne"}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Laminat:</span><span>{stLam.label}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Naklad:</span><span>{stQuantity} szt.</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Nakład:</span><span>{stQuantity} szt.</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Narzut ({((stMargin - 1) * 100).toFixed(0)}%):</span><span>x{stMargin.toFixed(1)}</span></div>
               <div className="border-t border-zinc-200 pt-3">
-                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{stTotal.toFixed(2)} zl</span></div>
-                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{stPerPiece.toFixed(4)} zl</span></div>
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{stTotal.toFixed(2)} zł</span></div>
+                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztukę:</span><span>{stPerPiece.toFixed(4)} zł</span></div>
                 <button
                   onClick={() => createOrderFromCalc(`Naklejki ${stWidthMm}x${stHeightMm}mm, ${stMat.label}${stCutType === "contour" ? ", po obrysie" : ""}`, stQuantity, stPerPiece)}
                   className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
@@ -631,7 +631,7 @@ export default function CalculatorPage() {
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Typ gadzetu</label>
               <select value={gdType} onChange={(e) => setGdType(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                 {Object.entries(GADGETS).map(([key, g]) => (
-                  <option key={key} value={key}>{g.label} ({g.basePrice.toFixed(2)} zl/szt)</option>
+                  <option key={key} value={key}>{g.label} ({g.basePrice.toFixed(2)} zł/szt)</option>
                 ))}
               </select>
             </div>
@@ -639,12 +639,12 @@ export default function CalculatorPage() {
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Metoda druku</label>
               <select value={gdPrint} onChange={(e) => setGdPrint(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
                 {Object.entries(GADGET_PRINT_METHODS).map(([key, m]) => (
-                  <option key={key} value={key}>{m.label} ({m.costPerPiece.toFixed(2)} zl/szt)</option>
+                  <option key={key} value={key}>{m.label} ({m.costPerPiece.toFixed(2)} zł/szt)</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Naklad</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Nakład</label>
               <input type="number" min={1} value={gdQuantity} onChange={(e) => setGdQuantity(parseInt(e.target.value) || 1)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
             </div>
           </div>
@@ -656,15 +656,15 @@ export default function CalculatorPage() {
             </div>
             <div className="space-y-2 text-[13px]">
               <div className="flex justify-between"><span className="text-zinc-500">Gadżet:</span><span>{gdGadget.label}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Cena bazowa:</span><span>{gdGadget.basePrice.toFixed(2)} zl</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Druk ({gdMethod.label}):</span><span>{gdMethod.costPerPiece.toFixed(2)} zl</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Przygotowanie (/{gdQuantity} szt.):</span><span>{gdSetupPerPiece.toFixed(2)} zl</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Naklad:</span><span>{gdQuantity} szt.</span></div>
-              <div className="flex justify-between text-[12px] text-zinc-400"><span>Koszt surowca/szt:</span><span>{gdRawPerPiece.toFixed(2)} zl</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Cena bazowa:</span><span>{gdGadget.basePrice.toFixed(2)} zł</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Druk ({gdMethod.label}):</span><span>{gdMethod.costPerPiece.toFixed(2)} zł</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Przygotowanie (/{gdQuantity} szt.):</span><span>{gdSetupPerPiece.toFixed(2)} zł</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Nakład:</span><span>{gdQuantity} szt.</span></div>
+              <div className="flex justify-between text-[12px] text-zinc-400"><span>Koszt surowca/szt:</span><span>{gdRawPerPiece.toFixed(2)} zł</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Narzut ({((gdMargin - 1) * 100).toFixed(0)}%):</span><span>x{gdMargin.toFixed(1)}</span></div>
               <div className="border-t border-zinc-200 pt-3">
-                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{gdTotal.toFixed(2)} zl</span></div>
-                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{gdPerPiece.toFixed(2)} zl</span></div>
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{gdTotal.toFixed(2)} zł</span></div>
+                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztukę:</span><span>{gdPerPiece.toFixed(2)} zł</span></div>
                 <button
                   onClick={() => createOrderFromCalc(`${gdGadget.label}, ${gdMethod.label}`, gdQuantity, gdPerPiece)}
                   className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"

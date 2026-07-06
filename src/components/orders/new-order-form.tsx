@@ -33,21 +33,28 @@ export function NewOrderForm({
   contacts = [],
   companies = [],
   initialItem,
+  duplicateData,
   onClose,
 }: {
   products: ProductOption[];
   contacts?: ContactOption[];
   companies?: CompanyOption[];
   initialItem?: { description: string; quantity: number; unitPrice: number };
+  duplicateData?: {
+    items: { productId: string; description: string; quantity: number; unitPrice: string }[];
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+  };
   onClose: () => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState(duplicateData?.customerName ?? "");
+  const [customerEmail, setCustomerEmail] = useState(duplicateData?.customerEmail ?? "");
+  const [customerPhone, setCustomerPhone] = useState(duplicateData?.customerPhone ?? "");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Sugestie kontaktow/firm na podstawie wpisanego tekstu
@@ -103,14 +110,16 @@ export function NewOrderForm({
   const [deadline, setDeadline] = useState("");
   const [isBlacklisted, setIsBlacklisted] = useState(false);
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState([
-    {
-      productId: "",
-      description: initialItem?.description ?? "",
-      quantity: initialItem?.quantity ?? 1,
-      unitPrice: initialItem?.unitPrice?.toString() ?? "",
-    },
-  ]);
+  const [items, setItems] = useState(
+    duplicateData?.items?.length
+      ? duplicateData.items
+      : [{
+          productId: "",
+          description: initialItem?.description ?? "",
+          quantity: initialItem?.quantity ?? 1,
+          unitPrice: initialItem?.unitPrice?.toString() ?? "",
+        }]
+  );
 
   function addItem() {
     setItems([...items, { productId: "", description: "", quantity: 1, unitPrice: "" }]);

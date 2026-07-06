@@ -63,16 +63,35 @@ export function OrdersPageClient({
   const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "awaiting_approval", "in_production", "ready", "finished"];
   const rawFilter = searchParams.get("filter") || "active";
   const initialFilter = VALID_FILTERS.includes(rawFilter) ? rawFilter : "active";
-  // Auto-open form z kalkulatora
+  // Auto-open form z kalkulatora lub duplikacji
   const newOrderParam = searchParams.get("newOrder");
+  const isDuplicate = searchParams.get("duplicate") === "1";
   const calcDesc = searchParams.get("desc");
   const calcQty = searchParams.get("qty");
   const calcPrice = searchParams.get("unitPrice");
-  const initialItem = newOrderParam ? {
+  const initialItem = (newOrderParam && !isDuplicate) ? {
     description: calcDesc || "",
     quantity: parseInt(calcQty || "1") || 1,
     unitPrice: parseFloat(calcPrice || "0") || 0,
   } : undefined;
+
+  // Duplikacja: odczytaj pełne dane z sessionStorage
+  const duplicateData = (() => {
+    if (!isDuplicate || typeof window === "undefined") return undefined;
+    try {
+      const raw = sessionStorage.getItem("duplicateOrder");
+      if (raw) {
+        sessionStorage.removeItem("duplicateOrder");
+        return JSON.parse(raw) as {
+          items: { productId: string; description: string; quantity: number; unitPrice: string }[];
+          customerName: string;
+          customerEmail: string;
+          customerPhone: string;
+        };
+      }
+    } catch { /* ignore */ }
+    return undefined;
+  })();
   const [showForm, setShowForm] = useState(!!newOrderParam);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
@@ -342,6 +361,7 @@ export function OrdersPageClient({
           contacts={contacts}
           companies={companies}
           initialItem={initialItem}
+          duplicateData={duplicateData}
           onClose={() => setShowForm(false)}
         />
       )}
