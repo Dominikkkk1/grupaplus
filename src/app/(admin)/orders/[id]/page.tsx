@@ -16,13 +16,13 @@ import {
   Star,
   MessageSquare,
   AlertTriangle,
-  Copy,
 } from "lucide-react";
 import { WorkflowChecklist } from "@/components/orders/workflow-checklist";
 import { ItemWorkflowBuilder } from "@/components/orders/item-workflow-builder";
 import { FileUpload } from "@/components/orders/file-upload";
 import { OrderActions } from "@/components/orders/order-actions";
 import { DeleteOrderButton } from "@/components/orders/delete-order-button";
+import { DuplicateOrderButton } from "@/components/orders/duplicate-order-button";
 import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
 
 export default async function OrderDetailPage({
@@ -140,27 +140,16 @@ export default async function OrderDetailPage({
           </div>
           {!isClient && (
             <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  const dupItems = (items ?? []).map(i => ({
-                    productId: (i.product as {sku:string}|null) ? "" : "",
-                    description: (i.product as {name:string}|null)?.name ?? i.description,
-                    quantity: i.quantity,
-                    unitPrice: i.unit_price ? String(i.unit_price) : "",
-                  }));
-                  sessionStorage.setItem("duplicateOrder", JSON.stringify({
-                    items: dupItems,
-                    customerName: contact?.full_name ?? "",
-                    customerEmail: contact?.email ?? "",
-                    customerPhone: contact?.phone ?? "",
-                  }));
-                  window.location.href = "/orders?newOrder=1&duplicate=1";
-                }}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 sm:px-3 sm:py-2 sm:text-[13px]"
-              >
-                <Copy size={14} />
-                <span className="hidden sm:inline">Powiel</span>
-              </button>
+              <DuplicateOrderButton
+                items={(items ?? []).map(i => ({
+                  description: (i.product as {name:string}|null)?.name ?? i.description,
+                  quantity: i.quantity,
+                  unitPrice: i.unit_price ? String(i.unit_price) : "",
+                }))}
+                customerName={contact?.full_name ?? ""}
+                customerEmail={contact?.email ?? ""}
+                customerPhone={contact?.phone ?? ""}
+              />
               <a
                 href={`/orders/${id}/print`}
                 target="_blank"
