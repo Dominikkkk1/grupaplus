@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Calculator } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Calculator, ShoppingCart } from "lucide-react";
 
 // Domyslne stawki — admin bedzie mogl je zmienic pozniej
 const MATERIALS: Record<string, { label: string; pricePerSheet: number }> = {
@@ -84,8 +85,19 @@ function getMarginMultiplier(qty: number): number {
 type Mode = "small" | "large" | "brochure" | "sticker" | "gadget";
 
 export default function CalculatorPage() {
+  const calcRouter = useRouter();
   const [mode, setMode] = useState<Mode>("small");
   const [showRates, setShowRates] = useState(false);
+
+  function createOrderFromCalc(description: string, qty: number, unitPrice: number) {
+    const params = new URLSearchParams({
+      newOrder: "1",
+      desc: description,
+      qty: qty.toString(),
+      unitPrice: unitPrice.toFixed(2),
+    });
+    calcRouter.push(`/orders?${params.toString()}`);
+  }
 
   // Edytowalne stawki
   const [printCost, setPrintCost] = useState(PRINT_COST_PER_SHEET);
@@ -344,6 +356,13 @@ export default function CalculatorPage() {
               <div className="border-t border-zinc-200 pt-3">
                 <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{totalSmall.toFixed(2)} zl</span></div>
                 <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{perPieceSmall.toFixed(2)} zl</span></div>
+                <button
+                  onClick={() => createOrderFromCalc(`${mat.label}${lam.label !== "Bez laminatu" ? ` + ${lam.label}` : ""}, ${doubleSided ? "dwustronny" : "jednostronny"}`, quantity, perPieceSmall)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
+                >
+                  <ShoppingCart size={13} />
+                  Utwórz zamówienie
+                </button>
               </div>
             </div>
           </div>
@@ -380,6 +399,13 @@ export default function CalculatorPage() {
               <div className="flex justify-between"><span className="text-zinc-500">Stawka:</span><span>{pricePerM2.toFixed(2)} zl/m²</span></div>
               <div className="border-t border-zinc-200 pt-3">
                 <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{totalLarge.toFixed(2)} zl</span></div>
+                <button
+                  onClick={() => createOrderFromCalc(`Duży format ${widthCm}x${heightCm}cm`, 1, totalLarge)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
+                >
+                  <ShoppingCart size={13} />
+                  Utwórz zamówienie
+                </button>
               </div>
             </div>
           </div>
@@ -496,6 +522,13 @@ export default function CalculatorPage() {
               <div className="border-t border-zinc-200 pt-3">
                 <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{brTotal.toFixed(2)} zl</span></div>
                 <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{brPerPiece.toFixed(2)} zl</span></div>
+                <button
+                  onClick={() => createOrderFromCalc(`Broszura ${brFmt.label}, ${brPages} stron, ${brBinding === "glue" ? "klejona" : "zszywana"}`, brQuantity, brPerPiece)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
+                >
+                  <ShoppingCart size={13} />
+                  Utwórz zamówienie
+                </button>
               </div>
             </div>
           </div>
@@ -563,6 +596,13 @@ export default function CalculatorPage() {
               <div className="border-t border-zinc-200 pt-3">
                 <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{stTotal.toFixed(2)} zl</span></div>
                 <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{stPerPiece.toFixed(4)} zl</span></div>
+                <button
+                  onClick={() => createOrderFromCalc(`Naklejki ${stWidthMm}x${stHeightMm}mm, ${stMat.label}${stCutType === "contour" ? ", po obrysie" : ""}`, stQuantity, stPerPiece)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
+                >
+                  <ShoppingCart size={13} />
+                  Utwórz zamówienie
+                </button>
               </div>
             </div>
           </div>
@@ -610,6 +650,13 @@ export default function CalculatorPage() {
               <div className="border-t border-zinc-200 pt-3">
                 <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{gdTotal.toFixed(2)} zl</span></div>
                 <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{gdPerPiece.toFixed(2)} zl</span></div>
+                <button
+                  onClick={() => createOrderFromCalc(`${gdGadget.label}, ${gdMethod.label}`, gdQuantity, gdPerPiece)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-zinc-800"
+                >
+                  <ShoppingCart size={13} />
+                  Utwórz zamówienie
+                </button>
               </div>
             </div>
           </div>

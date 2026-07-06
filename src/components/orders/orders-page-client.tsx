@@ -12,6 +12,7 @@ interface ProductOption {
   name: string;
   sku: string | null;
   lead_time_days: number | null;
+  base_price: number | null;
 }
 
 export interface Order {
@@ -62,7 +63,17 @@ export function OrdersPageClient({
   const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "awaiting_approval", "in_production", "ready", "finished"];
   const rawFilter = searchParams.get("filter") || "active";
   const initialFilter = VALID_FILTERS.includes(rawFilter) ? rawFilter : "active";
-  const [showForm, setShowForm] = useState(false);
+  // Auto-open form z kalkulatora
+  const newOrderParam = searchParams.get("newOrder");
+  const calcDesc = searchParams.get("desc");
+  const calcQty = searchParams.get("qty");
+  const calcPrice = searchParams.get("unitPrice");
+  const initialItem = newOrderParam ? {
+    description: calcDesc || "",
+    quantity: parseInt(calcQty || "1") || 1,
+    unitPrice: parseFloat(calcPrice || "0") || 0,
+  } : undefined;
+  const [showForm, setShowForm] = useState(!!newOrderParam);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
   const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");
@@ -330,6 +341,7 @@ export function OrdersPageClient({
           products={products}
           contacts={contacts}
           companies={companies}
+          initialItem={initialItem}
           onClose={() => setShowForm(false)}
         />
       )}

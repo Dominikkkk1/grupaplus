@@ -10,6 +10,7 @@ interface ProductOption {
   name: string;
   sku: string | null;
   lead_time_days: number | null;
+  base_price: number | null;
 }
 
 interface ContactOption {
@@ -31,11 +32,13 @@ export function NewOrderForm({
   products,
   contacts = [],
   companies = [],
+  initialItem,
   onClose,
 }: {
   products: ProductOption[];
   contacts?: ContactOption[];
   companies?: CompanyOption[];
+  initialItem?: { description: string; quantity: number; unitPrice: number };
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -101,11 +104,16 @@ export function NewOrderForm({
   const [isBlacklisted, setIsBlacklisted] = useState(false);
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState([
-    { productId: "", description: "", quantity: 1 },
+    {
+      productId: "",
+      description: initialItem?.description ?? "",
+      quantity: initialItem?.quantity ?? 1,
+      unitPrice: initialItem?.unitPrice?.toString() ?? "",
+    },
   ]);
 
   function addItem() {
-    setItems([...items, { productId: "", description: "", quantity: 1 }]);
+    setItems([...items, { productId: "", description: "", quantity: 1, unitPrice: "" }]);
   }
 
   function removeItem(index: number) {
@@ -127,11 +135,14 @@ export function NewOrderForm({
   function updateItem(index: number, field: string, value: string | number) {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
-    // Auto-fill description from product
+    // Auto-fill description + unitPrice from product
     if (field === "productId" && value) {
       const product = products.find((p) => p.id === value);
       if (product) {
         updated[index].description = product.name;
+        if (product.base_price) {
+          updated[index].unitPrice = product.base_price.toString();
+        }
       }
     }
     setItems(updated);
@@ -161,6 +172,7 @@ export function NewOrderForm({
         productId: i.productId || undefined,
         description: i.description,
         quantity: i.quantity,
+        unitPrice: i.unitPrice ? parseFloat(i.unitPrice) : undefined,
       }));
 
     console.log("[ORDER FORM] raw items state:", items);
@@ -416,7 +428,19 @@ export function NewOrderForm({
                     onChange={(e) =>
                       updateItem(i, "quantity", parseInt(e.target.value) || 1)
                     }
+                    placeholder="Ilość"
                     className="w-16 rounded-lg border border-zinc-300 px-2 py-2 text-center text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={item.unitPrice}
+                    onChange={(e) =>
+                      updateItem(i, "unitPrice", e.target.value)
+                    }
+                    placeholder="zł/szt"
+                    className="w-20 rounded-lg border border-zinc-300 px-2 py-2 text-center text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                   />
                   {items.length > 1 && (
                     <button
