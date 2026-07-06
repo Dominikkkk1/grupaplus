@@ -41,6 +41,8 @@ export function WorkflowBuilder({
   const [justSaved, setJustSaved] = useState(false);
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   // Etapy dostepne = te ktore NIE sa jeszcze przypisane
   const assignedIds = new Set(assigned.map((a) => a.stepId));
@@ -74,7 +76,11 @@ export function WorkflowBuilder({
 
   function handleDragEnd() {
     if (dragItem.current === null || dragOverItem.current === null) return;
-    if (dragItem.current === dragOverItem.current) return;
+    if (dragItem.current === dragOverItem.current) {
+      setDraggingIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
     const newArr = [...assigned];
     const [dragged] = newArr.splice(dragItem.current, 1);
     newArr.splice(dragOverItem.current, 0, dragged);
@@ -82,6 +88,8 @@ export function WorkflowBuilder({
     setSaved(false);
     dragItem.current = null;
     dragOverItem.current = null;
+    setDraggingIndex(null);
+    setDragOverIndex(null);
   }
 
   async function handleSave() {
@@ -153,37 +161,54 @@ export function WorkflowBuilder({
       )}
 
       {assigned.length > 0 ? (
-        <div className="mb-6 space-y-1.5">
-          {assigned.map((step, i) => (
-            <div
-              key={step.stepId}
-              draggable
-              onDragStart={() => { dragItem.current = i; }}
-              onDragEnter={() => { dragOverItem.current = i; }}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnd={handleDragEnd}
-              className="flex cursor-grab items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 shadow-sm transition-colors active:cursor-grabbing active:border-zinc-400 active:bg-zinc-50"
-            >
-              <GripVertical size={14} className="flex-shrink-0 text-zinc-300" />
-              <span className="w-5 text-center text-[12px] font-semibold text-zinc-400">
-                {step.stepOrder}
-              </span>
-              <div
-                className="h-3 w-3 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: step.color }}
-              />
-              <span className="flex-1 text-[13px] font-medium text-zinc-900">
-                {step.name}
-              </span>
-              <button
-                onClick={() => removeStep(step.stepId)}
-                className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-                title="Usuń"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+        <div className="mb-6 space-y-0">
+          {assigned.map((step, i) => {
+            const isDragging = draggingIndex === i;
+            const isOver = dragOverIndex === i && draggingIndex !== i;
+            return (
+              <div key={step.stepId}>
+                {/* Drop indicator — linia nad elementem */}
+                {isOver && draggingIndex !== null && draggingIndex > i && (
+                  <div className="mx-2 h-0.5 rounded bg-blue-500 transition-all" />
+                )}
+                <div
+                  draggable
+                  onDragStart={() => { dragItem.current = i; setDraggingIndex(i); }}
+                  onDragEnter={() => { dragOverItem.current = i; setDragOverIndex(i); }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={handleDragEnd}
+                  className={`my-0.5 flex cursor-grab items-center gap-3 rounded-lg border px-4 py-2.5 shadow-sm transition-all ${
+                    isDragging
+                      ? "border-blue-300 bg-blue-50 opacity-50"
+                      : "border-zinc-200 bg-white"
+                  }`}
+                >
+                  <GripVertical size={14} className="flex-shrink-0 text-zinc-300" />
+                  <span className="w-5 text-center text-[12px] font-semibold text-zinc-400">
+                    {step.stepOrder}
+                  </span>
+                  <div
+                    className="h-3 w-3 flex-shrink-0 rounded-full"
+                    style={{ backgroundColor: step.color }}
+                  />
+                  <span className="flex-1 text-[13px] font-medium text-zinc-900">
+                    {step.name}
+                  </span>
+                  <button
+                    onClick={() => removeStep(step.stepId)}
+                    className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                    title="Usuń"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                {/* Drop indicator — linia pod elementem */}
+                {isOver && draggingIndex !== null && draggingIndex < i && (
+                  <div className="mx-2 h-0.5 rounded bg-blue-500 transition-all" />
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="mb-6 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">

@@ -34,6 +34,8 @@ export function ItemWorkflowBuilder({
   const [saved, setSaved] = useState(false);
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   const assignedIds = new Set(assigned.map((a) => a.stepId));
   const available = allSteps.filter((s) => !assignedIds.has(s.id));
@@ -51,7 +53,11 @@ export function ItemWorkflowBuilder({
 
   function handleDragEnd() {
     if (dragItem.current === null || dragOverItem.current === null) return;
-    if (dragItem.current === dragOverItem.current) return;
+    if (dragItem.current === dragOverItem.current) {
+      setDraggingIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
     const newArr = [...assigned];
     const [dragged] = newArr.splice(dragItem.current, 1);
     newArr.splice(dragOverItem.current, 0, dragged);
@@ -59,6 +65,8 @@ export function ItemWorkflowBuilder({
     setSaved(false);
     dragItem.current = null;
     dragOverItem.current = null;
+    setDraggingIndex(null);
+    setDragOverIndex(null);
   }
 
   async function handleSave() {
@@ -126,26 +134,39 @@ export function ItemWorkflowBuilder({
       )}
 
       {assigned.length > 0 && (
-        <div className="mb-3 space-y-1">
-          {assigned.map((step, i) => (
-            <div
-              key={step.stepId}
-              draggable
-              onDragStart={() => { dragItem.current = i; }}
-              onDragEnter={() => { dragOverItem.current = i; }}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnd={handleDragEnd}
-              className="flex cursor-grab items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[12px] shadow-sm active:cursor-grabbing active:border-zinc-400"
-            >
-              <GripVertical size={12} className="text-zinc-300" />
-              <span className="w-4 text-center text-[11px] font-semibold text-zinc-400">{step.stepOrder}</span>
-              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: step.color }} />
-              <span className="flex-1 font-medium text-zinc-900">{step.name}</span>
-              <button onClick={() => removeStep(step.stepId)} className="rounded p-0.5 text-zinc-400 hover:text-red-500">
-                <X size={12} />
-              </button>
-            </div>
-          ))}
+        <div className="mb-3 space-y-0">
+          {assigned.map((step, i) => {
+            const isDragging = draggingIndex === i;
+            const isOver = dragOverIndex === i && draggingIndex !== i;
+            return (
+              <div key={step.stepId}>
+                {isOver && draggingIndex !== null && draggingIndex > i && (
+                  <div className="mx-1 h-0.5 rounded bg-blue-500" />
+                )}
+                <div
+                  draggable
+                  onDragStart={() => { dragItem.current = i; setDraggingIndex(i); }}
+                  onDragEnter={() => { dragOverItem.current = i; setDragOverIndex(i); }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={handleDragEnd}
+                  className={`my-0.5 flex cursor-grab items-center gap-2 rounded-lg border px-3 py-2 text-[12px] shadow-sm transition-all ${
+                    isDragging ? "border-blue-300 bg-blue-50 opacity-50" : "border-zinc-200 bg-white"
+                  }`}
+                >
+                  <GripVertical size={12} className="text-zinc-300" />
+                  <span className="w-4 text-center text-[11px] font-semibold text-zinc-400">{step.stepOrder}</span>
+                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: step.color }} />
+                  <span className="flex-1 font-medium text-zinc-900">{step.name}</span>
+                  <button onClick={() => removeStep(step.stepId)} className="rounded p-0.5 text-zinc-400 hover:text-red-500">
+                    <X size={12} />
+                  </button>
+                </div>
+                {isOver && draggingIndex !== null && draggingIndex < i && (
+                  <div className="mx-1 h-0.5 rounded bg-blue-500" />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
