@@ -164,6 +164,12 @@ export function NewOrderForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (!customerName.trim()) {
+      setError("Wpisz nazwę klienta");
+      return;
+    }
+
     setLoading(true);
 
     const orderItems = items
@@ -397,60 +403,77 @@ export function NewOrderForm({
             <label className="mb-2 block text-[12px] font-medium text-zinc-600">
               Pozycje
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {items.map((item, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <select
-                    value={item.productId}
-                    onChange={(e) => updateItem(i, "productId", e.target.value)}
-                    className="w-44 flex-shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                  >
-                    <option value="">— Produkt —</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={(e) =>
-                      updateItem(i, "description", e.target.value)
-                    }
-                    placeholder="Opis pozycji"
-                    className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                  />
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.quantity}
-                    onChange={(e) =>
-                      updateItem(i, "quantity", parseInt(e.target.value) || 1)
-                    }
-                    placeholder="Ilość"
-                    className="w-16 rounded-lg border border-zinc-300 px-2 py-2 text-center text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                  />
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={item.unitPrice}
-                    onChange={(e) =>
-                      updateItem(i, "unitPrice", e.target.value)
-                    }
-                    placeholder="zł/szt"
-                    className="w-20 rounded-lg border border-zinc-300 px-2 py-2 text-center text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                  />
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeItem(i)}
-                      className="mt-1.5 rounded p-1 text-zinc-400 hover:text-red-500"
+                <div key={i} className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-3 space-y-2">
+                  {/* Rząd 1: Produkt + Opis */}
+                  <div className="flex gap-2">
+                    <select
+                      value={item.productId}
+                      onChange={(e) => updateItem(i, "productId", e.target.value)}
+                      className="w-40 flex-shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                     >
+                      <option value="">— Produkt —</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={(e) =>
+                        updateItem(i, "description", e.target.value)
+                      }
+                      placeholder="Opis pozycji"
+                      className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    />
+                  </div>
+                  {/* Rząd 2: Ilość + Cena + Usuń */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-zinc-500">Ilość:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateItem(i, "quantity", parseInt(e.target.value) || 1)
+                        }
+                        className="w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-center text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-zinc-500">Cena/szt:</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        value={item.unitPrice}
+                        onChange={(e) =>
+                          updateItem(i, "unitPrice", e.target.value)
+                        }
+                        placeholder="zł"
+                        className="w-20 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-center text-[13px] placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                      />
+                    </div>
+                    {item.unitPrice && item.quantity > 0 && (
+                      <span className="text-[11px] text-zinc-400">
+                        = {(parseFloat(item.unitPrice) * item.quantity).toFixed(2)} zł
+                      </span>
+                    )}
+                    <div className="flex-1" />
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(i)}
+                        className="rounded p-1 text-zinc-400 hover:text-red-500"
+                      >
                       <Trash2 size={14} />
                     </button>
                   )}
+                  </div>
                 </div>
               ))}
             </div>
