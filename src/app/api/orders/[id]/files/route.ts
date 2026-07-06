@@ -5,8 +5,14 @@ import { validateFile } from "@/services/file-validation.service";
 export const maxDuration = 60;
 
 /**
- * POST /api/orders/[id]/files — upload pliku do zamówienia
- * Body: FormData z polem "file"
+ * POST /api/orders/[id]/files — rejestracja pliku (po direct upload do Storage)
+ *
+ * Nowy flow (od Fazy "duże pliki"):
+ * 1. Browser uploaduje plik bezpośrednio do Supabase Storage (bypass Vercel 4.5MB limit)
+ * 2. Browser wysyła JSON z metadata do tego API
+ * 3. API pobiera plik ze Storage → preflight → zapisuje rekord w order_files
+ *
+ * Body: { filePath, fileName, fileSize, mimeType, orderItemId? }
  */
 export async function POST(
   request: NextRequest,
@@ -32,40 +38,23 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const formData = await request.formData();
-  const file = formData.get("file") as File | null;
-  const orderItemId = formData.get("orderItemId") as string | null;
+  const body = await request.json();
+  const { filePath, fileName, fileSize, mimeType, orderItemId } = body;
 
-  if (!file) {
-    return NextResponse.json({ error: "Brak pliku" }, { status: 400 });
-  }
-
-  if (file.size > 20 * 1024 * 1024) {
-    return NextResponse.json(
-      { error: "Plik za duzy (max 20 MB)" },
-      { status: 400 }
-    );
+  if (!filePath || !fileName) {
+    return NextResponse.json({ error: "filePath i fileName wymagane" }, { status: 400 });
   }
 
   // Walidacja rozszerzenia server-side
   const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "tiff", "tif"];
-  const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+  const ext = (fileName.split(".").pop() ?? "").toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    // Cleanup: usun plik z Storage
+    await supabase.storage.from("order-files").remove([filePath]);
     return NextResponse.json(
       { error: "Niedozwolony typ pliku (dozwolone: PDF, JPG, PNG, TIFF)" },
       { status: 400 }
     );
-  }
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const filePath = `${id}/${Date.now()}-${safeName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("order-files")
-    .upload(filePath, file, { contentType: file.type });
-
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
   // Pobierz docelowe wymiary produktu (jeśli pozycja ma produkt)
@@ -83,20 +72,30 @@ export async function POST(
     targetHeight = prod?.height_mm ? Number(prod.height_mm) : null;
   }
 
-  // Preflight — walidacja pliku (DPI, wymiary, profil, proporcje)
-  const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const preflight = await validateFile(fileBuffer, file.type, file.name, targetWidth, targetHeight);
+  // Pobierz plik ze Storage do preflight
+  let preflight: { status: string; checks?: unknown[]; validatedAt?: string } = { status: "pending", checks: [], validatedAt: new Date().toISOString() };
 
-  // Zapisz rekord w tabeli order_files z wynikiem preflight
+  const { data: fileData, error: downloadError } = await supabase.storage
+    .from("order-files")
+    .download(filePath);
+
+  if (!downloadError && fileData) {
+    const fileBuffer = Buffer.from(await fileData.arrayBuffer());
+    preflight = await validateFile(fileBuffer, mimeType, fileName, targetWidth, targetHeight);
+  } else {
+    console.error("[FILES] download for preflight failed:", downloadError?.message);
+  }
+
+  // Zapisz rekord w tabeli order_files
   const { data: record, error: dbError } = await supabase
     .from("order_files")
     .insert({
       order_id: id,
       order_item_id: orderItemId || null,
-      file_name: file.name,
+      file_name: fileName,
       file_path: filePath,
-      file_size: file.size,
-      mime_type: file.type,
+      file_size: fileSize || null,
+      mime_type: mimeType || null,
       uploaded_by: user.id,
       preflight_status: preflight.status,
       preflight_result: preflight,
@@ -105,7 +104,6 @@ export async function POST(
     .single();
 
   if (dbError) {
-    // Cleanup: usun plik z Storage jesli DB insert fail (zeby nie bylo orphanow)
     await supabase.storage.from("order-files").remove([filePath]);
     return NextResponse.json({ error: dbError.message }, { status: 500 });
   }
@@ -120,7 +118,6 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // params consumed below after fileId check
   const supabase = await createClient();
   const {
     data: { user },
@@ -147,7 +144,6 @@ export async function DELETE(
 
   const { id: orderId } = await params;
 
-  // Pobierz sciezke pliku — weryfikuj ze nalezy do tego zamowienia
   const { data: fileRecord } = await supabase
     .from("order_files")
     .select("file_path")

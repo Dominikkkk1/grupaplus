@@ -114,26 +114,59 @@ export function FileUpload({
       setPreflightWarning(warning);
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    if (orderItemId) formData.append("orderItemId", orderItemId);
+    // Walidacja rozszerzenia client-side
+    const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+    if (!["pdf", "jpg", "jpeg", "png", "tiff", "tif"].includes(ext)) {
+      setError("Niedozwolony typ pliku (dozwolone: PDF, JPG, PNG, TIFF)");
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
-    const res = await fetch(`/api/orders/${orderId}/files`, {
-      method: "POST",
-      body: formData,
-    });
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Plik za duży — maksymalny rozmiar to 100 MB");
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
-    if (!res.ok) {
-      if (res.status === 413) {
-        setError("Plik za duży — maksymalny rozmiar to 4.5 MB");
-      } else {
-        try {
-          const data = await res.json();
-          setError(data.error || "Błąd uploadu");
-        } catch {
-          setError(`Błąd serwera (${res.status})`);
-        }
+    try {
+      // Direct upload do Supabase Storage (bypass Vercel 4.5MB limit)
+      const supabase = createClient();
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const filePath = `${orderId}/${Date.now()}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("order-files")
+        .upload(filePath, file, { contentType: file.type });
+
+      if (uploadError) {
+        setError(`Błąd uploadu: ${uploadError.message}`);
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
       }
+
+      // Zapisz metadata + triggeruj preflight przez API (mały request, bez pliku)
+      const res = await fetch(`/api/orders/${orderId}/files`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filePath,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          orderItemId: orderItemId || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Błąd serwera" }));
+        setError(data.error || "Błąd zapisu metadanych");
+      }
+    } catch (err) {
+      setError("Błąd uploadu — sprawdź połączenie");
+      console.error("[UPLOAD] error:", err);
     }
 
     setUploading(false);
