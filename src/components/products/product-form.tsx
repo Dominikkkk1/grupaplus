@@ -145,6 +145,8 @@ export function ProductForm({
                 <option value="maly_format">Maly format</option>
                 <option value="duzy_format">Duzy format</option>
                 <option value="broszura">Broszura / Ksiazka</option>
+                <option value="naklejki">Naklejki / Etykiety</option>
+                <option value="gadzety">Kubki / Gadzety</option>
                 <option value="inne">Inne (niestandardowe)</option>
               </select>
             </div>

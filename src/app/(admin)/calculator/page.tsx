@@ -40,11 +40,36 @@ const FORMATS: Record<string, { label: string; pagesPerSheet: number }> = {
   dl: { label: "DL (99x210mm)", pagesPerSheet: 6 },
 };
 
+// Naklejki — materialy
+const STICKER_MATERIALS: Record<string, { label: string; pricePerSheet: number }> = {
+  folia_biala: { label: "Folia biała", pricePerSheet: 2.0 },
+  folia_przezroczysta: { label: "Folia przezroczysta", pricePerSheet: 2.5 },
+  papier_samoprzylepny: { label: "Papier samoprzylepny", pricePerSheet: 1.5 },
+};
+
+// Gadżety — typy
+const GADGETS: Record<string, { label: string; basePrice: number }> = {
+  kubek_ceramiczny: { label: "Kubek ceramiczny", basePrice: 8.0 },
+  kubek_magiczny: { label: "Kubek magiczny", basePrice: 15.0 },
+  dlugopis: { label: "Długopis", basePrice: 2.5 },
+  smycz: { label: "Smycz", basePrice: 3.0 },
+  torba_bawelniana: { label: "Torba bawełniana", basePrice: 12.0 },
+};
+
+const GADGET_PRINT_METHODS: Record<string, { label: string; costPerPiece: number }> = {
+  uv: { label: "Druk UV", costPerPiece: 3.0 },
+  sublimacja: { label: "Sublimacja", costPerPiece: 4.0 },
+  sitodruk: { label: "Sitodruk", costPerPiece: 2.0 },
+};
+
 const PRINT_COST_PER_SHEET = 0.8;
 const CUT_COST = 0.1;
-const BINDING_GLUE_COST = 1.5; // klejenie per szt
-const BINDING_STAPLE_COST = 0.8; // zszywanie per szt
-const BROCHURE_CUT_COST = 0.3; // ciecie broszury per szt
+const BINDING_GLUE_COST = 1.5;
+const BINDING_STAPLE_COST = 0.8;
+const BROCHURE_CUT_COST = 0.3;
+const STICKER_CUT_RECT = 0.05;
+const STICKER_CUT_CONTOUR = 0.15;
+const GADGET_SETUP_COST = 50.0;
 
 // Marza wg ilosci
 function getMarginMultiplier(qty: number): number {
@@ -56,7 +81,7 @@ function getMarginMultiplier(qty: number): number {
   return 1.3;
 }
 
-type Mode = "small" | "large" | "brochure";
+type Mode = "small" | "large" | "brochure" | "sticker" | "gadget";
 
 export default function CalculatorPage() {
   const [mode, setMode] = useState<Mode>("small");
@@ -68,6 +93,9 @@ export default function CalculatorPage() {
   const [glueCost, setGlueCost] = useState(BINDING_GLUE_COST);
   const [stapleCost, setStapleCost] = useState(BINDING_STAPLE_COST);
   const [brochureCutCost, setBrochureCutCost] = useState(BROCHURE_CUT_COST);
+  const [stickerCutRect, setStickerCutRect] = useState(STICKER_CUT_RECT);
+  const [stickerCutContour, setStickerCutContour] = useState(STICKER_CUT_CONTOUR);
+  const [gadgetSetup, setGadgetSetup] = useState(GADGET_SETUP_COST);
 
   // Maly format
   const [material, setMaterial] = useState("350g");
@@ -89,6 +117,19 @@ export default function CalculatorPage() {
   const [brPrint, setBrPrint] = useState("4+4");
   const [brBinding, setBrBinding] = useState<"glue" | "staple">("glue");
   const [brQuantity, setBrQuantity] = useState(100);
+
+  // Naklejki
+  const [stMaterial, setStMaterial] = useState("folia_biala");
+  const [stWidthMm, setStWidthMm] = useState(50);
+  const [stHeightMm, setStHeightMm] = useState(30);
+  const [stCutType, setStCutType] = useState<"rect" | "contour">("rect");
+  const [stLaminate, setStLaminate] = useState("none");
+  const [stQuantity, setStQuantity] = useState(500);
+
+  // Gadżety
+  const [gdType, setGdType] = useState("kubek_ceramiczny");
+  const [gdPrint, setGdPrint] = useState("uv");
+  const [gdQuantity, setGdQuantity] = useState(50);
 
   // ========= Kalkulacja — maly format =========
   const mat = MATERIALS[material];
@@ -132,6 +173,26 @@ export default function CalculatorPage() {
   const brTotal = brTotalRaw * brMargin;
   const brPerPiece = brTotal / brQuantity;
 
+  // ========= Kalkulacja — naklejki =========
+  const stMat = STICKER_MATERIALS[stMaterial];
+  const stLam = LAMINATES[stLaminate];
+  const stPerSheet = Math.max(1, Math.floor(420 / stWidthMm) * Math.floor(297 / stHeightMm));
+  const stSheets = Math.ceil(stQuantity / stPerSheet);
+  const stCutCostPer = stCutType === "contour" ? stickerCutContour : stickerCutRect;
+  const stRawCost = stSheets * (stMat.pricePerSheet + printCost + stLam.pricePerSheet) + stQuantity * stCutCostPer;
+  const stMargin = getMarginMultiplier(stQuantity);
+  const stTotal = stRawCost * stMargin;
+  const stPerPiece = stTotal / stQuantity;
+
+  // ========= Kalkulacja — gadżety =========
+  const gdGadget = GADGETS[gdType];
+  const gdMethod = GADGET_PRINT_METHODS[gdPrint];
+  const gdSetupPerPiece = gadgetSetup / gdQuantity;
+  const gdRawPerPiece = gdGadget.basePrice + gdMethod.costPerPiece + gdSetupPerPiece;
+  const gdMargin = getMarginMultiplier(gdQuantity);
+  const gdTotal = gdRawPerPiece * gdQuantity * gdMargin;
+  const gdPerPiece = gdTotal / gdQuantity;
+
   return (
     <div>
       <div className="mb-6">
@@ -144,11 +205,13 @@ export default function CalculatorPage() {
       </div>
 
       {/* Tryb */}
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
         {([
           { value: "small" as const, label: "Maly format" },
           { value: "large" as const, label: "Duzy format" },
-          { value: "brochure" as const, label: "Broszury / Ksiazki" },
+          { value: "brochure" as const, label: "Broszury" },
+          { value: "sticker" as const, label: "Naklejki" },
+          { value: "gadget" as const, label: "Kubki / Gadzety" },
         ]).map((m) => (
           <button
             key={m.value}
@@ -173,7 +236,7 @@ export default function CalculatorPage() {
           {showRates ? "Ukryj stawki bazowe" : "Edytuj stawki bazowe"}
         </button>
         {showRates && (
-          <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 lg:grid-cols-5">
+          <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 lg:grid-cols-4">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-500">Druk (zl/arkusz)</label>
               <input type="number" step="0.01" value={printCost} onChange={(e) => setPrintCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
@@ -193,6 +256,18 @@ export default function CalculatorPage() {
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie broszury (zl/szt)</label>
               <input type="number" step="0.01" value={brochureCutCost} onChange={(e) => setBrochureCutCost(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie nakl. prostokat (zl/szt)</label>
+              <input type="number" step="0.01" value={stickerCutRect} onChange={(e) => setStickerCutRect(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Ciecie nakl. po obrysie (zl/szt)</label>
+              <input type="number" step="0.01" value={stickerCutContour} onChange={(e) => setStickerCutContour(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-500">Setup gadzety (zl jednorazowo)</label>
+              <input type="number" step="1" value={gadgetSetup} onChange={(e) => setGadgetSetup(parseFloat(e.target.value) || 0)} className="w-full rounded border border-zinc-300 px-2 py-1 text-[13px]" />
             </div>
           </div>
         )}
@@ -394,6 +469,120 @@ export default function CalculatorPage() {
               <div className="border-t border-zinc-200 pt-3">
                 <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{brTotal.toFixed(2)} zl</span></div>
                 <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{brPerPiece.toFixed(2)} zl</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "sticker" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Material</label>
+              <select value={stMaterial} onChange={(e) => setStMaterial(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+                {Object.entries(STICKER_MATERIALS).map(([key, m]) => (
+                  <option key={key} value={key}>{m.label} ({m.pricePerSheet.toFixed(2)} zl/arkusz)</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Szerokosc (mm)</label>
+                <input type="number" min={5} value={stWidthMm} onChange={(e) => setStWidthMm(parseInt(e.target.value) || 5)} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Wysokosc (mm)</label>
+                <input type="number" min={5} value={stHeightMm} onChange={(e) => setStHeightMm(parseInt(e.target.value) || 5)} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Ciecie</label>
+                <select value={stCutType} onChange={(e) => setStCutType(e.target.value as "rect" | "contour")} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+                  <option value="rect">Prostokątne ({stickerCutRect.toFixed(2)} zl/szt)</option>
+                  <option value="contour">Po obrysie ({stickerCutContour.toFixed(2)} zl/szt)</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Laminat</label>
+                <select value={stLaminate} onChange={(e) => setStLaminate(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+                  {Object.entries(LAMINATES).map(([key, l]) => (
+                    <option key={key} value={key}>{l.label}{l.pricePerSheet > 0 ? ` (+${l.pricePerSheet.toFixed(2)} zl)` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Naklad</label>
+              <input type="number" min={1} value={stQuantity} onChange={(e) => setStQuantity(parseInt(e.target.value) || 1)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <Calculator size={18} className="text-zinc-400" />
+              <h2 className="text-[14px] font-semibold text-zinc-900">Wycena naklejek</h2>
+            </div>
+            <div className="space-y-2 text-[13px]">
+              <div className="flex justify-between"><span className="text-zinc-500">Material:</span><span>{stMat.label}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Wymiar:</span><span>{stWidthMm} x {stHeightMm} mm</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Szt. na arkuszu:</span><span>{stPerSheet}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Arkuszy potrzebnych:</span><span>{stSheets}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Ciecie:</span><span>{stCutType === "contour" ? "Po obrysie" : "Prostokątne"}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Laminat:</span><span>{stLam.label}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Naklad:</span><span>{stQuantity} szt.</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Narzut ({((stMargin - 1) * 100).toFixed(0)}%):</span><span>x{stMargin.toFixed(1)}</span></div>
+              <div className="border-t border-zinc-200 pt-3">
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{stTotal.toFixed(2)} zl</span></div>
+                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{stPerPiece.toFixed(4)} zl</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "gadget" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Typ gadzetu</label>
+              <select value={gdType} onChange={(e) => setGdType(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+                {Object.entries(GADGETS).map(([key, g]) => (
+                  <option key={key} value={key}>{g.label} ({g.basePrice.toFixed(2)} zl/szt)</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Metoda druku</label>
+              <select value={gdPrint} onChange={(e) => setGdPrint(e.target.value)} className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none">
+                {Object.entries(GADGET_PRINT_METHODS).map(([key, m]) => (
+                  <option key={key} value={key}>{m.label} ({m.costPerPiece.toFixed(2)} zl/szt)</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">Naklad</label>
+              <input type="number" min={1} value={gdQuantity} onChange={(e) => setGdQuantity(parseInt(e.target.value) || 1)} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <Calculator size={18} className="text-zinc-400" />
+              <h2 className="text-[14px] font-semibold text-zinc-900">Wycena gadzetu</h2>
+            </div>
+            <div className="space-y-2 text-[13px]">
+              <div className="flex justify-between"><span className="text-zinc-500">Gadżet:</span><span>{gdGadget.label}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Cena bazowa:</span><span>{gdGadget.basePrice.toFixed(2)} zl</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Druk ({gdMethod.label}):</span><span>{gdMethod.costPerPiece.toFixed(2)} zl</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Przygotowanie (/{gdQuantity} szt.):</span><span>{gdSetupPerPiece.toFixed(2)} zl</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Naklad:</span><span>{gdQuantity} szt.</span></div>
+              <div className="flex justify-between text-[12px] text-zinc-400"><span>Koszt surowca/szt:</span><span>{gdRawPerPiece.toFixed(2)} zl</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Narzut ({((gdMargin - 1) * 100).toFixed(0)}%):</span><span>x{gdMargin.toFixed(1)}</span></div>
+              <div className="border-t border-zinc-200 pt-3">
+                <div className="flex justify-between text-[15px] font-bold text-zinc-900"><span>RAZEM:</span><span>{gdTotal.toFixed(2)} zl</span></div>
+                <div className="mt-1 flex justify-between text-[12px] text-zinc-500"><span>Za sztuke:</span><span>{gdPerPiece.toFixed(2)} zl</span></div>
               </div>
             </div>
           </div>
