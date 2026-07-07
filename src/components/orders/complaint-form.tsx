@@ -25,7 +25,7 @@ export function ComplaintForm({
   const [error, setError] = useState("");
 
   const [type, setType] = useState<"internal" | "external">("internal");
-  const [orderItemId, setOrderItemId] = useState("");
+  const [orderItemId, setOrderItemId] = useState(items.length === 1 ? items[0].id : "");
   const [revertToStepId, setRevertToStepId] = useState("");
   const [reprintQuantity, setReprintQuantity] = useState("");
   const [reason, setReason] = useState("");

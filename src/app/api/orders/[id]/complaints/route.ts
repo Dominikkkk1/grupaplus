@@ -35,7 +35,7 @@ export async function POST(
   const body = await request.json();
   const { type, orderItemId, reason, revertToStepId, revertBranchType, reprintQuantity, notes } =
     body;
-  console.log("[COMPLAINT] orderId=%s type=%s orderItemId=%s revertToStepId=%s user=%s", id, type, orderItemId, revertToStepId, user.id);
+  console.log("[COMPLAINT] orderId=%s type=%s orderItemId=%s revertToStepId=%s revertBranchType=%s user=%s", id, type, orderItemId, revertToStepId, revertBranchType, user.id);
 
   if (!reason || !reason.trim()) {
     return NextResponse.json(
