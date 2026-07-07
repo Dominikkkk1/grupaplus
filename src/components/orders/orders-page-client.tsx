@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Plus, Search, Package, Star, MessageSquare, Store } from "lucide-react";
@@ -75,24 +75,26 @@ export function OrdersPageClient({
     unitPrice: parseFloat(calcPrice || "0") || 0,
   } : undefined;
 
-  // Duplikacja: odczytaj pełne dane z sessionStorage
-  const duplicateData = (() => {
-    if (!isDuplicate || typeof window === "undefined") return undefined;
+  // Duplikacja: odczytaj pełne dane z sessionStorage (useEffect bo SSR nie ma sessionStorage)
+  const [duplicateData, setDuplicateData] = useState<{
+    items: { productId: string; description: string; quantity: number; unitPrice: string }[];
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+  } | undefined>(undefined);
+  const [showForm, setShowForm] = useState(!!newOrderParam);
+
+  useEffect(() => {
+    if (!isDuplicate) return;
     try {
       const raw = sessionStorage.getItem("duplicateOrder");
       if (raw) {
         sessionStorage.removeItem("duplicateOrder");
-        return JSON.parse(raw) as {
-          items: { productId: string; description: string; quantity: number; unitPrice: string }[];
-          customerName: string;
-          customerEmail: string;
-          customerPhone: string;
-        };
+        setDuplicateData(JSON.parse(raw));
+        setShowForm(true);
       }
     } catch { /* ignore */ }
-    return undefined;
-  })();
-  const [showForm, setShowForm] = useState(!!newOrderParam);
+  }, [isDuplicate]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
   const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");

@@ -10,6 +10,7 @@ interface OrderData {
   source: string;
   status: string;
   payment_status: string;
+  is_priority: boolean;
   delivery_type: string;
   shipping_method: string | null;
   total_price: number | null;
@@ -55,7 +56,7 @@ export default function PrintPage() {
       supabase
         .from("orders")
         .select(
-          "order_number, source, status, payment_status, delivery_type, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
+          "order_number, source, status, payment_status, is_priority, delivery_type, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
         )
         .eq("id", id)
         .single(),
@@ -160,6 +161,9 @@ export default function PrintPage() {
             <div>
               <h1 style={{ fontSize: "1.25rem", fontWeight: "bold", margin: 0 }}>
                 KARTA PRODUKCYJNA
+                {order.is_priority && (
+                  <span style={{ marginLeft: "0.5rem", color: "#d97706", fontSize: "1rem" }}>★ PRIORYTET</span>
+                )}
               </h1>
               <p style={{ fontSize: "1.1rem", fontWeight: "bold", fontFamily: "monospace", marginTop: "0.25rem" }}>
                 {order.order_number}
