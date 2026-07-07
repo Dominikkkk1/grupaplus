@@ -100,29 +100,53 @@ export async function POST(
 
   // Jesli zgłoszenie wewnetrzne z cofnieciem etapu — cofnij progress
   if (type === "internal" && revertToStepId && orderItemId) {
-    // Znajdz step_order tego etapu
-    const { data: targetStep } = await supabase
+    // Znajdz step_order i branch_type tego etapu
+    // Uwaga: ten sam step_id moze byc w obu branchach — bierzemy pierwszy match
+    const { data: targetSteps } = await supabase
       .from("order_item_progress")
-      .select("step_order")
+      .select("step_order, branch_type")
       .eq("order_item_id", orderItemId)
       .eq("step_id", revertToStepId)
-      .maybeSingle();
+      .limit(1);
+
+    const targetStep = targetSteps?.[0];
 
     if (targetStep) {
-      console.log("[COMPLAINT] REVERT: item=%s from step_order=%d", orderItemId, targetStep.step_order);
-      // Cofnij wszystkie etapy od tego w gore do pending
-      await supabase
-        .from("order_item_progress")
-        .update({
-          status: "pending",
-          completed_by: null,
-          completed_at: null,
-          machine_id: null,
-          started_at: null,
-          started_by: null,
-        })
-        .eq("order_item_id", orderItemId)
-        .gte("step_order", targetStep.step_order);
+      const bt = targetStep.branch_type ?? "common";
+      console.log("[COMPLAINT] REVERT: item=%s from step_order=%d branch=%s", orderItemId, targetStep.step_order, bt);
+
+      if (bt === "branch_a" || bt === "branch_b") {
+        // Branch step: cofnij TYLKO ten branch + post-join common
+        await supabase
+          .from("order_item_progress")
+          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
+          .eq("order_item_id", orderItemId)
+          .eq("branch_type", bt)
+          .gte("step_order", targetStep.step_order);
+
+        // Cofnij tez post-join common (bo branch sie zmienil)
+        await supabase
+          .from("order_item_progress")
+          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
+          .eq("order_item_id", orderItemId)
+          .eq("branch_type", "common")
+          .gte("step_order", 100);
+      } else if (bt === "common" && targetStep.step_order >= 100) {
+        // Post-join common: cofnij tylko post-join common od tego kroku
+        await supabase
+          .from("order_item_progress")
+          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
+          .eq("order_item_id", orderItemId)
+          .eq("branch_type", "common")
+          .gte("step_order", targetStep.step_order);
+      } else {
+        // Pre-fork common: cofnij WSZYSTKO (oba branche + post-join)
+        await supabase
+          .from("order_item_progress")
+          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
+          .eq("order_item_id", orderItemId)
+          .gte("step_order", targetStep.step_order);
+      }
 
       // Oznacz pozycje jako nieukonczona
       await supabase

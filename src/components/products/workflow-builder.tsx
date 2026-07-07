@@ -76,7 +76,11 @@ export function WorkflowBuilder({
   const availableLinear = allSteps.filter((s) => !linearAssignedIds.has(s.id));
   const availablePreFork = allSteps.filter((s) => !preForkIds.has(s.id));
   const availablePostJoin = allSteps.filter((s) => !postJoinIds.has(s.id));
-  const availableBranch = allSteps; // ten sam step moze byc w obu branchach
+  // Branche: ten sam step moze byc w A i B, ale nie 2x w tym samym branchu
+  const branchAIds = new Set(branchA.map((a) => a.stepId));
+  const branchBIds = new Set(branchB.map((a) => a.stepId));
+  const availableBranchA = allSteps.filter((s) => !branchAIds.has(s.id));
+  const availableBranchB = allSteps.filter((s) => !branchBIds.has(s.id));
 
   function renumber(steps: AssignedStep[]): AssignedStep[] {
     return steps.map((s, i) => ({ ...s, stepOrder: i + 1 }));
@@ -133,8 +137,15 @@ export function WorkflowBuilder({
 
   function toggleForkMode() {
     if (isForkMode) {
-      // Fork → Linear: merge all into linear
-      setLinearSteps(renumber([...preFork, ...branchA, ...branchB, ...postJoin].map((s) => ({ ...s, branchType: "common" as BranchType }))));
+      // Fork → Linear: merge all into linear (dedup by stepId)
+      const merged = [...preFork, ...branchA, ...branchB, ...postJoin].map((s) => ({ ...s, branchType: "common" as BranchType }));
+      const seen = new Set<string>();
+      const deduped = merged.filter((s) => {
+        if (seen.has(s.stepId)) return false;
+        seen.add(s.stepId);
+        return true;
+      });
+      setLinearSteps(renumber(deduped));
       setPreFork([]);
       setBranchA([]);
       setBranchB([]);
@@ -268,7 +279,7 @@ export function WorkflowBuilder({
               label="Branch A (Okładka)"
               steps={branchA}
               section="branchA"
-              allSteps={availableBranch}
+              allSteps={availableBranchA}
               onAdd={(step) => addToSection(step, "branchA")}
               onRemove={(id) => removeFromSection(id, "branchA")}
               onDrag={(from, to) => handleDrag("branchA", from, to)}
@@ -278,7 +289,7 @@ export function WorkflowBuilder({
               label="Branch B (Wkład)"
               steps={branchB}
               section="branchB"
-              allSteps={availableBranch}
+              allSteps={availableBranchB}
               onAdd={(step) => addToSection(step, "branchB")}
               onRemove={(id) => removeFromSection(id, "branchB")}
               onDrag={(from, to) => handleDrag("branchB", from, to)}
