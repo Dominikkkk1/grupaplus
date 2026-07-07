@@ -170,6 +170,9 @@ export async function POST(request: NextRequest) {
           if (!force) {
             return NextResponse.json({ error: "Poprzedni wspólny etap nie jest ukończony", requiresConfirmation: true, stepName }, { status: 409 });
           }
+          // Force: skip pre-fork common step
+          await supabase.from("order_item_progress").update({ status: "skipped" })
+            .eq("order_item_id", progress.order_item_id).eq("branch_type", "common").eq("step_order", lastPreFork.step_order);
         }
       } else {
         // Kolejny krok w branchu: sprawdz step_order-1 w TYM SAMYM branchu

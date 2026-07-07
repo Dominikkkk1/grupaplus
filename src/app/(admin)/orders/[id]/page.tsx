@@ -210,8 +210,9 @@ export default async function OrderDetailPage({
                 }[]
               )?.sort((a, b) => {
                 // Sortuj: common pre-fork → branch_a → branch_b → common post-join
-                const branchOrder = (bt: string) => bt === "branch_a" ? 1 : bt === "branch_b" ? 2 : (a.step_order >= 100 ? 3 : 0);
-                const bo = branchOrder(a.branch_type ?? "common") - branchOrder(b.branch_type ?? "common");
+                const branchOrder = (bt: string, stepOrder: number) =>
+                  bt === "branch_a" ? 1 : bt === "branch_b" ? 2 : (stepOrder >= 100 ? 3 : 0);
+                const bo = branchOrder(a.branch_type ?? "common", a.step_order) - branchOrder(b.branch_type ?? "common", b.step_order);
                 if (bo !== 0) return bo;
                 return a.step_order - b.step_order;
               });
