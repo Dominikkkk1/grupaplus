@@ -61,7 +61,7 @@ export default async function OrderDetailPage({
       *,
       product:products(name, sku),
       progress:order_item_progress(
-        id, step_order, status, branch_type, completed_at, notes,
+        id, step_id, step_order, status, branch_type, completed_at, notes,
         step:workflow_steps(name, color),
         completed_by_user:users!order_item_progress_completed_by_fkey(full_name),
         machine:machines(name)
