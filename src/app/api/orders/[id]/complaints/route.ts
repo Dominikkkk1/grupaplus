@@ -33,8 +33,15 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { type, orderItemId, reason, revertToStepId, revertBranchType, reprintQuantity, notes } =
-    body;
+  const raw = body;
+  // Sanitize: zamien string "undefined" na null
+  const type = raw.type;
+  const orderItemId = (raw.orderItemId && raw.orderItemId !== "undefined") ? raw.orderItemId : null;
+  const reason = raw.reason;
+  const revertToStepId = (raw.revertToStepId && raw.revertToStepId !== "undefined") ? raw.revertToStepId : null;
+  const revertBranchType = (raw.revertBranchType && raw.revertBranchType !== "undefined") ? raw.revertBranchType : null;
+  const reprintQuantity = raw.reprintQuantity;
+  const notes = raw.notes;
   console.log("[COMPLAINT] orderId=%s type=%s orderItemId=%s revertToStepId=%s revertBranchType=%s user=%s", id, type, orderItemId, revertToStepId, revertBranchType, user.id);
 
   if (!reason || !reason.trim()) {
@@ -63,10 +70,10 @@ export async function POST(
     .from("complaints")
     .insert({
       order_id: id,
-      order_item_id: (orderItemId && orderItemId !== "undefined") ? orderItemId : null,
+      order_item_id: orderItemId || null,
       type: type || "internal",
       reason: reason.trim(),
-      revert_to_step_id: (revertToStepId && revertToStepId !== "undefined") ? revertToStepId : null,
+      revert_to_step_id: revertToStepId || null,
       reprint_quantity: reprintQuantity || null,
       status: "open",
       reported_by: user.id,
