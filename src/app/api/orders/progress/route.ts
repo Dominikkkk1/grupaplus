@@ -71,46 +71,89 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  // Walidacja kolejnosci: nie mozna oznaczyc etapu jako completed
+  // Walidacja kolejnosci (branch-aware): nie mozna oznaczyc etapu jako completed
   // jesli poprzedni etap nie jest ukończony
   if (status === "completed") {
     const { data: current } = await supabase
       .from("order_item_progress")
-      .select("order_item_id, step_order")
-      .eq("id", progressId)
-      .single();
-
-    if (current && current.step_order > 1) {
-      const { data: prev } = await supabase
-        .from("order_item_progress")
-        .select("status")
-        .eq("order_item_id", current.order_item_id)
-        .eq("step_order", current.step_order - 1)
-        .single();
-
-      if (prev && prev.status !== "completed" && prev.status !== "skipped") {
-        console.log("[PROGRESS] 400 — prev step status=%s, nie mozna complete", prev.status);
-        return NextResponse.json(
-          { error: "Poprzedni etap musi byc ukończony" },
-          { status: 400 }
-        );
-      }
-    }
-  }
-
-  // Walidacja cofania: nie mozna cofnąć etapu jesli nastepny jest ukończony
-  if (status !== "completed") {
-    const { data: current } = await supabase
-      .from("order_item_progress")
-      .select("order_item_id, step_order")
+      .select("order_item_id, step_order, branch_type")
       .eq("id", progressId)
       .single();
 
     if (current) {
+      const bt = current.branch_type ?? "common";
+
+      if (bt === "common" && current.step_order >= 100) {
+        // Post-join common: czekaj az oba branche done
+        const { data: branchSteps } = await supabase
+          .from("order_item_progress")
+          .select("status, branch_type")
+          .eq("order_item_id", current.order_item_id)
+          .in("branch_type", ["branch_a", "branch_b"]);
+
+        if (branchSteps && branchSteps.length > 0) {
+          const aOk = branchSteps.filter((s) => s.branch_type === "branch_a").every((s) => s.status === "completed" || s.status === "skipped");
+          const bOk = branchSteps.filter((s) => s.branch_type === "branch_b").every((s) => s.status === "completed" || s.status === "skipped");
+          if (!aOk || !bOk) {
+            return NextResponse.json({ error: "Nie można zakończyć — oba branche muszą być ukończone (join)" }, { status: 400 });
+          }
+        }
+      }
+
+      // Standardowa walidacja: poprzedni krok w TYM SAMYM branchu
+      if (current.step_order > 1 && !(bt === "common" && current.step_order >= 100 && current.step_order === 101)) {
+        const prevOrder = bt !== "common" && current.step_order === 1
+          ? null  // Pierwszy w branchu — sprawdzamy pre-fork common osobno
+          : current.step_order - 1;
+
+        if (prevOrder !== null) {
+          const { data: prev } = await supabase
+            .from("order_item_progress")
+            .select("status")
+            .eq("order_item_id", current.order_item_id)
+            .eq("branch_type", bt)
+            .eq("step_order", prevOrder)
+            .maybeSingle();
+
+          if (prev && prev.status !== "completed" && prev.status !== "skipped") {
+            return NextResponse.json({ error: "Poprzedni etap musi być ukończony" }, { status: 400 });
+          }
+        }
+      }
+
+      // Pierwszy krok w branchu: sprawdz ostatni pre-fork common
+      if ((bt === "branch_a" || bt === "branch_b") && current.step_order === 1) {
+        const { data: preFork } = await supabase
+          .from("order_item_progress")
+          .select("status")
+          .eq("order_item_id", current.order_item_id)
+          .eq("branch_type", "common")
+          .lt("step_order", 100)
+          .order("step_order", { ascending: false })
+          .limit(1);
+
+        if (preFork?.[0] && preFork[0].status !== "completed" && preFork[0].status !== "skipped") {
+          return NextResponse.json({ error: "Poprzedni wspólny etap musi być ukończony" }, { status: 400 });
+        }
+      }
+    }
+  }
+
+  // Walidacja cofania (branch-aware): nie mozna cofnąć etapu jesli nastepny w TYM SAMYM branchu jest ukończony
+  if (status !== "completed") {
+    const { data: current } = await supabase
+      .from("order_item_progress")
+      .select("order_item_id, step_order, branch_type")
+      .eq("id", progressId)
+      .single();
+
+    if (current) {
+      const revertBranch = current.branch_type ?? "common";
       const { data: laterCompleted } = await supabase
         .from("order_item_progress")
         .select("id")
         .eq("order_item_id", current.order_item_id)
+        .eq("branch_type", revertBranch)
         .gt("step_order", current.step_order)
         .eq("status", "completed")
         .limit(1);

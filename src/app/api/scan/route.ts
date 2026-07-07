@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   // Pobierz dane etapu
   const { data: progress } = await supabase
     .from("order_item_progress")
-    .select("id, order_item_id, step_id, step_order, status, step:workflow_steps(name)")
+    .select("id, order_item_id, step_id, step_order, status, branch_type, step:workflow_steps(name)")
     .eq("id", progressId)
     .single();
 
@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
   }
 
   const stepName = (progress.step as unknown as { name: string })?.name;
-  console.log("[SCAN] etap: %s (order %d), krok: %s, obecny status: %s", stepName, progress.step_order, progressId, progress.status);
+  const branchType = (progress as unknown as { branch_type: string }).branch_type ?? "common";
+  console.log("[SCAN] etap: %s (order %d, branch=%s), krok: %s, obecny status: %s", stepName, progress.step_order, branchType, progressId, progress.status);
 
   if (action === "start") {
     // Blokada: nie mozna startowac krokow jesli zamowienie oczekuje na akceptacje projektu
@@ -91,36 +92,102 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sprawdz czy poprzedni krok jest completed
-    if (progress.step_order > 1) {
-      const { data: prev } = await supabase
+    // Sprawdz czy poprzedni krok jest completed (branch-aware)
+    if (branchType === "common") {
+      // Common step: sprawdz czy istnieja branche (post-join)
+      const { data: branchSteps } = await supabase
         .from("order_item_progress")
-        .select("status")
+        .select("status, branch_type")
         .eq("order_item_id", progress.order_item_id)
-        .eq("step_order", progress.step_order - 1)
-        .single();
+        .in("branch_type", ["branch_a", "branch_b"]);
 
-      if (prev && prev.status !== "completed" && prev.status !== "skipped") {
-        console.log("[SCAN] prev step status=%s (nie completed/skipped), force=%s", prev.status, force);
-        if (!force) {
+      const hasBranches = branchSteps && branchSteps.length > 0;
+
+      if (hasBranches && progress.step_order >= 100) {
+        // Post-join common: czekaj az OBA branche beda done
+        const branchADone = branchSteps.filter((s) => s.branch_type === "branch_a").every((s) => s.status === "completed" || s.status === "skipped");
+        const branchBDone = branchSteps.filter((s) => s.branch_type === "branch_b").every((s) => s.status === "completed" || s.status === "skipped");
+
+        if (!branchADone || !branchBDone) {
+          console.log("[SCAN] JOIN BLOCKED: branchA=%s branchB=%s", branchADone, branchBDone);
           return NextResponse.json(
-            {
-              error: "Poprzedni etap nie jest ukończony",
-              requiresConfirmation: true,
-              stepName: (progress.step as unknown as { name: string })?.name,
-            },
+            { error: "Nie można rozpocząć — czekam na zakończenie obu branchy (okładka + wkład)" },
             { status: 409 }
           );
         }
-        // force=true → oznacz brakujacy etap jako pominięty (nie completed — praca nie byla wykonana)
-        console.log("[SCAN] FORCE SKIP — pomijam prev step (step_order=%d)", progress.step_order - 1);
-        await supabase
+
+        // Sprawdz tez poprzedni post-join common (step_order - 1 w common)
+        if (progress.step_order > 101) {
+          const { data: prevPostJoin } = await supabase
+            .from("order_item_progress")
+            .select("status")
+            .eq("order_item_id", progress.order_item_id)
+            .eq("branch_type", "common")
+            .eq("step_order", progress.step_order - 1)
+            .maybeSingle();
+
+          if (prevPostJoin && prevPostJoin.status !== "completed" && prevPostJoin.status !== "skipped") {
+            if (!force) {
+              return NextResponse.json({ error: "Poprzedni etap nie jest ukończony", requiresConfirmation: true, stepName }, { status: 409 });
+            }
+            await supabase.from("order_item_progress").update({ status: "skipped" })
+              .eq("order_item_id", progress.order_item_id).eq("branch_type", "common").eq("step_order", progress.step_order - 1);
+          }
+        }
+      } else if (progress.step_order > 1) {
+        // Pre-fork common: standardowa sekwencyjna walidacja
+        const { data: prev } = await supabase
           .from("order_item_progress")
-          .update({
-            status: "skipped",
-          })
+          .select("status")
           .eq("order_item_id", progress.order_item_id)
-          .eq("step_order", progress.step_order - 1);
+          .eq("branch_type", "common")
+          .eq("step_order", progress.step_order - 1)
+          .maybeSingle();
+
+        if (prev && prev.status !== "completed" && prev.status !== "skipped") {
+          if (!force) {
+            return NextResponse.json({ error: "Poprzedni etap nie jest ukończony", requiresConfirmation: true, stepName }, { status: 409 });
+          }
+          await supabase.from("order_item_progress").update({ status: "skipped" })
+            .eq("order_item_id", progress.order_item_id).eq("branch_type", "common").eq("step_order", progress.step_order - 1);
+        }
+      }
+    } else {
+      // Branch step (branch_a lub branch_b)
+      if (progress.step_order === 1) {
+        // Pierwszy krok w branchu: sprawdz ostatni pre-fork common
+        const { data: preForkSteps } = await supabase
+          .from("order_item_progress")
+          .select("status, step_order")
+          .eq("order_item_id", progress.order_item_id)
+          .eq("branch_type", "common")
+          .lt("step_order", 100)
+          .order("step_order", { ascending: false })
+          .limit(1);
+
+        const lastPreFork = preForkSteps?.[0];
+        if (lastPreFork && lastPreFork.status !== "completed" && lastPreFork.status !== "skipped") {
+          if (!force) {
+            return NextResponse.json({ error: "Poprzedni wspólny etap nie jest ukończony", requiresConfirmation: true, stepName }, { status: 409 });
+          }
+        }
+      } else {
+        // Kolejny krok w branchu: sprawdz step_order-1 w TYM SAMYM branchu
+        const { data: prevBranch } = await supabase
+          .from("order_item_progress")
+          .select("status")
+          .eq("order_item_id", progress.order_item_id)
+          .eq("branch_type", branchType)
+          .eq("step_order", progress.step_order - 1)
+          .maybeSingle();
+
+        if (prevBranch && prevBranch.status !== "completed" && prevBranch.status !== "skipped") {
+          if (!force) {
+            return NextResponse.json({ error: "Poprzedni etap nie jest ukończony", requiresConfirmation: true, stepName }, { status: 409 });
+          }
+          await supabase.from("order_item_progress").update({ status: "skipped" })
+            .eq("order_item_id", progress.order_item_id).eq("branch_type", branchType).eq("step_order", progress.step_order - 1);
+        }
       }
     }
 
@@ -287,13 +354,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Pobierz info o nastepnym kroku (jesli nie wszystko done)
+    // Pobierz info o nastepnym kroku (branch-aware)
     let nextStep: { name: string; group: string | null } | null = null;
     if (!allDone) {
+      // Nastepny krok w tym samym branchu
       const { data: next } = await supabase
         .from("order_item_progress")
         .select("step:workflow_steps(name, machine_group:machine_groups(name))")
         .eq("order_item_id", progress.order_item_id)
+        .eq("branch_type", branchType)
         .eq("step_order", progress.step_order + 1)
         .maybeSingle();
 
