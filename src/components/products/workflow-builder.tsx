@@ -65,19 +65,18 @@ export function WorkflowBuilder({
     hasBranches ? [] : initialWorkflow
   );
 
-  // Drag refs per sekcja
-  const dragFrom = useRef<{ section: string; index: number } | null>(null);
-  const dragTo = useRef<{ section: string; index: number } | null>(null);
-
   // Wszystkie przypisane stepy (do filtrowania available)
   const allAssigned = isForkMode
     ? [...preFork, ...branchA, ...branchB, ...postJoin]
     : linearSteps;
-  const assignedIds = new Set(allAssigned.map((a) => a.stepId));
-  // W fork mode ten sam step moze byc w obu branchach — nie filtruj ich
-  const available = isForkMode
-    ? allSteps // w fork mode nie filtrujemy — ten sam step moze byc w A i B
-    : allSteps.filter((s) => !assignedIds.has(s.id));
+  const linearAssignedIds = new Set(linearSteps.map((a) => a.stepId));
+  const preForkIds = new Set(preFork.map((a) => a.stepId));
+  const postJoinIds = new Set(postJoin.map((a) => a.stepId));
+  // Linear: filtruj przypisane. Fork preFork/postJoin: filtruj. Branche: nie filtruj (ten sam step moze byc w A i B)
+  const availableLinear = allSteps.filter((s) => !linearAssignedIds.has(s.id));
+  const availablePreFork = allSteps.filter((s) => !preForkIds.has(s.id));
+  const availablePostJoin = allSteps.filter((s) => !postJoinIds.has(s.id));
+  const availableBranch = allSteps; // ten sam step moze byc w obu branchach
 
   function renumber(steps: AssignedStep[]): AssignedStep[] {
     return steps.map((s, i) => ({ ...s, stepOrder: i + 1 }));
@@ -163,17 +162,7 @@ export function WorkflowBuilder({
       return;
     }
 
-    const steps = isForkMode
-      ? [
-          ...preFork.map((s) => ({ stepId: s.stepId, stepOrder: s.stepOrder, branchType: "common" as const })),
-          ...branchA.map((s) => ({ stepId: s.stepId, stepOrder: s.stepOrder, branchType: "branch_a" as const })),
-          ...branchB.map((s) => ({ stepId: s.stepId, stepOrder: s.stepOrder, branchType: "branch_b" as const })),
-          ...postJoin.map((s, i) => ({ stepId: s.stepId, stepOrder: i + 1, branchType: "common" as const })),
-        ]
-      : linearSteps.map((s) => ({ stepId: s.stepId, stepOrder: s.stepOrder, branchType: "common" as const }));
-
-    // Dla post-join: step_order musi byc wyzszy niz pre-fork zeby rozroznic
-    // Uzyjemy: pre-fork = stepOrder as-is, post-join = 100 + stepOrder
+    // Dla post-join: step_order = 100+ zeby rozroznic od pre-fork common
     const stepsWithOrder = isForkMode
       ? [
           ...preFork.map((s) => ({ stepId: s.stepId, stepOrder: s.stepOrder, branchType: "common" as const })),
@@ -257,7 +246,7 @@ export function WorkflowBuilder({
             label="Wspólne (przed forkiem)"
             steps={preFork}
             section="preFork"
-            allSteps={allSteps}
+            allSteps={availablePreFork}
             onAdd={(step) => addToSection(step, "preFork")}
             onRemove={(id) => removeFromSection(id, "preFork")}
             onDrag={(from, to) => handleDrag("preFork", from, to)}
@@ -279,7 +268,7 @@ export function WorkflowBuilder({
               label="Branch A (Okładka)"
               steps={branchA}
               section="branchA"
-              allSteps={allSteps}
+              allSteps={availableBranch}
               onAdd={(step) => addToSection(step, "branchA")}
               onRemove={(id) => removeFromSection(id, "branchA")}
               onDrag={(from, to) => handleDrag("branchA", from, to)}
@@ -289,7 +278,7 @@ export function WorkflowBuilder({
               label="Branch B (Wkład)"
               steps={branchB}
               section="branchB"
-              allSteps={allSteps}
+              allSteps={availableBranch}
               onAdd={(step) => addToSection(step, "branchB")}
               onRemove={(id) => removeFromSection(id, "branchB")}
               onDrag={(from, to) => handleDrag("branchB", from, to)}
@@ -312,7 +301,7 @@ export function WorkflowBuilder({
             label="Wspólne (po joinie)"
             steps={postJoin}
             section="postJoin"
-            allSteps={allSteps}
+            allSteps={availablePostJoin}
             onAdd={(step) => addToSection(step, "postJoin")}
             onRemove={(id) => removeFromSection(id, "postJoin")}
             onDrag={(from, to) => handleDrag("postJoin", from, to)}
@@ -324,7 +313,7 @@ export function WorkflowBuilder({
           label=""
           steps={linearSteps}
           section="linear"
-          allSteps={available}
+          allSteps={availableLinear}
           onAdd={(step) => addToSection(step, "linear")}
           onRemove={(id) => removeFromSection(id, "linear")}
           onDrag={(from, to) => handleDrag("linear", from, to)}
