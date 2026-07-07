@@ -366,7 +366,21 @@ export async function POST(request: NextRequest) {
         .eq("step_order", progress.step_order + 1)
         .maybeSingle();
 
-      const stepData = next?.step as unknown as { name: string; machine_group: { name: string } | null } | null;
+      let stepData = next?.step as unknown as { name: string; machine_group: { name: string } | null } | null;
+
+      // Jesli nie ma nastepnego w tym branchu — szukaj post-join common (step_order >= 100)
+      if (!stepData && branchType !== "common") {
+        const { data: postJoin } = await supabase
+          .from("order_item_progress")
+          .select("step:workflow_steps(name, machine_group:machine_groups(name))")
+          .eq("order_item_id", progress.order_item_id)
+          .eq("branch_type", "common")
+          .gte("step_order", 100)
+          .order("step_order")
+          .limit(1);
+        stepData = (postJoin?.[0]?.step as unknown as { name: string; machine_group: { name: string } | null } | null) ?? null;
+      }
+
       if (stepData) {
         nextStep = {
           name: stepData.name,

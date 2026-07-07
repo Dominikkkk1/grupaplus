@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Standardowa walidacja: poprzedni krok w TYM SAMYM branchu
-      if (current.step_order > 1 && !(bt === "common" && current.step_order >= 100 && current.step_order === 101)) {
+      if (current.step_order > 1 && !(bt === "common" && current.step_order === 101)) {
         const prevOrder = bt !== "common" && current.step_order === 1
           ? null  // Pierwszy w branchu — sprawdzamy pre-fork common osobno
           : current.step_order - 1;
