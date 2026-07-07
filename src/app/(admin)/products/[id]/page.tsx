@@ -35,6 +35,7 @@ interface Step {
 interface WorkflowEntry {
   step_id: string;
   step_order: number;
+  branch_type: string;
   step: { id: string; name: string; color: string };
 }
 
@@ -70,7 +71,7 @@ export default function ProductDetailPage() {
       supabase.from("workflow_steps").select("id, name, color").order("name"),
       supabase
         .from("product_workflow")
-        .select("step_id, step_order, step:workflow_steps(id, name, color)")
+        .select("step_id, step_order, branch_type, step:workflow_steps(id, name, color)")
         .eq("product_id", id)
         .order("step_order"),
       supabase.from("machine_groups").select("id, name").order("name"),
@@ -104,6 +105,7 @@ export default function ProductDetailPage() {
     stepOrder: w.step_order,
     name: w.step?.name ?? "?",
     color: w.step?.color ?? "#6b7280",
+    branchType: (w.branch_type ?? "common") as "common" | "branch_a" | "branch_b",
   }));
 
   if (loading) {

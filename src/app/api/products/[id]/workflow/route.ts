@@ -33,7 +33,7 @@ export async function PUT(
   }
 
   const body = await request.json();
-  const steps: { stepId: string; stepOrder: number }[] = body.steps ?? [];
+  const steps: { stepId: string; stepOrder: number; branchType?: string }[] = body.steps ?? [];
 
   // Usuń stare przypisania
   const { error: deleteError } = await supabase
@@ -51,6 +51,7 @@ export async function PUT(
       product_id: id,
       step_id: s.stepId,
       step_order: s.stepOrder,
+      branch_type: s.branchType || "common",
       is_required: true,
     }));
 
