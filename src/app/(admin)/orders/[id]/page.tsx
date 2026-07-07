@@ -61,7 +61,7 @@ export default async function OrderDetailPage({
       *,
       product:products(name, sku),
       progress:order_item_progress(
-        id, step_order, status, completed_at, notes,
+        id, step_order, status, branch_type, completed_at, notes,
         step:workflow_steps(name, color),
         completed_by_user:users!order_item_progress_completed_by_fkey(full_name),
         machine:machines(name)
@@ -201,13 +201,20 @@ export default async function OrderDetailPage({
                   id: string;
                   step_order: number;
                   status: string;
+                  branch_type: string;
                   completed_at: string | null;
                   notes: string | null;
                   step: { name: string; color: string };
                   completed_by_user: { full_name: string } | null;
                   machine: { name: string } | null;
                 }[]
-              )?.sort((a, b) => a.step_order - b.step_order);
+              )?.sort((a, b) => {
+                // Sortuj: common pre-fork → branch_a → branch_b → common post-join
+                const branchOrder = (bt: string) => bt === "branch_a" ? 1 : bt === "branch_b" ? 2 : (a.step_order >= 100 ? 3 : 0);
+                const bo = branchOrder(a.branch_type ?? "common") - branchOrder(b.branch_type ?? "common");
+                if (bo !== 0) return bo;
+                return a.step_order - b.step_order;
+              });
 
               return (
                 <div

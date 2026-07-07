@@ -27,7 +27,7 @@ interface OrderItem {
   quantity: number;
   unit_price: number | null;
   product: { name: string; sku: string | null } | null;
-  progress: { step_order: number; step: { name: string } }[];
+  progress: { step_order: number; branch_type?: string; step: { name: string } }[];
 }
 
 interface OrderFile {
@@ -63,7 +63,7 @@ export default function PrintPage() {
       supabase
         .from("order_items")
         .select(
-          "id, description, quantity, unit_price, product:products(name, sku), progress:order_item_progress(step_order, step:workflow_steps(name))"
+          "id, description, quantity, unit_price, product:products(name, sku), progress:order_item_progress(step_order, branch_type, step:workflow_steps(name))"
         )
         .eq("order_id", id)
         .order("created_at"),
