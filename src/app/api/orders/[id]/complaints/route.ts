@@ -63,10 +63,10 @@ export async function POST(
     .from("complaints")
     .insert({
       order_id: id,
-      order_item_id: orderItemId || null,
+      order_item_id: (orderItemId && orderItemId !== "undefined") ? orderItemId : null,
       type: type || "internal",
       reason: reason.trim(),
-      revert_to_step_id: revertToStepId || null,
+      revert_to_step_id: (revertToStepId && revertToStepId !== "undefined") ? revertToStepId : null,
       reprint_quantity: reprintQuantity || null,
       status: "open",
       reported_by: user.id,
