@@ -241,8 +241,8 @@ function StepRow({
             <span className="rounded bg-blue-50 px-1 py-0.5 text-[9px] font-medium text-blue-600">W trakcie</span>
           )}
         </div>
-        {!compact && isCompleted && (
-          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-zinc-400">
+        {isCompleted && (
+          <div className="mt-0.5 flex items-center gap-2 text-[10px] text-zinc-400">
             {s.completed_by_user && <span>{s.completed_by_user.full_name}</span>}
             {s.machine && <span>na {s.machine.name}</span>}
             {s.completed_at && (

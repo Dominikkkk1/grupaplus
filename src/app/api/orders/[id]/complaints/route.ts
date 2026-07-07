@@ -33,7 +33,7 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { type, orderItemId, reason, revertToStepId, reprintQuantity, notes } =
+  const { type, orderItemId, reason, revertToStepId, revertBranchType, reprintQuantity, notes } =
     body;
   console.log("[COMPLAINT] orderId=%s type=%s orderItemId=%s revertToStepId=%s user=%s", id, type, orderItemId, revertToStepId, user.id);
 
@@ -101,14 +101,18 @@ export async function POST(
   // Jesli zgłoszenie wewnetrzne z cofnieciem etapu — cofnij progress
   if (type === "internal" && revertToStepId && orderItemId) {
     // Znajdz step_order i branch_type tego etapu
-    // Uwaga: ten sam step_id moze byc w obu branchach — bierzemy pierwszy match
-    const { data: targetSteps } = await supabase
+    // Znajdz target step — jesli branch_type podany, uzyj go (precyzyjne dopasowanie)
+    let targetStepQuery = supabase
       .from("order_item_progress")
       .select("step_order, branch_type")
       .eq("order_item_id", orderItemId)
-      .eq("step_id", revertToStepId)
-      .limit(1);
+      .eq("step_id", revertToStepId);
 
+    if (revertBranchType) {
+      targetStepQuery = targetStepQuery.eq("branch_type", revertBranchType);
+    }
+
+    const { data: targetSteps } = await targetStepQuery.limit(1);
     const targetStep = targetSteps?.[0];
 
     if (targetStep) {

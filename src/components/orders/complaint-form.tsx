@@ -60,7 +60,8 @@ export function ComplaintForm({
         type,
         orderItemId: orderItemId || undefined,
         reason,
-        revertToStepId: revertToStepId || undefined,
+        revertToStepId: revertToStepId ? revertToStepId.split("::")[0] : undefined,
+        revertBranchType: revertToStepId ? revertToStepId.split("::")[1] : undefined,
         reprintQuantity: reprintQuantity
           ? parseInt(reprintQuantity)
           : undefined,
@@ -171,8 +172,8 @@ export function ComplaintForm({
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
               >
                 <option value="">— Bez cofania —</option>
-                {availableSteps.map((s) => (
-                  <option key={s.step_id} value={s.step_id}>
+                {availableSteps.map((s, idx) => (
+                  <option key={idx} value={`${s.step_id}::${s.branch_type ?? "common"}`}>
                     {s.step_order}. {s.step?.name}{s.branch_type === "branch_a" ? " (A)" : s.branch_type === "branch_b" ? " (B)" : ""}
                   </option>
                 ))}
