@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 interface OrderItem {
   id: string;
   description: string;
-  progress: { step_id: string; step_order: number; step: { name: string } }[];
+  progress: { step_id: string; step_order: number; branch_type?: string; step: { name: string } }[];
 }
 
 export function ComplaintForm({
@@ -173,7 +173,7 @@ export function ComplaintForm({
                 <option value="">— Bez cofania —</option>
                 {availableSteps.map((s) => (
                   <option key={s.step_id} value={s.step_id}>
-                    {s.step_order}. {s.step?.name}
+                    {s.step_order}. {s.step?.name}{s.branch_type === "branch_a" ? " (A)" : s.branch_type === "branch_b" ? " (B)" : ""}
                   </option>
                 ))}
               </select>

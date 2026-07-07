@@ -180,7 +180,7 @@ export default async function OrderDetailPage({
           items={(items ?? []).map((i) => ({
             id: i.id,
             description: (i.product as {name: string} | null)?.name ?? i.description,
-            progress: ((i.progress ?? []) as unknown as { step_id: string; step_order: number; step: { name: string } }[]),
+            progress: ((i.progress ?? []) as unknown as { step_id: string; step_order: number; branch_type?: string; step: { name: string } }[]),
           }))}
           complaints={(complaints ?? []) as unknown as { id: string; type: string; reason: string; status: string; reprint_quantity: number | null; notes: string | null; created_at: string; resolved_at: string | null; reported_by_user: { full_name: string } | null; revert_step: { name: string } | null }[]}
         />}

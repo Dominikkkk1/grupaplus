@@ -22,7 +22,7 @@ interface Complaint {
 interface OrderItem {
   id: string;
   description: string;
-  progress: { step_id: string; step_order: number; step: { name: string } }[];
+  progress: { step_id: string; step_order: number; branch_type?: string; step: { name: string } }[];
 }
 
 export function OrderActions({
