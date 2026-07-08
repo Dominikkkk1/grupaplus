@@ -33,6 +33,7 @@ export default async function ProductionPage() {
         id,
         step_id,
         status,
+        branch_type,
         started_by_user:users!order_item_progress_started_by_fkey(full_name),
         order_item:order_items(
           description,

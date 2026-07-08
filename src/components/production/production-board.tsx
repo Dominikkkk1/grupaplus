@@ -17,6 +17,7 @@ export interface ActiveItem {
   id: string;
   step_id: string;
   status: string;
+  branch_type?: string;
   started_by_user: { full_name: string } | null;
   order_item: {
     description: string;
@@ -350,6 +351,8 @@ function ProductionCard({ item, now }: { item: ActiveItem; now: number }) {
       <div className="flex items-start justify-between">
         <p className="text-[13px] font-medium text-zinc-900">
           {orderItem?.description ?? "\u2014"}
+          {item.branch_type === "branch_a" && <span className="ml-1 text-[10px] font-bold text-blue-600">(A)</span>}
+          {item.branch_type === "branch_b" && <span className="ml-1 text-[10px] font-bold text-emerald-600">(B)</span>}
         </p>
         {isInProgress && (
           <span className="flex-shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">

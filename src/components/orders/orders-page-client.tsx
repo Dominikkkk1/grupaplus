@@ -84,7 +84,8 @@ export function OrdersPageClient({
     customerEmail: string;
     customerPhone: string;
   } | undefined>(undefined);
-  const [showForm, setShowForm] = useState(!!newOrderParam);
+  // Nie otwieraj formularza od razu przy duplikacji — czekaj na useEffect
+  const [showForm, setShowForm] = useState(newOrderParam && !isDuplicate ? true : false);
 
   useEffect(() => {
     if (!isDuplicate) return;
@@ -93,7 +94,8 @@ export function OrdersPageClient({
       if (raw) {
         sessionStorage.removeItem("duplicateOrder");
         setDuplicateData(JSON.parse(raw));
-        setShowForm(true);
+        // Teraz dopiero otwieramy formularz (z danymi gotowymi)
+        setTimeout(() => setShowForm(true), 50);
       }
     } catch { /* ignore */ }
   }, [isDuplicate]);
@@ -361,6 +363,7 @@ export function OrdersPageClient({
       {/* Modal */}
       {showForm && (
         <NewOrderForm
+          key={duplicateData ? "dup" : "new"}
           products={products}
           contacts={contacts}
           companies={companies}
