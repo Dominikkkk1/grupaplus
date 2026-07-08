@@ -38,6 +38,11 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  const ALLOWED_STATUSES = ["pending", "in_progress", "completed", "skipped", "rework"];
+  if (!ALLOWED_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Nieprawidłowy status" }, { status: 400 });
+  }
+
   // Blokada: nie mozna startowac ani konczyc krokow jesli zamowienie oczekuje na akceptacje projektu
   if (status === "completed" || status === "in_progress") {
     const { data: blockCheck } = await supabase
@@ -71,9 +76,9 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  // Walidacja kolejnosci (branch-aware): nie mozna oznaczyc etapu jako completed
-  // jesli poprzedni etap nie jest ukończony
-  if (status === "completed") {
+  // Walidacja kolejnosci (branch-aware): nie mozna oznaczyc etapu jako completed/skipped
+  // jesli poprzedni etap nie jest ukończony (skipped tez wymaga walidacji join!)
+  if (status === "completed" || status === "skipped") {
     const { data: current } = await supabase
       .from("order_item_progress")
       .select("order_item_id, step_order, branch_type")
