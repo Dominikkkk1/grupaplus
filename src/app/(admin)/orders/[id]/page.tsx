@@ -113,6 +113,7 @@ export default async function OrderDetailPage({
             <div className="flex gap-2">
               <DuplicateOrderButton
                 items={(items ?? []).map(i => ({
+                  productId: i.product_id ?? "",
                   description: (i.product as {name:string}|null)?.name ?? i.description,
                   quantity: i.quantity,
                   unitPrice: i.unit_price ? String(i.unit_price) : "",

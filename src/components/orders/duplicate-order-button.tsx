@@ -8,7 +8,7 @@ export function DuplicateOrderButton({
   customerEmail,
   customerPhone,
 }: {
-  items: { description: string; quantity: number; unitPrice: string }[];
+  items: { productId: string; description: string; quantity: number; unitPrice: string }[];
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -17,7 +17,7 @@ export function DuplicateOrderButton({
     <button
       onClick={() => {
         const dupItems = items.map((i) => ({
-          productId: "",
+          productId: i.productId,
           description: i.description,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
