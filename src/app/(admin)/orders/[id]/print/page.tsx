@@ -214,92 +214,95 @@ export default function PrintPage() {
           </h2>
 
           {items.map((item, idx) => {
-            const steps = [...(item.progress ?? [])].sort(
-              (a, b) => a.step_order - b.step_order
-            );
+            const allSteps = [...(item.progress ?? [])].sort((a, b) => a.step_order - b.step_order);
             const thumbUrl = thumbnails[item.id];
             const itemFiles = files.filter((f) => f.order_item_id === item.id);
             const hasPdf = itemFiles.some((f) => f.mime_type === "application/pdf");
-            // Preflight: wez status z pierwszego pliku ktory ma wynik (nie pending/null)
             const preflightFile = itemFiles.find((f) => f.preflight_status && f.preflight_status !== "pending") ?? itemFiles[0];
             const preflightStatus = preflightFile?.preflight_status;
+            const hasFork = allSteps.some((s) => s.branch_type === "branch_a" || s.branch_type === "branch_b");
 
-            return (
-              <div key={idx} style={{ marginBottom: "1rem", padding: "0.75rem", border: "1px solid #e4e4e7", borderRadius: "6px" }}>
-                <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                  {/* Miniaturka */}
-                  {thumbUrl ? (
-                    <img
-                      src={thumbUrl}
-                      alt=""
-                      style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "4px", border: "1px solid #e4e4e7", flexShrink: 0 }}
-                    />
-                  ) : hasPdf ? (
-                    <div style={{
-                      width: "60px", height: "60px", borderRadius: "4px", border: "1px solid #e4e4e7",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      background: "#fafafa", flexShrink: 0, fontSize: "0.65rem", color: "#a1a1aa", fontWeight: "bold",
-                    }}>
-                      PDF
-                    </div>
-                  ) : null}
-
-                  {/* Nazwa + ilosc + preflight */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <strong style={{ fontSize: "0.9rem" }}>
-                        {idx + 1}. {item.product?.name ?? item.description}
-                      </strong>
-                      <span style={{ fontSize: "0.85rem", color: "#71717a" }}>
-                        {item.quantity} szt.
-                      </span>
-                    </div>
-                    {item.product?.sku && (
-                      <p style={{ fontSize: "0.75rem", color: "#a1a1aa", fontFamily: "monospace", margin: "0.15rem 0" }}>
-                        SKU: {item.product.sku}
-                      </p>
-                    )}
-                    {/* Preflight badge */}
-                    {preflightStatus && preflightStatus !== "pending" && (
-                      <span style={{
-                        display: "inline-block",
-                        padding: "0.1rem 0.4rem",
-                        borderRadius: "3px",
-                        fontSize: "0.7rem",
-                        fontWeight: "bold",
-                        marginTop: "0.15rem",
-                        background: preflightStatus === "passed" ? "#dcfce7" : preflightStatus === "warning" ? "#fef9c3" : "#fee2e2",
-                        color: preflightStatus === "passed" ? "#166534" : preflightStatus === "warning" ? "#854d0e" : "#991b1b",
-                        WebkitPrintColorAdjust: "exact",
-                        printColorAdjust: "exact",
-                      } as React.CSSProperties}>
-                        {preflightStatus === "passed" ? "✓ Zweryfikowany" : preflightStatus === "warning" ? "⚠ Ostrzeżenia" : "✗ Błędy"}
-                      </span>
-                    )}
+            const renderItemHeader = (label?: string) => (
+              <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                {thumbUrl ? (
+                  <img src={thumbUrl} alt="" style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "4px", border: "1px solid #e4e4e7", flexShrink: 0 }} />
+                ) : hasPdf ? (
+                  <div style={{ width: "60px", height: "60px", borderRadius: "4px", border: "1px solid #e4e4e7", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa", flexShrink: 0, fontSize: "0.65rem", color: "#a1a1aa", fontWeight: "bold" }}>PDF</div>
+                ) : null}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <strong style={{ fontSize: "0.9rem" }}>
+                      {idx + 1}. {item.product?.name ?? item.description}
+                      {label && <span style={{ marginLeft: "0.5rem", color: label === "A" ? "#2563eb" : "#059669", fontSize: "1rem", fontWeight: "bold" }}>— KARTA {label}</span>}
+                    </strong>
+                    <span style={{ fontSize: "0.85rem", color: "#71717a" }}>{item.quantity} szt.</span>
                   </div>
+                  {item.product?.sku && <p style={{ fontSize: "0.75rem", color: "#a1a1aa", fontFamily: "monospace", margin: "0.15rem 0" }}>SKU: {item.product.sku}</p>}
+                  {preflightStatus && preflightStatus !== "pending" && (
+                    <span style={{ display: "inline-block", padding: "0.1rem 0.4rem", borderRadius: "3px", fontSize: "0.7rem", fontWeight: "bold", marginTop: "0.15rem", background: preflightStatus === "passed" ? "#dcfce7" : preflightStatus === "warning" ? "#fef9c3" : "#fee2e2", color: preflightStatus === "passed" ? "#166534" : preflightStatus === "warning" ? "#854d0e" : "#991b1b", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" } as React.CSSProperties}>
+                      {preflightStatus === "passed" ? "✓ Zweryfikowany" : preflightStatus === "warning" ? "⚠ Ostrzeżenia" : "✗ Błędy"}
+                    </span>
+                  )}
                 </div>
+              </div>
+            );
 
-                {steps.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {steps.map((s, si) => (
-                      <span
-                        key={si}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                          padding: "0.2rem 0.5rem",
-                          border: "1px solid #d4d4d8",
-                          borderRadius: "4px",
-                          fontSize: "0.8rem",
-                        }}
-                      >
+            const renderSteps = (stepsToRender: typeof allSteps, highlightBranch?: string) => (
+              stepsToRender.length > 0 ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                  {stepsToRender.map((s, si) => {
+                    const isBranchStep = s.branch_type === highlightBranch;
+                    return (
+                      <span key={si} style={{
+                        display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.5rem",
+                        border: isBranchStep ? "2px solid #7c3aed" : "1px solid #d4d4d8",
+                        borderRadius: "4px", fontSize: "0.8rem",
+                        fontWeight: isBranchStep ? "bold" : "normal",
+                        background: isBranchStep ? "#f5f3ff" : "transparent",
+                      }}>
                         <span style={{ display: "inline-block", width: "10px", height: "10px", border: "1.5px solid #a1a1aa", borderRadius: "2px" }} />
                         {s.step?.name}
                       </span>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
+              ) : null
+            );
+
+            if (!hasFork) {
+              // Liniowy — 1 karta jak dotychczas
+              return (
+                <div key={idx} style={{ marginBottom: "1rem", padding: "0.75rem", border: "1px solid #e4e4e7", borderRadius: "6px" }}>
+                  {renderItemHeader()}
+                  {renderSteps(allSteps)}
+                </div>
+              );
+            }
+
+            // Fork/Join — 2 karty (A + B)
+            const preFork = allSteps.filter((s) => (s.branch_type ?? "common") === "common" && s.step_order < 100);
+            const branchA = allSteps.filter((s) => s.branch_type === "branch_a");
+            const branchB = allSteps.filter((s) => s.branch_type === "branch_b");
+            const postJoin = allSteps.filter((s) => (s.branch_type ?? "common") === "common" && s.step_order >= 100);
+            const stepsA = [...preFork, ...branchA, ...postJoin];
+            const stepsB = [...preFork, ...branchB, ...postJoin];
+
+            return (
+              <div key={idx}>
+                {/* KARTA A */}
+                <div style={{ marginBottom: "1rem", padding: "0.75rem", border: "2px solid #2563eb", borderRadius: "6px" }}>
+                  {renderItemHeader("A")}
+                  {renderSteps(stepsA, "branch_a")}
+                </div>
+
+                {/* Page break dla druku */}
+                <div style={{ pageBreakBefore: "always" }} />
+
+                {/* KARTA B */}
+                <div style={{ marginBottom: "1rem", padding: "0.75rem", border: "2px solid #059669", borderRadius: "6px" }}>
+                  {renderItemHeader("B")}
+                  {renderSteps(stepsB, "branch_b")}
+                </div>
               </div>
             );
           })}
