@@ -107,7 +107,7 @@ export async function PATCH(
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   // Auto-shipped: dodanie tracking number przy statusie "ready" → automatycznie shipped
@@ -185,7 +185,7 @@ export async function DELETE(
 
   if (error) {
     console.error("[ORDER DELETE] error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

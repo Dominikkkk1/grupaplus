@@ -83,7 +83,7 @@ export async function POST() {
 
   if (error) {
     console.error("[BACKFILL] insert error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   console.log("[BACKFILL] done — created=%d, skipped=%d", toInsert.length, clientUsers.length - toInsert.length);

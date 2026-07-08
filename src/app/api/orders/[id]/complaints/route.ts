@@ -84,7 +84,7 @@ export async function POST(
 
   if (error) {
     console.error("[COMPLAINT] insert error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   console.log("[COMPLAINT] created id=%s", complaint.id);
@@ -107,6 +107,17 @@ export async function POST(
 
   // Jesli zgłoszenie wewnetrzne z cofnieciem etapu — cofnij progress
   if (type === "internal" && revertToStepId && orderItemId) {
+    // Walidacja: orderItemId musi nalezec do tego zamowienia
+    const { data: itemCheck } = await supabase
+      .from("order_items")
+      .select("id")
+      .eq("id", orderItemId)
+      .eq("order_id", id)
+      .maybeSingle();
+    if (!itemCheck) {
+      console.log("[COMPLAINT] 400 — orderItemId %s nie nalezy do order %s", orderItemId, id);
+      return NextResponse.json({ error: "Pozycja nie należy do tego zamówienia" }, { status: 400 });
+    }
     // Znajdz step_order i branch_type tego etapu
     // Znajdz target step — jesli branch_type podany, uzyj go (precyzyjne dopasowanie)
     let targetStepQuery = supabase

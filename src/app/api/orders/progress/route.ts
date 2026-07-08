@@ -195,7 +195,7 @@ export async function PATCH(request: NextRequest) {
 
   if (error) {
     console.error("[PROGRESS] DB update error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   console.log("[PROGRESS] updated progressId=%s → %s", progressId, status);

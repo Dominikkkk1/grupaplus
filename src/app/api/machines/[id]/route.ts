@@ -46,7 +46,7 @@ export async function PATCH(
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
@@ -79,7 +79,7 @@ export async function DELETE(
   const { error } = await supabase.from("machines").delete().eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

@@ -35,6 +35,10 @@ export async function PUT(
   const body = await request.json();
   const steps: { stepId: string; stepOrder: number; branchType?: string }[] = body.steps ?? [];
 
+  if (steps.length > 50) {
+    return NextResponse.json({ error: "Maksymalnie 50 kroków workflow" }, { status: 400 });
+  }
+
   // Usuń stare przypisania
   const { error: deleteError } = await supabase
     .from("product_workflow")
@@ -42,7 +46,7 @@ export async function PUT(
     .eq("product_id", id);
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    console.error("[API] DB error:", deleteError.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   // Wstaw nowe (jesli sa)

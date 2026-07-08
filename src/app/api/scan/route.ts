@@ -41,8 +41,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { progressId, action, force, machineId } = body;
-  console.log("[SCAN] action=%s progressId=%s force=%s machineId=%s user=%s", action, progressId, force, machineId, user.id);
+  const { progressId, action, machineId } = body;
+  // Force skip — tylko admin (operator nie moze pomijac krokow)
+  const force = body.force && profile.role === "admin";
+  console.log("[SCAN] action=%s progressId=%s force=%s machineId=%s user=%s role=%s", action, progressId, force, machineId, user.id, profile.role);
 
   if (!progressId || !action) {
     return NextResponse.json(
@@ -231,7 +233,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("[SCAN] START error:", error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
     }
 
     // Auto-advance: jesli zamówienie jest "confirmed", przejdz do "in_production"
@@ -279,7 +281,7 @@ export async function POST(request: NextRequest) {
       .eq("id", progressId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
     }
 
     // Auto-awaiting_approval: po zakonczeniu kroku "Projektowanie"

@@ -79,7 +79,7 @@ export async function PUT(
 
   if (deleteError) {
     console.error("[ITEM WORKFLOW] delete error:", deleteError.message);
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    console.error("[API] DB error:", deleteError.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   // Wstaw nowe progress rows
@@ -96,7 +96,7 @@ export async function PUT(
 
   if (insertError) {
     console.error("[ITEM WORKFLOW] insert error:", insertError.message);
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+    console.error("[API] DB error:", insertError.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   console.log("[ITEM WORKFLOW] orderId=%s itemId=%s steps=%d", orderId, itemId, steps.length);
