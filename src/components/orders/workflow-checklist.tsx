@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Circle, Loader2, RotateCcw, GitFork, GitMerge } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 interface StepProgress {
   id: string;
@@ -26,6 +27,7 @@ export function WorkflowChecklist({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  useRealtimeRefresh(["order_item_progress"], "checklist-realtime-" + orderItemId);
 
   const hasBranches = steps.some((s) => s.branch_type === "branch_a" || s.branch_type === "branch_b");
 

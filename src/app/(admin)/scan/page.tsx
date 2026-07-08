@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 import { Scan, CheckCircle2, AlertTriangle, Loader2, Cog, Download, FileText, Image as ImageIcon } from "lucide-react";
 
 interface ProgressStep {
@@ -36,6 +37,7 @@ interface MachineGroup {
 
 export default function ScanPage() {
   const router = useRouter();
+  useRealtimeRefresh(["order_item_progress", "orders"], "scan-realtime");
   const videoRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<unknown>(null);
 

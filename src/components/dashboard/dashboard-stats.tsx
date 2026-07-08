@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 import {
   Package,
   Factory,
@@ -50,6 +51,8 @@ export function DashboardStats({
   complaints,
   topMachines,
 }: Props) {
+  useRealtimeRefresh(["orders", "order_item_progress", "complaints"], "dashboard-realtime");
+
   const totalSourceOrders = Object.values(sourceCounts).reduce(
     (s, v) => s + v,
     0

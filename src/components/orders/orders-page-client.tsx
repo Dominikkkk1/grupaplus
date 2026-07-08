@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, Search, Package, Star, MessageSquare, Store } from "lucide-react";
 import { NewOrderForm } from "./new-order-form";
 import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 interface ProductOption {
   id: string;
@@ -59,6 +60,7 @@ export function OrdersPageClient({
   userRole?: string;
 }) {
   const isClient = userRole === "client";
+  useRealtimeRefresh(["orders", "order_items"], "orders-list-realtime");
   const searchParams = useSearchParams();
   const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "awaiting_approval", "in_production", "ready", "finished"];
   const rawFilter = searchParams.get("filter") || "active";

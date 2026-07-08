@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, UserPlus, Star, Hourglass } from "lucide-react";
 import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 import { ComplaintForm } from "./complaint-form";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 interface Complaint {
   id: string;
@@ -45,6 +46,7 @@ export function OrderActions({
   complaints: Complaint[];
 }) {
   const router = useRouter();
+  useRealtimeRefresh(["orders", "order_item_progress", "complaints"], "order-detail-realtime");
   const [statusLoading, setStatusLoading] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
   const [priorityFlag, setPriorityFlag] = useState(initialPriority);
