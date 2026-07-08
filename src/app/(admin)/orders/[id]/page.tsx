@@ -55,9 +55,9 @@ export default async function OrderDetailPage({
   const userRole = profile?.role ?? "client";
   const isClient = userRole === "client";
 
-  const { data: items, error: itemsError } = await supabase
-    .from("order_items")
-    .select(`
+  // Wszystkie zapytania równolegle (order juz mamy)
+  const [itemsRes, filesRes, complaintsRes, usersRes, workflowStepsRes] = await Promise.all([
+    supabase.from("order_items").select(`
       *,
       product:products(name, sku),
       progress:order_item_progress(
@@ -66,47 +66,18 @@ export default async function OrderDetailPage({
         completed_by_user:users!order_item_progress_completed_by_fkey(full_name),
         machine:machines(name)
       )
-    `)
-    .eq("order_id", id)
-    .order("created_at");
-
-  if (itemsError) {
-    console.error("[ORDER DETAIL] items query error:", itemsError.message, itemsError.details, itemsError.hint);
-  }
-  console.log("[ORDER DETAIL] orderId=%s items=%d error=%s", id, items?.length ?? 0, itemsError?.message ?? "none");
-
-  // Pliki, zgłoszenia, użytkownicy (do przypisania)
-  const [filesRes, complaintsRes, usersRes] = await Promise.all([
-    supabase
-      .from("order_files")
-      .select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, order_item_id, created_at")
-      .eq("order_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("complaints")
-      .select(
-        "id, type, reason, status, reprint_quantity, notes, created_at, resolved_at, reported_by_user:users(full_name), revert_step:workflow_steps(name)"
-      )
-      .eq("order_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("users")
-      .select("id, full_name, role")
-      .in("role", ["admin", "operator"])
-      .eq("is_active", true)
-      .order("full_name"),
+    `).eq("order_id", id).order("created_at"),
+    supabase.from("order_files").select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, order_item_id, created_at").eq("order_id", id).order("created_at", { ascending: false }),
+    supabase.from("complaints").select("id, type, reason, status, reprint_quantity, notes, created_at, resolved_at, reported_by_user:users(full_name), revert_step:workflow_steps(name)").eq("order_id", id).order("created_at", { ascending: false }),
+    supabase.from("users").select("id, full_name, role").in("role", ["admin", "operator"]).eq("is_active", true).order("full_name"),
+    supabase.from("workflow_steps").select("id, name, color").order("name"),
   ]);
 
+  const items = itemsRes.data;
   const files = filesRes.data ?? [];
   const complaints = complaintsRes.data ?? [];
   const teamUsers = usersRes.data ?? [];
-
-  // Workflow steps — do buildera recznego workflow
-  const { data: workflowStepsData } = await supabase
-    .from("workflow_steps")
-    .select("id, name, color")
-    .order("name");
-  const allWorkflowSteps = (workflowStepsData ?? []) as { id: string; name: string; color: string }[];
+  const allWorkflowSteps = (workflowStepsRes.data ?? []) as { id: string; name: string; color: string }[];
 
   const status = STATUS_CONFIG[order.status] ?? {
     label: order.status,

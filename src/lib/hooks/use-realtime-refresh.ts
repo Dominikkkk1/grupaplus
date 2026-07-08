@@ -22,7 +22,7 @@ export function useRealtimeRefresh(tables: string[], channelName: string) {
         { event: "*", schema: "public", table },
         () => {
           if (debounceRef.current) clearTimeout(debounceRef.current);
-          debounceRef.current = setTimeout(() => router.refresh(), 500);
+          debounceRef.current = setTimeout(() => router.refresh(), 1000);
         }
       );
     }
