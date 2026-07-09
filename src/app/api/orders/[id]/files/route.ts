@@ -34,8 +34,20 @@ export async function POST(
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !["admin", "client"].includes(profile.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Klient moze uploadowac tylko do swoich zamowien (RLS sprawdza za nas)
+  if (profile.role === "client") {
+    const { data: orderCheck } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!orderCheck) {
+      return NextResponse.json({ error: "Brak dostępu do tego zamówienia" }, { status: 403 });
+    }
   }
 
   const body = await request.json();
