@@ -143,7 +143,7 @@ export default async function OrderDetailPage({
         )}
 
         {!isClient && <OrderActions
-          orderId={id} userRole={userRole}
+          orderId={id}
           currentStatus={order.status}
           isPriority={order.is_priority ?? false}
           sentForApprovalAt={order.sent_for_approval_at as string | null}
@@ -224,14 +224,12 @@ export default async function OrderDetailPage({
                     progress && progress.length > 0 ? (
                       <WorkflowChecklist
                         orderItemId={item.id}
-                      userRole={userRole}
                         steps={progress}
                       />
                     ) : (
                       <ItemWorkflowBuilder
-                        orderId={id} userRole={userRole}
+                        orderId={id}
                         orderItemId={item.id}
-                      userRole={userRole}
                         allSteps={allWorkflowSteps}
                       />
                     )
