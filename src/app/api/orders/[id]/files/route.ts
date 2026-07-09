@@ -109,6 +109,8 @@ export async function POST(
       file_size: fileSize || null,
       mime_type: mimeType || null,
       uploaded_by: user.id,
+      is_client_upload: profile.role === "client",
+      is_accepted: profile.role !== "client", // admin = auto-accepted, klient = wymaga akceptacji
       preflight_status: preflight.status,
       preflight_result: preflight,
     })
@@ -178,6 +180,45 @@ export async function DELETE(
   if (deleteError) {
     console.error("[FILE DELETE] error:", deleteError.message);
     return NextResponse.json({ error: "Błąd usuwania pliku" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * PATCH /api/orders/[id]/files?fileId=xxx&action=accept — akceptacja pliku klienta
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+  if (!profile || !["admin", "operator"].includes(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const fileId = request.nextUrl.searchParams.get("fileId");
+  const action = request.nextUrl.searchParams.get("action");
+
+  if (!fileId || action !== "accept") {
+    return NextResponse.json({ error: "fileId i action=accept wymagane" }, { status: 400 });
+  }
+
+  const { id: orderId } = await params;
+
+  const { error } = await supabase
+    .from("order_files")
+    .update({ is_accepted: true })
+    .eq("id", fileId)
+    .eq("order_id", orderId);
+
+  if (error) {
+    console.error("[FILE ACCEPT] error:", error.message);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

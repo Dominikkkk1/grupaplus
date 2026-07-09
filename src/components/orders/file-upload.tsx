@@ -27,6 +27,8 @@ interface OrderFile {
   file_path: string;
   preflight_status: string | null;
   preflight_result: { checks?: PreflightCheck[] } | null;
+  is_client_upload?: boolean;
+  is_accepted?: boolean;
   created_at: string;
 }
 
@@ -264,8 +266,26 @@ export function FileUpload({
                       ? "OK"
                       : file.preflight_status === "warning"
                         ? "Uwaga"
-                        : "Blad"}
+                        : "Błąd"}
                   </span>
+                )}
+                {/* Badge klienta + akceptacja */}
+                {file.is_client_upload && (
+                  file.is_accepted ? (
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-600">
+                      ✓ Klient
+                    </span>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        await fetch(`/api/orders/${orderId}/files?fileId=${file.id}&action=accept`, { method: "PATCH" });
+                        router.refresh();
+                      }}
+                      className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-200 transition-colors"
+                    >
+                      Zaakceptuj plik klienta
+                    </button>
+                  )
                 )}
               <button
                 onClick={() => handleDownload(file)}

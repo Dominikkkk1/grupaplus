@@ -67,7 +67,7 @@ export default async function OrderDetailPage({
         machine:machines(name)
       )
     `).eq("order_id", id).order("created_at"),
-    supabase.from("order_files").select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, order_item_id, created_at").eq("order_id", id).order("created_at", { ascending: false }),
+    supabase.from("order_files").select("id, file_name, file_size, mime_type, file_path, preflight_status, preflight_result, is_client_upload, is_accepted, order_item_id, created_at").eq("order_id", id).order("created_at", { ascending: false }),
     supabase.from("complaints").select("id, type, reason, status, reprint_quantity, notes, created_at, resolved_at, reported_by_user:users(full_name), revert_step:workflow_steps(name)").eq("order_id", id).order("created_at", { ascending: false }),
     supabase.from("users").select("id, full_name, role").in("role", ["admin", "operator"]).eq("is_active", true).order("full_name"),
     supabase.from("workflow_steps").select("id, name, color").order("name"),
@@ -243,7 +243,7 @@ export default async function OrderDetailPage({
                     <FileUpload
                       orderId={id}
                       orderItemId={item.id}
-                      files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; created_at: string }[]).filter(f => f.order_item_id === item.id)}
+                      files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; is_client_upload?: boolean; is_accepted?: boolean; created_at: string }[]).filter(f => f.order_item_id === item.id)}
                     />
                   </div>
                 </div>
@@ -405,7 +405,7 @@ export default async function OrderDetailPage({
               </h3>
               <FileUpload
                 orderId={id}
-                files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; created_at: string }[]).filter(f => !f.order_item_id)}
+                files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; is_client_upload?: boolean; is_accepted?: boolean; created_at: string }[]).filter(f => !f.order_item_id)}
               />
             </div>
           )}

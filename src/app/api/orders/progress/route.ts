@@ -74,6 +74,32 @@ export async function PATCH(request: NextRequest) {
         }
       }
     }
+
+    // Blokada: niezaakceptowane pliki klienta
+    if (blockCheck) {
+      const { data: blockItemForFiles } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("id", blockCheck.order_item_id)
+        .single();
+
+      if (blockItemForFiles) {
+        const { data: unacceptedFiles } = await supabase
+          .from("order_files")
+          .select("id")
+          .eq("order_id", blockItemForFiles.order_id)
+          .eq("is_client_upload", true)
+          .eq("is_accepted", false)
+          .limit(1);
+
+        if (unacceptedFiles && unacceptedFiles.length > 0) {
+          return NextResponse.json(
+            { error: "Plik klienta oczekuje na akceptację. Zaakceptuj plik przed kontynuowaniem." },
+            { status: 409 }
+          );
+        }
+      }
+    }
   }
 
   // Walidacja kolejnosci (branch-aware): nie mozna oznaczyc etapu jako completed/skipped

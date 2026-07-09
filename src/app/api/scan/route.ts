@@ -92,6 +92,22 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         );
       }
+
+      // Blokada: niezaakceptowane pliki klienta
+      const { data: unacceptedFiles } = await supabase
+        .from("order_files")
+        .select("id")
+        .eq("order_id", startCheckItem.order_id)
+        .eq("is_client_upload", true)
+        .eq("is_accepted", false)
+        .limit(1);
+
+      if (unacceptedFiles && unacceptedFiles.length > 0) {
+        return NextResponse.json(
+          { error: "Plik klienta oczekuje na akceptację. Zaakceptuj plik przed rozpoczęciem produkcji." },
+          { status: 409 }
+        );
+      }
     }
 
     // Sprawdz czy poprzedni krok jest completed (branch-aware)
