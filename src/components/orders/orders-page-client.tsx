@@ -354,8 +354,9 @@ export function OrdersPageClient({
           </div>
           <p className="text-sm font-medium text-zinc-900">Brak zamówień</p>
           <p className="mt-1 text-[13px] text-zinc-500">
-            Kliknij &quot;Nowe zamówienie&quot; aby dodać ręczne zlecenie lub
-            podłącz WooCommerce.
+            {isClient
+              ? "Nie masz jeszcze żadnych zamówień."
+              : "Kliknij \"Nowe zamówienie\" aby dodać ręczne zlecenie lub podłącz WooCommerce."}
           </p>
         </div>
       )}
