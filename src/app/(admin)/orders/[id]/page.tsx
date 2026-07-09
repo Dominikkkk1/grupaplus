@@ -143,7 +143,7 @@ export default async function OrderDetailPage({
         )}
 
         {!isClient && <OrderActions
-          orderId={id}
+          orderId={id} userRole={userRole}
           currentStatus={order.status}
           isPriority={order.is_priority ?? false}
           sentForApprovalAt={order.sent_for_approval_at as string | null}
@@ -224,12 +224,14 @@ export default async function OrderDetailPage({
                     progress && progress.length > 0 ? (
                       <WorkflowChecklist
                         orderItemId={item.id}
+                      userRole={userRole}
                         steps={progress}
                       />
                     ) : (
                       <ItemWorkflowBuilder
-                        orderId={id}
+                        orderId={id} userRole={userRole}
                         orderItemId={item.id}
+                      userRole={userRole}
                         allSteps={allWorkflowSteps}
                       />
                     )
@@ -243,6 +245,7 @@ export default async function OrderDetailPage({
                     <FileUpload
                       orderId={id}
                       orderItemId={item.id}
+                      userRole={userRole}
                       files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; is_client_upload?: boolean; is_accepted?: boolean; created_at: string }[]).filter(f => f.order_item_id === item.id)}
                     />
                   </div>
@@ -405,6 +408,7 @@ export default async function OrderDetailPage({
               </h3>
               <FileUpload
                 orderId={id}
+                userRole={userRole}
                 files={((files ?? []) as unknown as { id: string; file_name: string; file_size: number; mime_type: string; file_path: string; preflight_status: string | null; preflight_result: { checks?: { status: "passed"|"warning"|"failed"; label: string; value: string; message?: string }[] } | null; order_item_id: string | null; is_client_upload?: boolean; is_accepted?: boolean; created_at: string }[]).filter(f => !f.order_item_id)}
               />
             </div>

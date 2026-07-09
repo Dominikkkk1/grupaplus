@@ -36,10 +36,12 @@ export function FileUpload({
   orderId,
   orderItemId,
   files,
+  userRole = "admin",
 }: {
   orderId: string;
   orderItemId?: string;
   files: OrderFile[];
+  userRole?: string;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -273,7 +275,11 @@ export function FileUpload({
                 {file.is_client_upload && (
                   file.is_accepted ? (
                     <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-600">
-                      ✓ Klient
+                      ✓ Zaakceptowany
+                    </span>
+                  ) : userRole === "client" ? (
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-600">
+                      Oczekuje na akceptację
                     </span>
                   ) : (
                     <button
