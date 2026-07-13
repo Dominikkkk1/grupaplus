@@ -1,36 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * GET /api/users — lista użytkownikow (admin only)
  */
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+export const GET = withAuth("admin", async (_request, { supabase }) => {
   const { data: users } = await supabase
     .from("users")
     .select("id, full_name, role, is_active, phone, created_at")
     .order("full_name");
 
-  // Pobierz emaile z auth (admin client)
   const adminClient = createAdminClient();
   const { data: authData } = await adminClient.auth.admin.listUsers();
   const emailMap = new Map<string, string>();
@@ -44,33 +25,16 @@ export async function GET() {
   }));
 
   return NextResponse.json(enriched);
-}
+});
 
 /**
  * POST /api/users — tworzenie nowego użytkownika (admin only)
- * Body: { email, password, fullName, role, phone? }
  */
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const POST = withAuth("admin", async (request, _ctx) => {
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const { email, password, fullName, role, phone } = await request.json();
+  const { email, password, fullName, role, phone } = parsed.data as Record<string, unknown>;
   console.log("[USER CREATE] email=%s role=%s fullName=%s", email, role, fullName);
 
   if (!email || !password || !fullName || !role) {
@@ -80,26 +44,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!["admin", "operator", "client"].includes(role)) {
+  if (!["admin", "operator", "client"].includes(role as string)) {
     return NextResponse.json(
       { error: "Rola musi być: admin, operator lub client" },
       { status: 400 }
     );
   }
 
-  if (password.length < 8) {
+  if ((password as string).length < 8) {
     return NextResponse.json(
       { error: "Hasło musi mieć minimum 8 znaków" },
       { status: 400 }
     );
   }
 
-  // Utworz usera przez Supabase Admin API
   const adminClient = createAdminClient();
   const { data: newUser, error: authError } =
     await adminClient.auth.admin.createUser({
-      email,
-      password,
+      email: email as string,
+      password: password as string,
       email_confirm: true,
       user_metadata: { full_name: fullName, role },
     });
@@ -115,7 +78,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: authError.message }, { status: 500 });
   }
 
-  // Zaktualizuj profil (trigger handle_new_user juz go stworzyl)
   if (newUser.user && phone) {
     await adminClient
       .from("users")
@@ -125,18 +87,14 @@ export async function POST(request: NextRequest) {
 
   console.log("[USER CREATE] auth user created: %s", newUser.user?.id);
 
-  // Klient musi miec rekord w contacts — bez tego nie pojawi sie w CRM
-  // i nie bedzie mogl byc przypisany do zamówień (RLS szuka go przez contacts.user_id)
   if (newUser.user && role === "client") {
-    // Sprawdz czy email juz istnieje w contacts (mogl byc dodany reczne w CRM)
     const { data: existingContact } = await adminClient
       .from("contacts")
       .select("id")
-      .eq("email", email)
+      .eq("email", email as string)
       .maybeSingle();
 
     if (existingContact) {
-      // Podlacz istniejacy contact do nowego usera
       console.log("[USER CREATE] podlaczam istniejacy contact %s do user %s", existingContact.id, newUser.user.id);
       await adminClient
         .from("contacts")
@@ -146,9 +104,9 @@ export async function POST(request: NextRequest) {
       console.log("[USER CREATE] tworze nowy contact dla %s", email);
       await adminClient.from("contacts").insert({
         user_id: newUser.user.id,
-        full_name: fullName,
-        email,
-        phone: phone || null,
+        full_name: fullName as string,
+        email: email as string,
+        phone: (phone as string) || null,
       });
     }
   }
@@ -159,4 +117,4 @@ export async function POST(request: NextRequest) {
     fullName,
     role,
   });
-}
+});

@@ -1,37 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 
 /**
  * PATCH /api/orders/[id]/complaints/[complaintId] — zmiana statusu zgłoszenia
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; complaintId: string }> }
-) {
-  const { id, complaintId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const PATCH = withAuth("admin", async (request, { supabase }, params) => {
+  const { id, complaintId } = params as unknown as { id: string; complaintId: string };
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const { status, notes } = await request.json();
+  const { status, notes } = parsed.data as Record<string, unknown>;
 
   const ALLOWED_STATUSES = ["open", "in_progress", "resolved", "rejected"];
-  if (!status || !ALLOWED_STATUSES.includes(status)) {
+  if (!status || !ALLOWED_STATUSES.includes(status as string)) {
     return NextResponse.json({ error: "Nieprawidłowy status" }, { status: 400 });
   }
 
@@ -57,4 +39,4 @@ export async function PATCH(
   }
 
   return NextResponse.json({ ok: true });
-}
+});

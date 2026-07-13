@@ -1,37 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/api/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * POST /api/admin/backfill-contacts
  * Tworzy brakujace rekordy contacts dla userow z rola "client"
- * ktorzy nie maja powiazanego kontaktu (user_id w contacts).
- * Admin only.
  */
-export async function POST() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+export const POST = withAuth("admin", async (_request, { user }) => {
   const adminClient = createAdminClient();
   console.log("[BACKFILL] start — user=%s", user.id);
 
-  // 1. Pobierz wszystkich userow z rola "client"
   const { data: clientUsers } = await adminClient
     .from("users")
     .select("id, full_name, phone")
@@ -42,7 +20,6 @@ export async function POST() {
     return NextResponse.json({ created: 0, skipped: 0, message: "Brak userow z rola client" });
   }
 
-  // 2. Pobierz contacts ktore JUZ maja user_id
   const { data: existingContacts } = await adminClient
     .from("contacts")
     .select("user_id")
@@ -52,7 +29,6 @@ export async function POST() {
     (existingContacts ?? []).map((c) => c.user_id)
   );
 
-  // 3. Filtruj userow bez contacts
   const missingUsers = clientUsers.filter((u) => !existingUserIds.has(u.id));
   console.log("[BACKFILL] missing=%d, existing=%d", missingUsers.length, existingUserIds.size);
 
@@ -64,14 +40,12 @@ export async function POST() {
     });
   }
 
-  // 4. Pobierz emaile z auth
   const { data: authData } = await adminClient.auth.admin.listUsers();
   const emailMap = new Map<string, string>();
   authData?.users?.forEach((u) => {
     if (u.email) emailMap.set(u.id, u.email);
   });
 
-  // 5. Batch INSERT
   const toInsert = missingUsers.map((u) => ({
     user_id: u.id,
     full_name: u.full_name,
@@ -83,7 +57,7 @@ export async function POST() {
 
   if (error) {
     console.error("[BACKFILL] insert error:", error.message);
-    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   console.log("[BACKFILL] done — created=%d, skipped=%d", toInsert.length, clientUsers.length - toInsert.length);
@@ -91,4 +65,4 @@ export async function POST() {
     created: toInsert.length,
     skipped: clientUsers.length - toInsert.length,
   });
-}
+});

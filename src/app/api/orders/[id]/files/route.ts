@@ -1,104 +1,64 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 import { validateFile } from "@/services/file-validation.service";
 
 export const maxDuration = 60;
 
 /**
  * POST /api/orders/[id]/files — rejestracja pliku (po direct upload do Storage)
- *
- * Nowy flow (od Fazy "duże pliki"):
- * 1. Browser uploaduje plik bezpośrednio do Supabase Storage (bypass Vercel 4.5MB limit)
- * 2. Browser wysyła JSON z metadata do tego API
- * 3. API pobiera plik ze Storage → preflight → zapisuje rekord w order_files
- *
- * Body: { filePath, fileName, fileSize, mimeType, orderItemId? }
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || !["admin", "client"].includes(profile.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+export const POST = withAuth(["admin", "client"], async (request, { supabase, user, role }, params) => {
+  const id = params!.id;
 
   // Klient moze uploadowac tylko do swoich zamowien (RLS sprawdza za nas)
-  if (profile.role === "client") {
-    const { data: orderCheck } = await supabase
-      .from("orders")
-      .select("id")
-      .eq("id", id)
-      .maybeSingle();
+  if (role === "client") {
+    const { data: orderCheck } = await supabase.from("orders").select("id").eq("id", id).maybeSingle();
     if (!orderCheck) {
       return NextResponse.json({ error: "Brak dostępu do tego zamówienia" }, { status: 403 });
     }
   }
 
-  const body = await request.json();
-  const { filePath, fileName, fileSize, mimeType, orderItemId } = body;
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
+
+  const body = parsed.data as Record<string, unknown>;
+  const { filePath, fileName, fileSize, mimeType, orderItemId } = body as {
+    filePath: string; fileName: string; fileSize?: number; mimeType?: string; orderItemId?: string;
+  };
 
   if (!filePath || !fileName) {
     return NextResponse.json({ error: "filePath i fileName wymagane" }, { status: 400 });
   }
 
-  // Walidacja rozszerzenia server-side
   const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "tiff", "tif"];
   const ext = (fileName.split(".").pop() ?? "").toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    // Cleanup: usun plik z Storage
     await supabase.storage.from("order-files").remove([filePath]);
-    return NextResponse.json(
-      { error: "Niedozwolony typ pliku (dozwolone: PDF, JPG, PNG, TIFF)" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Niedozwolony typ pliku (dozwolone: PDF, JPG, PNG, TIFF)" }, { status: 400 });
   }
 
-  // Pobierz docelowe wymiary produktu (jeśli pozycja ma produkt)
   let targetWidth: number | null = null;
   let targetHeight: number | null = null;
 
   if (orderItemId) {
     const { data: itemData } = await supabase
-      .from("order_items")
-      .select("product:products(width_mm, height_mm)")
-      .eq("id", orderItemId)
-      .maybeSingle();
+      .from("order_items").select("product:products(width_mm, height_mm)").eq("id", orderItemId).maybeSingle();
     const prod = itemData?.product as unknown as { width_mm: number | null; height_mm: number | null } | null;
     targetWidth = prod?.width_mm ? Number(prod.width_mm) : null;
     targetHeight = prod?.height_mm ? Number(prod.height_mm) : null;
   }
 
-  // Pobierz plik ze Storage do preflight
   let preflight: { status: string; checks?: unknown[]; validatedAt?: string } = { status: "pending", checks: [], validatedAt: new Date().toISOString() };
 
-  const { data: fileData, error: downloadError } = await supabase.storage
-    .from("order-files")
-    .download(filePath);
-
+  const { data: fileData, error: downloadError } = await supabase.storage.from("order-files").download(filePath);
   if (!downloadError && fileData) {
     const fileBuffer = Buffer.from(await fileData.arrayBuffer());
-    preflight = await validateFile(fileBuffer, mimeType, fileName, targetWidth, targetHeight);
+    preflight = await validateFile(fileBuffer, mimeType ?? "", fileName, targetWidth, targetHeight);
   } else {
     console.error("[FILES] download for preflight failed:", downloadError?.message);
   }
 
-  // Zapisz rekord w tabeli order_files
   const { data: record, error: dbError } = await supabase
     .from("order_files")
     .insert({
@@ -109,8 +69,8 @@ export async function POST(
       file_size: fileSize || null,
       mime_type: mimeType || null,
       uploaded_by: user.id,
-      is_client_upload: profile.role === "client",
-      is_accepted: profile.role !== "client", // admin = auto-accepted, klient = wymaga akceptacji
+      is_client_upload: role === "client",
+      is_accepted: role !== "client",
       preflight_status: preflight.status,
       preflight_result: preflight,
     })
@@ -123,84 +83,43 @@ export async function POST(
   }
 
   return NextResponse.json(record);
-}
+});
 
 /**
  * DELETE /api/orders/[id]/files?fileId=xxx — usun plik
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+export const DELETE = withAuth("admin", async (request, { supabase }, params) => {
+  const id = params!.id;
   const fileId = request.nextUrl.searchParams.get("fileId");
   if (!fileId) {
     return NextResponse.json({ error: "Brak fileId" }, { status: 400 });
   }
 
-  const { id: orderId } = await params;
-
   const { data: fileRecord } = await supabase
-    .from("order_files")
-    .select("file_path")
-    .eq("id", fileId)
-    .eq("order_id", orderId)
-    .maybeSingle();
+    .from("order_files").select("file_path").eq("id", fileId).eq("order_id", id).maybeSingle();
 
   if (!fileRecord) {
     return NextResponse.json({ error: "Plik nie znaleziony" }, { status: 404 });
   }
 
   if (fileRecord.file_path) {
-    await supabase.storage
-      .from("order-files")
-      .remove([fileRecord.file_path]);
+    await supabase.storage.from("order-files").remove([fileRecord.file_path]);
   }
 
-  const { error: deleteError } = await supabase.from("order_files").delete().eq("id", fileId).eq("order_id", orderId);
-
+  const { error: deleteError } = await supabase.from("order_files").delete().eq("id", fileId).eq("order_id", id);
   if (deleteError) {
     console.error("[FILE DELETE] error:", deleteError.message);
     return NextResponse.json({ error: "Błąd usuwania pliku" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
-}
+});
 
 /**
  * PATCH /api/orders/[id]/files?fileId=xxx&action=accept — akceptacja pliku klienta
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
-  if (!profile || !["admin", "operator"].includes(profile.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+export const PATCH = withAuth(["admin", "operator"], async (request, { supabase }, params) => {
+  const id = params!.id;
   const fileId = request.nextUrl.searchParams.get("fileId");
   const action = request.nextUrl.searchParams.get("action");
 
@@ -208,18 +127,11 @@ export async function PATCH(
     return NextResponse.json({ error: "fileId i action=accept wymagane" }, { status: 400 });
   }
 
-  const { id: orderId } = await params;
-
-  const { error } = await supabase
-    .from("order_files")
-    .update({ is_accepted: true })
-    .eq("id", fileId)
-    .eq("order_id", orderId);
-
+  const { error } = await supabase.from("order_files").update({ is_accepted: true }).eq("id", fileId).eq("order_id", id);
   if (error) {
     console.error("[FILE ACCEPT] error:", error.message);
     return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
-}
+});

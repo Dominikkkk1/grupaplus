@@ -1,71 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 import { notifyComplaint } from "@/lib/email/notifications";
 
 /**
  * POST /api/orders/[id]/complaints — nowe zgłoszenie incydentu
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const POST = withAuth(["admin", "operator"], async (request, { supabase, user }, params) => {
+  const id = params!.id;
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (
-    !profile ||
-    (profile.role !== "admin" && profile.role !== "operator")
-  ) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await request.json();
-  const raw = body;
-  // Sanitize: zamien string "undefined" na null
-  const type = raw.type;
-  const orderItemId = (raw.orderItemId && raw.orderItemId !== "undefined") ? raw.orderItemId : null;
-  const reason = raw.reason;
-  const revertToStepId = (raw.revertToStepId && raw.revertToStepId !== "undefined") ? raw.revertToStepId : null;
-  const revertBranchType = (raw.revertBranchType && raw.revertBranchType !== "undefined") ? raw.revertBranchType : null;
-  const reprintQuantity = raw.reprintQuantity;
-  const notes = raw.notes;
+  const raw = parsed.data as Record<string, unknown>;
+  const type = raw.type as string;
+  const orderItemId = (raw.orderItemId && raw.orderItemId !== "undefined") ? raw.orderItemId as string : null;
+  const reason = raw.reason as string;
+  const revertToStepId = (raw.revertToStepId && raw.revertToStepId !== "undefined") ? raw.revertToStepId as string : null;
+  const revertBranchType = (raw.revertBranchType && raw.revertBranchType !== "undefined") ? raw.revertBranchType as string : null;
+  const reprintQuantity = raw.reprintQuantity as number | null;
+  const notes = raw.notes as string | undefined;
   console.log("[COMPLAINT] orderId=%s type=%s orderItemId=%s revertToStepId=%s revertBranchType=%s user=%s", id, type, orderItemId, revertToStepId, revertBranchType, user.id);
 
   if (!reason || !reason.trim()) {
-    return NextResponse.json(
-      { error: "Powód zgłoszenia jest wymagany" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Powód zgłoszenia jest wymagany" }, { status: 400 });
   }
 
   if (reason.length > 5000) {
-    return NextResponse.json(
-      { error: "Powód zgłoszenia jest za długi (max 5000 znaków)" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Powód zgłoszenia jest za długi (max 5000 znaków)" }, { status: 400 });
   }
 
   if (notes && notes.length > 5000) {
-    return NextResponse.json(
-      { error: "Uwagi są za długie (max 5000 znaków)" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Uwagi są za długie (max 5000 znaków)" }, { status: 400 });
   }
 
-  // Utworz zgłoszenie
   const { data: complaint, error } = await supabase
     .from("complaints")
     .insert({
@@ -84,7 +51,7 @@ export async function POST(
 
   if (error) {
     console.error("[COMPLAINT] insert error:", error.message);
-    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   console.log("[COMPLAINT] created id=%s", complaint.id);
@@ -105,9 +72,8 @@ export async function POST(
     assignedTo: (orderInfo?.assigned_to as string) ?? null,
   }).catch((err) => console.error("[COMPLAINT] notify error:", err));
 
-  // Jesli zgłoszenie wewnetrzne z cofnieciem etapu — cofnij progress
+  // Cofanie etapu przy reklamacji wewnetrznej
   if (type === "internal" && revertToStepId && orderItemId) {
-    // Walidacja: orderItemId musi nalezec do tego zamowienia
     const { data: itemCheck } = await supabase
       .from("order_items")
       .select("id")
@@ -115,11 +81,9 @@ export async function POST(
       .eq("order_id", id)
       .maybeSingle();
     if (!itemCheck) {
-      console.log("[COMPLAINT] 400 — orderItemId %s nie nalezy do order %s", orderItemId, id);
       return NextResponse.json({ error: "Pozycja nie należy do tego zamówienia" }, { status: 400 });
     }
-    // Znajdz step_order i branch_type tego etapu
-    // Znajdz target step — jesli branch_type podany, uzyj go (precyzyjne dopasowanie)
+
     let targetStepQuery = supabase
       .from("order_item_progress")
       .select("step_order, branch_type")
@@ -137,87 +101,42 @@ export async function POST(
       const bt = targetStep.branch_type ?? "common";
       console.log("[COMPLAINT] REVERT: item=%s from step_order=%d branch=%s", orderItemId, targetStep.step_order, bt);
 
-      if (bt === "branch_a" || bt === "branch_b") {
-        // Branch step: cofnij TYLKO ten branch + post-join common
-        await supabase
-          .from("order_item_progress")
-          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
-          .eq("order_item_id", orderItemId)
-          .eq("branch_type", bt)
-          .gte("step_order", targetStep.step_order);
+      const resetData = { status: "pending" as const, completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null };
 
-        // Cofnij tez post-join common (bo branch sie zmienil)
-        await supabase
-          .from("order_item_progress")
-          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
-          .eq("order_item_id", orderItemId)
-          .eq("branch_type", "common")
-          .gte("step_order", 100);
+      if (bt === "branch_a" || bt === "branch_b") {
+        await supabase.from("order_item_progress").update(resetData)
+          .eq("order_item_id", orderItemId).eq("branch_type", bt).gte("step_order", targetStep.step_order);
+        await supabase.from("order_item_progress").update(resetData)
+          .eq("order_item_id", orderItemId).eq("branch_type", "common").gte("step_order", 100);
       } else if (bt === "common" && targetStep.step_order >= 100) {
-        // Post-join common: cofnij tylko post-join common od tego kroku
-        await supabase
-          .from("order_item_progress")
-          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
-          .eq("order_item_id", orderItemId)
-          .eq("branch_type", "common")
-          .gte("step_order", targetStep.step_order);
+        await supabase.from("order_item_progress").update(resetData)
+          .eq("order_item_id", orderItemId).eq("branch_type", "common").gte("step_order", targetStep.step_order);
       } else {
-        // Pre-fork common: cofnij WSZYSTKO (oba branche + post-join)
-        await supabase
-          .from("order_item_progress")
-          .update({ status: "pending", completed_by: null, completed_at: null, machine_id: null, started_at: null, started_by: null })
-          .eq("order_item_id", orderItemId)
-          .gte("step_order", targetStep.step_order);
+        await supabase.from("order_item_progress").update(resetData)
+          .eq("order_item_id", orderItemId).gte("step_order", targetStep.step_order);
       }
 
-      // Oznacz pozycje jako nieukonczona
-      await supabase
-        .from("order_items")
-        .update({ is_completed: false })
-        .eq("id", orderItemId);
+      await supabase.from("order_items").update({ is_completed: false }).eq("id", orderItemId);
 
-      // Jesli zamówienie jest "ready" — cofnij do "in_production"
-      const { data: revertedItem } = await supabase
-        .from("order_items")
-        .select("order_id")
-        .eq("id", orderItemId)
-        .single();
+      const { data: revertedItem } = await supabase.from("order_items").select("order_id").eq("id", orderItemId).single();
       if (revertedItem) {
-        const { data: currentOrder } = await supabase
-          .from("orders")
-          .select("status")
-          .eq("id", revertedItem.order_id)
-          .single();
+        const { data: currentOrder } = await supabase.from("orders").select("status").eq("id", revertedItem.order_id).single();
         if (currentOrder?.status === "ready") {
           console.log("[COMPLAINT] ORDER REVERT: %s ready → in_production", revertedItem.order_id);
-          await supabase
-            .from("orders")
-            .update({ status: "in_production" })
-            .eq("id", revertedItem.order_id);
+          await supabase.from("orders").update({ status: "in_production" }).eq("id", revertedItem.order_id);
         }
       }
     }
   }
 
   return NextResponse.json({ id: complaint.id });
-}
+});
 
 /**
  * GET /api/orders/[id]/complaints — lista zgloszen
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withAuth(["admin", "operator"], async (_request, { supabase }, params) => {
+  const id = params!.id;
 
   const { data: complaints } = await supabase
     .from("complaints")
@@ -228,4 +147,4 @@ export async function GET(
     .order("created_at", { ascending: false });
 
   return NextResponse.json(complaints ?? []);
-}
+});

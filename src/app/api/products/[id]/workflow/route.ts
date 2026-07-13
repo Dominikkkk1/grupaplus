@@ -1,55 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 
 /**
  * PUT /api/products/[id]/workflow — zastepuje caly workflow produktu
- * Body: { steps: [{ stepId: string, stepOrder: number }] }
- *
- * Atomowa operacja: usun stare → wstaw nowe.
- * Dziala jak "zapisz obecny stan" — nie trzeba sledzic co dodane/usuniete.
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const PUT = withAuth("admin", async (request, { supabase }, params) => {
+  const id = params!.id;
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await request.json();
-  const steps: { stepId: string; stepOrder: number; branchType?: string }[] = body.steps ?? [];
+  const body = parsed.data as Record<string, unknown>;
+  const steps: { stepId: string; stepOrder: number; branchType?: string }[] =
+    (body.steps as { stepId: string; stepOrder: number; branchType?: string }[]) ?? [];
 
   if (steps.length > 50) {
     return NextResponse.json({ error: "Maksymalnie 50 kroków workflow" }, { status: 400 });
   }
 
-  // Usuń stare przypisania
-  const { error: deleteError } = await supabase
-    .from("product_workflow")
-    .delete()
-    .eq("product_id", id);
-
+  const { error: deleteError } = await supabase.from("product_workflow").delete().eq("product_id", id);
   if (deleteError) {
-    console.error("[API] DB error:", deleteError.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+    console.error("[PRODUCT_WORKFLOW] delete error:", deleteError.message);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
-  // Wstaw nowe (jesli sa)
   if (steps.length > 0) {
     const rows = steps.map((s) => ({
       product_id: id,
@@ -59,17 +33,11 @@ export async function PUT(
       is_required: true,
     }));
 
-    const { error: insertError } = await supabase
-      .from("product_workflow")
-      .insert(rows);
-
+    const { error: insertError } = await supabase.from("product_workflow").insert(rows);
     if (insertError) {
-      return NextResponse.json(
-        { error: insertError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
   }
 
   return NextResponse.json({ ok: true });
-}
+});

@@ -1,34 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 
 /**
  * POST /api/products — tworzenie nowego produktu
- * Body: { name, sku?, category?, basPrice?, description? }
  */
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const POST = withAuth("admin", async (request, { supabase }) => {
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { name, sku, category, basePrice, description, leadTimeDays } = parsed.data as Record<string, unknown>;
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await request.json();
-  const { name, sku, category, basePrice, description, leadTimeDays } = body;
-
-  if (!name || !name.trim()) {
+  if (!name || !(name as string).trim()) {
     return NextResponse.json(
       { error: "Nazwa produktu jest wymagana" },
       { status: 400 }
@@ -39,7 +22,7 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await supabase
       .from("products")
       .select("id")
-      .eq("sku", sku.trim())
+      .eq("sku", (sku as string).trim())
       .maybeSingle();
 
     if (existing) {
@@ -53,19 +36,20 @@ export async function POST(request: NextRequest) {
   const { data: product, error } = await supabase
     .from("products")
     .insert({
-      name: name.trim(),
-      sku: sku?.trim() || null,
-      category: category || "maly_format",
-      base_price: basePrice ?? null,
-      description: description?.trim() || null,
-      lead_time_days: leadTimeDays && leadTimeDays > 0 ? leadTimeDays : null,
+      name: (name as string).trim(),
+      sku: sku ? (sku as string).trim() : null,
+      category: (category as string) || "maly_format",
+      base_price: (basePrice as number) ?? null,
+      description: description ? (description as string).trim() : null,
+      lead_time_days: leadTimeDays && (leadTimeDays as number) > 0 ? (leadTimeDays as number) : null,
     })
     .select("id, name")
     .single();
 
   if (error) {
-    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+    console.error("[PRODUCTS] DB error:", error.message);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json(product);
-}
+});

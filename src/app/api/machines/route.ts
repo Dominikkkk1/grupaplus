@@ -1,29 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/with-auth";
+import { parseBody } from "@/lib/api/parse-body";
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+/**
+ * POST /api/machines — tworzenie nowej maszyny
+ */
+export const POST = withAuth("admin", async (request, { supabase }) => {
+  const parsed = await parseBody(request);
+  if ("error" in parsed) return parsed.error;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { name, groupId, priority, isActive, notes } = parsed.data as Record<string, unknown>;
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const { name, groupId, priority, isActive, notes } = await request.json();
-
-  if (!name || !name.trim()) {
+  if (!name || !(name as string).trim()) {
     return NextResponse.json(
       { error: "Nazwa maszyny jest wymagana" },
       { status: 400 }
@@ -40,18 +28,19 @@ export async function POST(request: NextRequest) {
   const { data, error } = await supabase
     .from("machines")
     .insert({
-      name: name.trim(),
-      group_id: groupId,
-      priority: priority ?? 0,
-      is_active: isActive ?? true,
-      notes: notes?.trim() || null,
+      name: (name as string).trim(),
+      group_id: groupId as string,
+      priority: (priority as number) ?? 0,
+      is_active: (isActive as boolean) ?? true,
+      notes: notes ? (notes as string).trim() : null,
     })
     .select("id, name")
     .single();
 
   if (error) {
-    console.error("[API] DB error:", error.message); return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+    console.error("[MACHINES] DB error:", error.message);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
   return NextResponse.json(data);
-}
+});
