@@ -30,8 +30,7 @@ export interface ProductionItem {
   contactName: string | null;
   companyName: string | null;
   operatorName: string | null;
-  currentStepId: string | null;
-  currentStepName: string | null;
+  currentStepIds: string[];
   steps: StepProgress[];
   completedCount: number;
   totalCount: number;
@@ -116,10 +115,10 @@ export function ProductionBoard({
   const filteredItems = useMemo(() => {
     let result = items;
 
-    // Filtr etapów — pokazuj pozycje których AKTUALNY etap pasuje
+    // Filtr etapów — pokazuj pozycje których KTÓRYKOLWIEK aktualny etap pasuje (fork = 2 etapy)
     if (selectedStepIds.length > 0) {
       result = result.filter((item) =>
-        item.currentStepId && selectedStepIds.includes(item.currentStepId)
+        item.currentStepIds.some((id) => selectedStepIds.includes(id))
       );
     }
 

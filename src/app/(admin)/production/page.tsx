@@ -126,7 +126,19 @@ export default async function ProductionPage() {
 
     const completed = steps.filter((s) => s.status === "completed" || s.status === "skipped").length;
     const total = steps.length;
-    const currentStep = steps.find((s) => s.status === "in_progress") ?? steps.find((s) => s.status === "pending");
+
+    // Aktywne etapy: WSZYSTKIE in_progress (fork może mieć 2!) + pierwszy pending
+    const activeInProgress = steps.filter((s) => s.status === "in_progress");
+    const firstPending = steps.find((s) => s.status === "pending");
+    const currentSteps = activeInProgress.length > 0
+      ? activeInProgress
+      : firstPending ? [firstPending] : [];
+
+    // Operator = pierwszy in_progress (lub null)
+    const primaryOperator = activeInProgress[0]?.operatorName ?? null;
+
+    // currentStepIds = wszystkie aktywne etapy (do filtrowania)
+    const currentStepIds = currentSteps.map((s) => s.stepId);
 
     items.push({
       itemId,
@@ -138,9 +150,8 @@ export default async function ProductionPage() {
       isPriority: orderItem.order.is_priority,
       contactName: orderItem.order.contact?.full_name ?? null,
       companyName: orderItem.order.contact?.company?.name ?? null,
-      operatorName: currentStep?.operatorName ?? null,
-      currentStepId: currentStep?.stepId ?? null,
-      currentStepName: currentStep?.name ?? null,
+      operatorName: primaryOperator,
+      currentStepIds,
       steps,
       completedCount: completed,
       totalCount: total,
@@ -151,14 +162,16 @@ export default async function ProductionPage() {
   // Unikalne etapy które są aktualnym krokiem jakiejś pozycji
   const activeStepMap = new Map<string, ActiveStep>();
   for (const item of items) {
-    if (item.currentStepId && item.currentStepName) {
-      if (!activeStepMap.has(item.currentStepId)) {
-        const step = item.steps.find((s) => s.stepId === item.currentStepId);
-        activeStepMap.set(item.currentStepId, {
-          id: item.currentStepId,
-          name: item.currentStepName,
-          color: step?.color ?? "#888",
-        });
+    for (const stepId of item.currentStepIds) {
+      if (!activeStepMap.has(stepId)) {
+        const step = item.steps.find((s) => s.stepId === stepId);
+        if (step) {
+          activeStepMap.set(stepId, {
+            id: stepId,
+            name: step.name,
+            color: step.color,
+          });
+        }
       }
     }
   }
