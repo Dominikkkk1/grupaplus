@@ -30,52 +30,64 @@ export interface ProductionItem {
   contactName: string | null;
   companyName: string | null;
   operatorName: string | null;
-  currentStepMachineGroupId: string | null;
+  currentStepId: string | null;
+  currentStepName: string | null;
   steps: StepProgress[];
   completedCount: number;
   totalCount: number;
   progressPercent: number;
 }
 
-export interface MachineGroup {
+export interface ActiveStep {
   id: string;
   name: string;
+  color: string;
 }
 
 // --- Komponent ---
 
 export function ProductionBoard({
   items,
-  machineGroups = [],
+  activeSteps = [],
   userRole = "admin",
 }: {
   items: ProductionItem[];
-  machineGroups?: MachineGroup[];
+  activeSteps?: ActiveStep[];
   userRole?: string;
 }) {
   const router = useRouter();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isOperator = userRole === "operator";
 
-  // Filtr grup maszyn
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
-  const [groupResolved, setGroupResolved] = useState(false);
+  // Filtr etapów produkcji
+  const [selectedStepIds, setSelectedStepIds] = useState<string[]>([]);
+  const [filterResolved, setFilterResolved] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem("scan_group_ids");
+      const saved = sessionStorage.getItem("production_step_ids");
       if (saved) {
         const ids = JSON.parse(saved) as string[];
-        if (ids.length > 0) setSelectedGroupIds(ids);
+        if (ids.length > 0) setSelectedStepIds(ids);
       }
     } catch {}
-    setGroupResolved(true);
+    setFilterResolved(true);
   }, []);
 
-  function toggleGroup(groupId: string) {
-    setSelectedGroupIds((prev) =>
-      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
+  // Persist filter to sessionStorage
+  useEffect(() => {
+    if (!filterResolved) return;
+    if (selectedStepIds.length > 0) {
+      sessionStorage.setItem("production_step_ids", JSON.stringify(selectedStepIds));
+    } else {
+      sessionStorage.removeItem("production_step_ids");
+    }
+  }, [selectedStepIds, filterResolved]);
+
+  function toggleStep(stepId: string) {
+    setSelectedStepIds((prev) =>
+      prev.includes(stepId) ? prev.filter((id) => id !== stepId) : [...prev, stepId]
     );
   }
 
@@ -104,10 +116,10 @@ export function ProductionBoard({
   const filteredItems = useMemo(() => {
     let result = items;
 
-    // Filtr grup maszyn — pokazuj pozycje których AKTUALNY etap jest w wybranej grupie
-    if (selectedGroupIds.length > 0) {
+    // Filtr etapów — pokazuj pozycje których AKTUALNY etap pasuje
+    if (selectedStepIds.length > 0) {
       result = result.filter((item) =>
-        item.currentStepMachineGroupId && selectedGroupIds.includes(item.currentStepMachineGroupId)
+        item.currentStepId && selectedStepIds.includes(item.currentStepId)
       );
     }
 
@@ -124,7 +136,7 @@ export function ProductionBoard({
     }
 
     return result;
-  }, [items, selectedGroupIds, searchQuery]);
+  }, [items, selectedStepIds, searchQuery]);
 
   // Sortowanie: spóźnione > pilne < 24h > in_progress > pending
   const sortedItems = useMemo(() => {
@@ -151,11 +163,11 @@ export function ProductionBoard({
 
   // Panel "Do zrobienia" operatora
   const todoItems = useMemo(() => {
-    if (!isOperator || selectedGroupIds.length === 0) return [];
+    if (!isOperator || selectedStepIds.length === 0) return [];
     return sortedItems.filter(
       (i) => !i.steps.some((s) => s.status === "in_progress") && i.steps.some((s) => s.status === "pending")
     );
-  }, [isOperator, selectedGroupIds, sortedItems]);
+  }, [isOperator, selectedStepIds, sortedItems]);
 
   const [showAllTodo, setShowAllTodo] = useState(false);
   const visibleTodo = showAllTodo ? todoItems : todoItems.slice(0, 5);
@@ -175,38 +187,39 @@ export function ProductionBoard({
           />
         </div>
 
-        {machineGroups.length > 0 && (
+        {activeSteps.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <button
-              onClick={() => setSelectedGroupIds([])}
+              onClick={() => setSelectedStepIds([])}
               className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                selectedGroupIds.length === 0
+                selectedStepIds.length === 0
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
               }`}
             >
               Wszystkie
             </button>
-            {machineGroups.map((g) => (
+            {activeSteps.map((s) => (
               <button
-                key={g.id}
-                onClick={() => toggleGroup(g.id)}
-                className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                  selectedGroupIds.includes(g.id)
+                key={s.id}
+                onClick={() => toggleStep(s.id)}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                  selectedStepIds.includes(s.id)
                     ? "border-zinc-900 bg-zinc-900 text-white"
                     : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                 }`}
               >
-                {g.name}
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+                {s.name}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {isOperator && selectedGroupIds.length === 0 && groupResolved && (
+      {isOperator && selectedStepIds.length === 0 && filterResolved && (
         <p className="mb-4 text-[11px] text-amber-600">
-          Wybierz stanowiska na /scan - filtr ustawi się automatycznie
+          Wybierz etap aby zobaczyć pozycje do realizacji
         </p>
       )}
 
@@ -250,7 +263,7 @@ export function ProductionBoard({
       ) : (
         <div className="rounded-lg border border-zinc-200 bg-white p-16 text-center">
           <p className="text-sm font-medium text-zinc-900">
-            {searchQuery ? "Brak wyników wyszukiwania" : selectedGroupIds.length > 0 ? "Brak pozycji dla wybranych stanowisk" : "Brak pozycji w produkcji"}
+            {searchQuery ? "Brak wyników wyszukiwania" : selectedStepIds.length > 0 ? "Brak pozycji na wybranych etapach" : "Brak pozycji w produkcji"}
           </p>
           <p className="mt-1 text-[13px] text-zinc-500">
             {searchQuery ? "Spróbuj inną frazę." : "Pozycje pojawią się po rozpoczęciu realizacji zamówień."}

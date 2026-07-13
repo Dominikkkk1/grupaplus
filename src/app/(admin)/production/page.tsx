@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   ProductionBoard,
   type ProductionItem,
-  type MachineGroup,
+  type ActiveStep,
 } from "@/components/production/production-board";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function ProductionPage() {
 
   // Pobierz WSZYSTKIE etapy per pozycja (nie tylko pending/in_progress)
   // Potrzebne do progress bara
-  const [progressRes, groupsRes, stepsRes] = await Promise.all([
+  const [progressRes] = await Promise.all([
     supabase
       .from("order_item_progress")
       .select(`
@@ -54,14 +54,6 @@ export default async function ProductionPage() {
       `)
       .order("step_order", { ascending: true })
       .limit(500),
-    supabase
-      .from("machine_groups")
-      .select("id, name")
-      .order("name"),
-    supabase
-      .from("workflow_steps")
-      .select("id, name, color, machine_group_id")
-      .order("name"),
   ]);
 
   // Grupuj progress po order_item_id, żeby mieć pełny obraz per pozycja
@@ -147,13 +139,30 @@ export default async function ProductionPage() {
       contactName: orderItem.order.contact?.full_name ?? null,
       companyName: orderItem.order.contact?.company?.name ?? null,
       operatorName: currentStep?.operatorName ?? null,
-      currentStepMachineGroupId: currentStep?.machineGroupId ?? null,
+      currentStepId: currentStep?.stepId ?? null,
+      currentStepName: currentStep?.name ?? null,
       steps,
       completedCount: completed,
       totalCount: total,
       progressPercent: total > 0 ? Math.round((completed / total) * 100) : 0,
     });
   }
+
+  // Unikalne etapy które są aktualnym krokiem jakiejś pozycji
+  const activeStepMap = new Map<string, ActiveStep>();
+  for (const item of items) {
+    if (item.currentStepId && item.currentStepName) {
+      if (!activeStepMap.has(item.currentStepId)) {
+        const step = item.steps.find((s) => s.stepId === item.currentStepId);
+        activeStepMap.set(item.currentStepId, {
+          id: item.currentStepId,
+          name: item.currentStepName,
+          color: step?.color ?? "#888",
+        });
+      }
+    }
+  }
+  const activeSteps = Array.from(activeStepMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div>
@@ -166,7 +175,7 @@ export default async function ProductionPage() {
 
       <ProductionBoard
         items={items}
-        machineGroups={(groupsRes.data ?? []) as unknown as MachineGroup[]}
+        activeSteps={activeSteps}
         userRole={userRole}
       />
     </div>
