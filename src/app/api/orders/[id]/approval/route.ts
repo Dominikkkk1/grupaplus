@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
 import { parseBody } from "@/lib/api/parse-body";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createApprovalToken, appUrl } from "@/lib/approval-token";
+import { sendEmail } from "@/lib/email/resend";
+import { designApprovalEmail } from "@/lib/email/templates";
+import { APPROVAL_DEADLINE_HOURS } from "@/lib/approval";
 
 /**
- * POST /api/orders/[id]/approval — obsluga zegara akceptacji projektu
+ * POST /api/orders/[id]/approval — wysyłka projektu do akceptacji klienta
  *
  * Body: { action: "send" | "resend" }
  *
- *  - "send"   — projekt poszedl do klienta po raz pierwszy.
- *               Ustawia status `awaiting_approval` i startuje zegar 24 h.
- *  - "resend" — klient dostal POPRAWIONA wersje projektu.
- *               Zegar 24 h startuje od nowa (tego wymagala Grupa Plus).
+ *  - "send"   — projekt idzie do klienta po raz pierwszy
+ *  - "resend" — klient dostaje POPRAWIONĄ wersję, zegar 24 h startuje od nowa
  *
- * Dlaczego osobny endpoint, a nie zwykla zmiana statusu?
- * Bo przejscie `awaiting_approval -> awaiting_approval` jest zabronione
- * w ALLOWED_TRANSITIONS (i slusznie — status sie nie zmienia). Bez tego
- * nie dalo sie zresetowac licznika po wyslaniu poprawki.
+ * Za każdym razem powstaje NOWY jednorazowy link, a poprzedni przestaje
+ * działać — inaczej klient mógłby zaakceptować nieaktualną wersję projektu.
+ *
+ * Osobny endpoint, bo przejście awaiting_approval -> awaiting_approval jest
+ * (słusznie) zabronione w ALLOWED_TRANSITIONS, a licznik trzeba wyzerować.
  */
 export const POST = withAuth(["admin", "operator"], async (request, { supabase, user }, params) => {
   const id = params!.id;
@@ -33,7 +37,7 @@ export const POST = withAuth(["admin", "operator"], async (request, { supabase, 
 
   const { data: order } = await supabase
     .from("orders")
-    .select("status, approval_resent_count")
+    .select("status, order_number, approval_resent_count, approval_decision, contact:contacts(full_name, email)")
     .eq("id", id)
     .maybeSingle();
 
@@ -41,7 +45,13 @@ export const POST = withAuth(["admin", "operator"], async (request, { supabase, 
     return NextResponse.json({ error: "Zamówienie nie znalezione" }, { status: 404 });
   }
 
-  const now = new Date().toISOString();
+  // Poprawiona wersja projektu ma DWIE drogi:
+  //  a) klient sie nie odezwal — zamowienie dalej wisi w awaiting_approval,
+  //  b) klient poprosil o poprawki — zamowienie wrocilo na "Potwierdzone"
+  //     i ma zapisana decyzje changes_requested.
+  // Obie to ten sam ruch dla obslugi: "wyslalem poprawke".
+  const poPoprawkach =
+    order.status === "confirmed" && order.approval_decision === "changes_requested";
 
   if (action === "send") {
     if (order.status === "awaiting_approval") {
@@ -58,21 +68,29 @@ export const POST = withAuth(["admin", "operator"], async (request, { supabase, 
     }
   }
 
-  if (action === "resend" && order.status !== "awaiting_approval") {
+  if (action === "resend" && order.status !== "awaiting_approval" && !poPoprawkach) {
     return NextResponse.json(
-      { error: "Zamówienie nie oczekuje na akceptację" },
+      { error: "To zamówienie nie jest na etapie akceptacji projektu" },
       { status: 400 }
     );
   }
 
+  // Klucz service_role — tabeli approval_tokens nie czyta ani nie zapisuje
+  // żaden zalogowany użytkownik (RLS bez polityk)
+  const admin = createAdminClient();
+  const token = await createApprovalToken(admin, id);
+  const link = `${appUrl()}/akceptacja/${token}`;
+
+  const now = new Date().toISOString();
   const updateData: Record<string, unknown> = {
     status: "awaiting_approval",
     sent_for_approval_at: now,
     approval_reminder_sent: false,
     approved_at: null,
+    approval_decision: null,
+    approval_comment: null,
   };
-
-  if (action === "resend") {
+  if (action === "resend" || poPoprawkach) {
     updateData.approval_resent_count = (order.approval_resent_count ?? 0) + 1;
   }
 
@@ -83,12 +101,48 @@ export const POST = withAuth(["admin", "operator"], async (request, { supabase, 
     return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 
+  // Nazwy plików projektu (nasze, nie te wgrane przez klienta)
+  const { data: files } = await admin
+    .from("order_files")
+    .select("file_name")
+    .eq("order_id", id)
+    .eq("is_client_upload", false)
+    .order("created_at", { ascending: false });
+
+  const contact = order.contact as unknown as { full_name: string; email: string | null } | null;
+
+  let emailSent = false;
+  if (contact?.email) {
+    const { subject, html } = designApprovalEmail({
+      orderNumber: order.order_number as string,
+      customerName: contact.full_name,
+      link,
+      fileNames: (files ?? []).map((f) => f.file_name as string),
+      isResend: action === "resend",
+      deadlineHours: APPROVAL_DEADLINE_HOURS,
+    });
+    const result = await sendEmail({ to: contact.email, subject, html });
+    emailSent = result !== null;
+  }
+
   console.log(
-    "[APPROVAL] %s orderId=%s przez user=%s (zegar 24h wystartowal od nowa)",
+    "[APPROVAL] %s orderId=%s user=%s mailWyslany=%s",
     action,
     id,
-    user.id
+    user.id,
+    emailSent
   );
 
-  return NextResponse.json({ ok: true, sentForApprovalAt: now });
+  return NextResponse.json({
+    ok: true,
+    sentForApprovalAt: now,
+    link,
+    emailSent,
+    // UI pokaże ostrzeżenie i sam link, gdy mail nie mógł pójść
+    warning: !contact?.email
+      ? "Klient nie ma zapisanego adresu e-mail — wyślij link ręcznie."
+      : !emailSent
+        ? "Nie udało się wysłać maila (brak konfiguracji Resend) — wyślij link ręcznie."
+        : null,
+  });
 });

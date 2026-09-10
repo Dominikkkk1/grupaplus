@@ -226,3 +226,102 @@ export function orderShippedEmail({
     `),
   };
 }
+
+/**
+ * Mail do klienta z projektem do akceptacji.
+ * Link prowadzi na strone bez logowania, gdzie klient klika
+ * "Akceptuje" albo "Prosze o poprawki".
+ */
+export function designApprovalEmail({
+  orderNumber,
+  customerName,
+  link,
+  fileNames,
+  isResend,
+  deadlineHours,
+}: {
+  orderNumber: string;
+  customerName: string;
+  link: string;
+  fileNames: string[];
+  isResend: boolean;
+  deadlineHours: number;
+}) {
+  const filesHtml =
+    fileNames.length > 0
+      ? `<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#3f3f46;">
+           ${fileNames.map((f) => `<li>${esc(f)}</li>`).join("")}
+         </ul>`
+      : `<p style="margin:8px 0 0;font-size:13px;color:#71717a;">Projekt pokażemy na stronie pod linkiem.</p>`;
+
+  const intro = isResend
+    ? "przygotowaliśmy poprawioną wersję projektu do zamówienia"
+    : "projekt do Państwa zamówienia jest gotowy";
+
+  return {
+    subject: isResend
+      ? `Poprawiony projekt do akceptacji — ${orderNumber}`
+      : `Projekt do akceptacji — ${orderNumber}`,
+    html: layout(`
+      <p style="margin:0 0 12px;font-size:15px;color:#18181b;">Dzień dobry${customerName ? `, ${esc(customerName)}` : ""},</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">
+        ${intro} <strong>${esc(orderNumber)}</strong>.
+      </p>
+      ${filesHtml}
+      <div style="margin:24px 0;text-align:center;">
+        <a href="${esc(link)}"
+           style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:15px;font-weight:600;">
+          Zobacz projekt i zdecyduj
+        </a>
+      </div>
+      <p style="margin:0 0 8px;font-size:13px;color:#71717a;">
+        Na stronie znajdą Państwo dwa przyciski: <strong>Akceptuję</strong> oraz
+        <strong>Proszę o poprawki</strong>. Logowanie nie jest potrzebne.
+      </p>
+      <p style="margin:0;font-size:13px;color:#71717a;">
+        Jeśli nie otrzymamy odpowiedzi w ciągu ${deadlineHours} godzin, skontaktujemy się z Państwem.
+        Produkcja rusza dopiero po akceptacji.
+      </p>
+    `),
+  };
+}
+
+/** Powiadomienie dla zespolu: klient podjal decyzje w sprawie projektu. */
+export function approvalDecisionEmail({
+  orderNumber,
+  customerName,
+  decision,
+  comment,
+}: {
+  orderNumber: string;
+  customerName: string;
+  decision: "approved" | "changes_requested";
+  comment?: string | null;
+}) {
+  const approved = decision === "approved";
+  return {
+    subject: approved
+      ? `Klient zaakceptował projekt — ${orderNumber}`
+      : `Klient prosi o poprawki — ${orderNumber}`,
+    html: layout(`
+      <p style="margin:0 0 12px;font-size:15px;color:#18181b;">
+        ${approved ? "Projekt zaakceptowany" : "Klient prosi o poprawki"}
+      </p>
+      <p style="margin:0 0 8px;font-size:14px;color:#3f3f46;">
+        Zamówienie <strong>${esc(orderNumber)}</strong> &middot; ${esc(customerName)}
+      </p>
+      ${
+        comment
+          ? `<div style="margin:16px 0;padding:12px;background:#fef3c7;border-radius:8px;font-size:13px;color:#78350f;">
+               <strong>Uwagi klienta:</strong><br>${esc(comment)}
+             </div>`
+          : ""
+      }
+      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">
+        ${approved
+          ? "Zamówienie przeszło do produkcji."
+          : "Zamówienie wróciło na etap „Potwierdzone”. Po wysłaniu poprawionej wersji licznik 24 h ruszy od nowa."}
+      </p>
+    `),
+  };
+}

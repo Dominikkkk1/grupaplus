@@ -6,7 +6,14 @@ import { NextResponse, type NextRequest } from "next/server";
 // sesji — bez wyjatku middleware odsylal je na /login (HTTP 307) i kod cronu
 // w ogole sie nie wykonywal. Same endpointy pilnuja sie naglowkiem CRON_SECRET,
 // a webhooki podpisem HMAC.
-const PUBLIC_PATHS = ["/login", "/api/webhooks", "/api/cron"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/webhooks",
+  "/api/cron",
+  // Akceptacja projektu przez klienta — bez logowania, autoryzuje token z linku
+  "/akceptacja",
+  "/api/approval",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

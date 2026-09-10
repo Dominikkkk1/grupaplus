@@ -34,5 +34,27 @@ export default async function ShippingPage() {
     .order("is_priority", { ascending: false })
     .order("deadline", { nullsFirst: false });
 
-  return <ShippingPageClient orders={(orders ?? []) as unknown as ShippingOrder[]} />;
+  // Godziny odbioru ustawia admin w /settings/carriers
+  const { data: carrierSettings } = await supabase
+    .from("carrier_settings")
+    .select("carrier, pickup_time, notes");
+
+  const pickupTimes: Record<string, { time: string | null; notes: string | null }> =
+    Object.fromEntries(
+      (carrierSettings ?? []).map((c) => [
+        c.carrier as string,
+        {
+          // z bazy "16:00:00" -> "16:00"
+          time: c.pickup_time ? String(c.pickup_time).slice(0, 5) : null,
+          notes: (c.notes as string | null) ?? null,
+        },
+      ])
+    );
+
+  return (
+    <ShippingPageClient
+      orders={(orders ?? []) as unknown as ShippingOrder[]}
+      pickupTimes={pickupTimes}
+    />
+  );
 }

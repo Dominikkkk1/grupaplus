@@ -149,6 +149,8 @@ export default async function OrderDetailPage({
           isPriority={order.is_priority ?? false}
           sentForApprovalAt={order.sent_for_approval_at as string | null}
           approvalResentCount={(order.approval_resent_count as number | null) ?? 0}
+          approvalDecision={order.approval_decision as string | null}
+          approvalComment={order.approval_comment as string | null}
           carrier={order.carrier as string | null}
           deliveryType={order.delivery_type as string}
           assignedTo={order.assigned_to as string | null}

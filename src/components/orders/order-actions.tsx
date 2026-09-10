@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, UserPlus, Star, Hourglass, Send, Truck } from "lucide-react";
+import { AlertTriangle, UserPlus, Star, Hourglass, Send, Truck, MessageSquareWarning, Check } from "lucide-react";
 import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
 import { CARRIERS } from "@/lib/carriers";
 import { APPROVAL_DEADLINE_HOURS, approvalWaitingHours, formatWaitingTime } from "@/lib/approval";
@@ -34,6 +34,8 @@ export function OrderActions({
   isPriority: initialPriority,
   sentForApprovalAt,
   approvalResentCount = 0,
+  approvalDecision,
+  approvalComment,
   carrier: initialCarrier,
   deliveryType,
   assignedTo,
@@ -46,6 +48,8 @@ export function OrderActions({
   isPriority: boolean;
   sentForApprovalAt: string | null;
   approvalResentCount?: number;
+  approvalDecision?: string | null;
+  approvalComment?: string | null;
   carrier: string | null;
   deliveryType: string;
   assignedTo: string | null;
@@ -63,6 +67,8 @@ export function OrderActions({
   const [carrier, setCarrier] = useState(initialCarrier ?? "");
   const [carrierLoading, setCarrierLoading] = useState(false);
   const [approvalLoading, setApprovalLoading] = useState(false);
+  // Gdy mail do klienta nie mogl pojsc — pokazujemy link do skopiowania
+  const [approvalLink, setApprovalLink] = useState<{ url: string; warning: string } | null>(null);
 
   const now = new Date();
 
@@ -130,9 +136,14 @@ export function OrderActions({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: "Błąd" }));
       alert(data.error ?? "Nie udało się zapisać");
+    } else if (data.warning) {
+      // Brak maila klienta albo nieskonfigurowany Resend — operator wysyła link sam
+      setApprovalLink({ url: data.link, warning: data.warning });
+    } else {
+      setApprovalLink(null);
     }
     setApprovalLoading(false);
     router.refresh();
@@ -237,7 +248,7 @@ export function OrderActions({
         </button>
 
         {/* Wysylka projektu do akceptacji / ponowna wysylka po poprawce */}
-        {currentStatus === "confirmed" && (
+        {currentStatus === "confirmed" && approvalDecision !== "changes_requested" && (
           <button
             onClick={() => sendForApproval("send")}
             disabled={approvalLoading}
@@ -248,7 +259,8 @@ export function OrderActions({
             Wysłano projekt do klienta
           </button>
         )}
-        {currentStatus === "awaiting_approval" && (
+        {(currentStatus === "awaiting_approval" ||
+          (currentStatus === "confirmed" && approvalDecision === "changes_requested")) && (
           <button
             onClick={() => sendForApproval("resend")}
             disabled={approvalLoading}
@@ -290,6 +302,54 @@ export function OrderActions({
           Zgłoś incydent
         </button>
       </div>
+
+      {/* Mail nie poszedl — link do recznego wyslania */}
+      {approvalLink && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-[12px] font-medium text-amber-900">{approvalLink.warning}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              readOnly
+              value={approvalLink.url}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 rounded border border-amber-200 bg-white px-2 py-1 font-mono text-[11px] text-zinc-700"
+            />
+            <button
+              onClick={() => navigator.clipboard?.writeText(approvalLink.url)}
+              className="rounded-md border border-amber-300 px-2 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+            >
+              Kopiuj
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Decyzja klienta */}
+      {approvalDecision === "changes_requested" && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-[12px] font-semibold text-amber-900">
+            <MessageSquareWarning size={13} />
+            Klient prosi o poprawki
+          </p>
+          {approvalComment ? (
+            <p className="mt-1 whitespace-pre-wrap text-[13px] text-amber-900">{approvalComment}</p>
+          ) : (
+            <p className="mt-1 text-[13px] text-amber-800">Bez dodatkowych uwag.</p>
+          )}
+          <p className="mt-2 text-[11px] text-amber-700">
+            Po wysłaniu poprawionej wersji użyj przycisku &quot;Wysłano poprawiony projekt&quot; —
+            licznik 24 h ruszy od nowa, a stary link przestanie działać.
+          </p>
+        </div>
+      )}
+      {approvalDecision === "approved" && (
+        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2">
+          <p className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-900">
+            <Check size={13} />
+            Klient zaakceptował projekt
+          </p>
+        </div>
+      )}
 
       {/* Lista zgloszen */}
       {complaints.length > 0 && (() => {

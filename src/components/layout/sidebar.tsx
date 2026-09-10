@@ -38,6 +38,7 @@ const NAV_ITEMS = [
   { href: "/products", label: "Produkty", icon: ClipboardList },
   { href: "/machines", label: "Maszyny", icon: Cog },
   { href: "/calculator", label: "Kalkulator", icon: Calculator },
+  { href: "/settings/carriers", label: "Przewoźnicy", icon: Truck },
   { href: "/settings/users", label: "Użytkownicy", icon: Shield },
 ];
 
