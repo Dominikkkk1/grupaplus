@@ -1,4 +1,5 @@
 import type { OrderInput, OrderItemInput } from "./types";
+import { normalizeCarrier } from "@/lib/carriers";
 
 /**
  * Mapuje payload webhooka WooCommerce (event: order.completed / order.paid)
@@ -80,8 +81,11 @@ export function parseWooCommerceOrder(payload: WooOrderPayload): OrderInput {
     };
   });
 
-  const shippingMethod =
-    payload.shipping_lines?.[0]?.method_title?.toLowerCase() ?? undefined;
+  // Zostawiamy oryginalna pisownie — to jest nazwa, ktora widzi obsluga.
+  const shippingMethod = payload.shipping_lines?.[0]?.method_title ?? undefined;
+  // Proba dopasowania do slownika przewoznikow. Jesli sklep nazywa metode
+  // "Darmowa dostawa", nie da sie zgadnac i przewoznika trzeba wybrac recznie.
+  const carrier = normalizeCarrier(shippingMethod) ?? undefined;
 
   return {
     source: "woo",
@@ -92,6 +96,7 @@ export function parseWooCommerceOrder(payload: WooOrderPayload): OrderInput {
     companyName: billing.company || undefined,
     shippingAddress: shippingAddress || undefined,
     shippingMethod,
+    carrier,
     paymentStatus: payload.status === "completed" ? "paid" : "pending",
     items,
     notes: payload.customer_note || undefined,

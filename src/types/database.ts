@@ -1,3 +1,19 @@
+// ⚠️ UWAGA — TEN PLIK JEST NIEAKTUALNY I NIGDZIE NIE UZYWANY (stan 10.09.2026).
+//
+// Zostal wygenerowany przy pierwszej wersji schematu (czerwiec) i nie zawiera
+// ANI JEDNEJ kolumny dodanej pozniej: is_priority, delivery_type,
+// sent_for_approval_at, approval_reminder_sent, shipped_at, branch_type,
+// is_client_upload, is_accepted, lead_time_days, is_blacklisted,
+// anonymized_at, width_mm, height_mm, started_at, started_by.
+//
+// Zaden plik w src/ go nie importuje — klienci Supabase sa nietypowane
+// (`createClient()` bez generyka <Database>). To dlatego TypeScript NIE wylapal
+// bledu `.from("users").select("email")` — kolumny email nigdy nie bylo.
+//
+// Do wyboru: albo zregenerowac i podpiac pod klientow, albo skasowac.
+// Regeneracja (wymaga Dockera / dzialajacego supabase CLI):
+//   supabase gen types typescript --project-id kxftvbzvalhruognzgmx > src/types/database.ts
+
 export type Json =
   | string
   | number

@@ -22,7 +22,10 @@ export interface OrderInput {
   companyName?: string;
   nip?: string;
   shippingAddress?: string;
+  /** Surowa nazwa metody wysylki ze zrodla (np. "flat rate" z WooCommerce) */
   shippingMethod?: string;
+  /** Kod przewoznika ze slownika @/lib/carriers — po nim filtrujemy */
+  carrier?: string;
   paymentStatus: "pending" | "paid" | "cod";
   deadline?: Date;
   isPriority?: boolean;

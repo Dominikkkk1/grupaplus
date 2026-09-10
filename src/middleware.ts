@@ -1,8 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Publiczne sciezki (nie wymagaja logowania)
-const PUBLIC_PATHS = ["/login", "/api/webhooks"];
+// Sciezki bez logowania uzytkownika.
+// UWAGA: /api/cron MUSI tu byc. Vercel Cron wola te endpointy bez ciasteczka
+// sesji — bez wyjatku middleware odsylal je na /login (HTTP 307) i kod cronu
+// w ogole sie nie wykonywal. Same endpointy pilnuja sie naglowkiem CRON_SECRET,
+// a webhooki podpisem HMAC.
+const PUBLIC_PATHS = ["/login", "/api/webhooks", "/api/cron"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,7 +16,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  // Layout serwerowy nie zna sciezki, a musi ja znac, zeby sprawdzic uprawnienia
+  // roli. Przekazujemy ja naglowkiem requestu.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
+
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,7 +37,11 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          // Naglowki budujemy PO ustawieniu ciasteczek, zeby odswiezona sesja
+          // poszla dalej razem z naszym x-pathname.
+          const headers = new Headers(request.headers);
+          headers.set("x-pathname", pathname);
+          supabaseResponse = NextResponse.next({ request: { headers } });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OrderInput } from "@/lib/adapters/types";
+import { normalizeCarrier } from "@/lib/carriers";
 
 /**
  * Tworzy zamówienie z ujednoliconego OrderInput.
@@ -129,6 +130,7 @@ export async function ingestOrder(
       is_priority: input.isPriority ?? false,
       delivery_type: input.deliveryType ?? "shipping",
       shipping_method: input.shippingMethod ?? null,
+      carrier: input.carrier ?? normalizeCarrier(input.shippingMethod) ?? null,
       notes: input.notes ?? null,
       total_price: totalPrice > 0 ? totalPrice : null,
     })

@@ -3,17 +3,27 @@
 -- ============================================================
 
 -- A. Brakujacy workflow dla Plakat A1 (duzy format)
--- ON CONFLICT DO NOTHING — seed.sql tez zawiera te dane (unika duplikatu przy db reset)
-INSERT INTO product_workflow (product_id, step_id, step_order) VALUES
-  ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000001', 1),
-  ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000003', 2),
-  ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000005', 3),
-  ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000011', 4)
+-- UWAGA: te dane pochodza z seed.sql, ktory w `supabase db reset` wykonuje sie
+-- PO migracjach. Dlatego wstawiamy warunkowo — jesli produktu/etapu jeszcze nie ma,
+-- wiersz jest pomijany (seed.sql i tak zawiera te same dane).
+INSERT INTO product_workflow (product_id, step_id, step_order)
+SELECT v.product_id, v.step_id, v.step_order
+FROM (VALUES
+  ('c0000000-0000-0000-0000-000000000004'::uuid, 'b0000000-0000-0000-0000-000000000001'::uuid, 1),
+  ('c0000000-0000-0000-0000-000000000004'::uuid, 'b0000000-0000-0000-0000-000000000003'::uuid, 2),
+  ('c0000000-0000-0000-0000-000000000004'::uuid, 'b0000000-0000-0000-0000-000000000005'::uuid, 3),
+  ('c0000000-0000-0000-0000-000000000004'::uuid, 'b0000000-0000-0000-0000-000000000011'::uuid, 4)
+) AS v(product_id, step_id, step_order)
+WHERE EXISTS (SELECT 1 FROM products p WHERE p.id = v.product_id)
+  AND EXISTS (SELECT 1 FROM workflow_steps w WHERE w.id = v.step_id)
 ON CONFLICT DO NOTHING;
 
 -- B. RLS: operator musi widziec contacts i companies
+DROP POLICY IF EXISTS operator_read_contacts ON contacts;
 CREATE POLICY operator_read_contacts ON contacts FOR SELECT
   USING (public.current_user_role() = 'operator');
+
+DROP POLICY IF EXISTS operator_read_companies ON companies;
 CREATE POLICY operator_read_companies ON companies FOR SELECT
   USING (public.current_user_role() = 'operator');
 
@@ -35,6 +45,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_check_progress_step ON order_item_progress;
 CREATE TRIGGER trg_check_progress_step
   BEFORE INSERT OR UPDATE ON order_item_progress
   FOR EACH ROW EXECUTE FUNCTION check_progress_step_valid();

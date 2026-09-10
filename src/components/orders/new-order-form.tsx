@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2, X, Star, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CARRIERS } from "@/lib/carriers";
 
 interface ProductOption {
   id: string;
@@ -107,6 +108,9 @@ export function NewOrderForm({
   const [paymentStatus, setPaymentStatus] = useState<string>("cod");
   const [isPriority, setIsPriority] = useState(false);
   const [deliveryType, setDeliveryType] = useState<string>("shipping");
+  // Przewoznik — bez tego pola zamowienia reczne nie mialy JAK trafic do
+  // filtrow pakowania (wszystkie 22 zamowienia w bazie mialy pusta wysylke)
+  const [carrier, setCarrier] = useState<string>("");
   const [deadline, setDeadline] = useState("");
   const [isBlacklisted, setIsBlacklisted] = useState(false);
   const [notes, setNotes] = useState("");
@@ -211,6 +215,7 @@ export function NewOrderForm({
         paymentStatus,
         isPriority,
         deliveryType,
+        carrier: deliveryType === "shipping" && carrier ? carrier : undefined,
         deadline: deadline || undefined,
         notes: notes || undefined,
         items: orderItems,
@@ -366,8 +371,8 @@ export function NewOrderForm({
           </div>
 
 
-          {/* Delivery + Deadline + Priorytet */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Delivery + Przewoznik + Deadline + Priorytet */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
                 Odbiór
@@ -379,6 +384,24 @@ export function NewOrderForm({
               >
                 <option value="shipping">Wysyłka</option>
                 <option value="pickup">Odbiór osobisty</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-zinc-600">
+                Przewoźnik
+              </label>
+              <select
+                value={carrier}
+                onChange={(e) => setCarrier(e.target.value)}
+                disabled={deliveryType !== "shipping"}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-400"
+              >
+                <option value="">Wybierz...</option>
+                {CARRIERS.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

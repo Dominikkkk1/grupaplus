@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api/parse-body";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ingestOrder } from "@/lib/orders/ingest";
 import type { OrderSource, OrderInput, OrderItemInput } from "@/lib/adapters/types";
+import { isCarrierCode } from "@/lib/carriers";
 
 /**
  * POST /api/orders — reczne tworzenie zamówienia (admin)
@@ -34,6 +35,7 @@ export const POST = withAuth("admin", async (request, _ctx) => {
       nip: body.nip as string | undefined,
       shippingAddress: body.shippingAddress as string | undefined,
       shippingMethod: body.shippingMethod as string | undefined,
+      carrier: isCarrierCode(body.carrier) ? body.carrier : undefined,
       paymentStatus: (body.paymentStatus as OrderInput["paymentStatus"]) || "pending",
       deadline: body.deadline ? new Date(body.deadline as string) : undefined,
       isPriority: (body.isPriority as boolean) ?? false,

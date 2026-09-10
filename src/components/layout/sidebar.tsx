@@ -6,9 +6,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { canAccess } from "@/lib/route-access";
+import { APPROVAL_DEADLINE_HOURS } from "@/lib/approval";
 import {
   Package,
   Factory,
+  Truck,
   Users,
   ClipboardList,
   Cog,
@@ -20,26 +23,33 @@ import {
   Menu,
   X,
   BarChart3,
+  BellRing,
 } from "lucide-react";
 
+// Uprawnienia trzymamy w @/lib/route-access (to samo zrodlo co blokada w layoucie),
+// tutaj zostaja tylko etykiety i ikony.
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: BarChart3, roles: ["admin"] },
-  { href: "/orders", label: "Zamówienia", icon: Package, roles: ["admin", "operator", "client"] },
-  { href: "/production", label: "Produkcja", icon: Factory, roles: ["admin", "operator"] },
-  { href: "/scan", label: "Skanowanie", icon: ScanLine, roles: ["admin", "operator"] },
-  { href: "/crm", label: "Klienci", icon: Users, roles: ["admin"] },
-  { href: "/products", label: "Produkty", icon: ClipboardList, roles: ["admin"] },
-  { href: "/machines", label: "Maszyny", icon: Cog, roles: ["admin"] },
-  { href: "/calculator", label: "Kalkulator", icon: Calculator, roles: ["admin"] },
-  { href: "/settings/users", label: "Użytkownicy", icon: Shield, roles: ["admin"] },
+  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { href: "/orders", label: "Zamówienia", icon: Package },
+  { href: "/production", label: "Produkcja", icon: Factory },
+  { href: "/shipping", label: "Do wysyłki", icon: Truck },
+  { href: "/scan", label: "Skanowanie", icon: ScanLine },
+  { href: "/crm", label: "Klienci", icon: Users },
+  { href: "/products", label: "Produkty", icon: ClipboardList },
+  { href: "/machines", label: "Maszyny", icon: Cog },
+  { href: "/calculator", label: "Kalkulator", icon: Calculator },
+  { href: "/settings/users", label: "Użytkownicy", icon: Shield },
 ];
 
 export function Sidebar({
   userName,
   userRole,
+  approvalAlerts = 0,
 }: {
   userName: string;
   userRole: string;
+  /** Ile projektow czeka na akceptacje klienta ponad 24 h */
+  approvalAlerts?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -59,10 +69,32 @@ export function Sidebar({
         ? "Operator"
         : "Klient";
 
-  const filteredNav = NAV_ITEMS.filter((item) => item.roles.includes(userRole));
+  const filteredNav = NAV_ITEMS.filter((item) => canAccess(item.href, userRole));
 
   const navContent = (
     <>
+      {/* Powiadomienie: brak akceptacji projektu ponad 24 h */}
+      {approvalAlerts > 0 && (
+        <Link
+          href={`/orders?filter=approval_overdue`}
+          onClick={() => setMobileOpen(false)}
+          className="order-first flex items-start gap-2 border-b border-red-200 bg-red-50 px-4 py-3 text-red-800 transition-colors hover:bg-red-100"
+        >
+          <BellRing size={15} className="mt-0.5 flex-shrink-0" />
+          <span className="text-[12px] leading-snug">
+            <span className="font-semibold">
+              {approvalAlerts}{" "}
+              {approvalAlerts === 1
+                ? "zamówienie czeka"
+                : approvalAlerts < 5
+                  ? "zamówienia czekają"
+                  : "zamówień czeka"}
+            </span>{" "}
+            na akceptację projektu ponad {APPROVAL_DEADLINE_HOURS} h
+          </span>
+        </Link>
+      )}
+
       {/* Logo */}
       <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
         <Image

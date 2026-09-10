@@ -26,6 +26,25 @@
 - Duze pliki produkcyjne zostaja na NAS (internet 50/50 Mb/s)
 - Klient widzi 3 statusy, zespol widzi szczegolowe etapy
 
+## Pulapki (wykryte 10.09.2026 — NIE powtarzac)
+- `public.users` NIE MA kolumny `email`. Adres jest w `auth.users`, tylko przez Admin API.
+  Zawsze uzywaj `src/lib/email/recipients.ts`. Zapytanie `.from("users").select("email")`
+  zwraca blad 42703, `data` = null i wysylka po cichu nie dochodzi.
+- `src/types/database.ts` jest nieaktualny i NIEUZYWANY — klienci Supabase sa nietypowane,
+  wiec TypeScript nie wylapie zlej nazwy kolumny. Bledy tego typu wychodza dopiero na produkcji.
+- Postgres NIE zna `ADD CONSTRAINT IF NOT EXISTS` ani `CREATE POLICY IF NOT EXISTS`.
+  Uzywaj `DO $$ ... IF NOT EXISTS (SELECT 1 FROM pg_constraint ...) $$` oraz
+  `DROP POLICY IF EXISTS` + `CREATE POLICY`. Cztery migracje przez to nigdy sie nie wykonaly.
+- `ALTER PUBLICATION ... ADD TABLE` wywala sie, gdy tabela juz jest w publikacji — opakowac w DO.
+- HISTORIA MIGRACJI BYLA ROZJECHANA: baze migrowano przez dashboard/MCP pod innymi numerami
+  niz pliki w repo. Naprawione 10.09 (wszystkie wersje z repo sa w `schema_migrations`).
+  Przed `supabase db push` ZAWSZE porownaj `schema_migrations` z plikami.
+- Sciezka pliku w Storage to `<order_id>/<timestamp>-<nazwa>` — polityki RLS opieraja sie
+  na `split_part(name,'/',1)`. Nie zmieniac formatu sciezki bez poprawienia polityk.
+- Bezposredni DELETE z `storage.objects` jest zablokowany triggerem — uzywaj Storage API.
+- Produkcyjny Supabase to darmowy plan: po tygodniu bezczynnosci projekt jest usypiany
+  i jego host przestaje sie rozwiazywac (NXDOMAIN). Trzeba go wznowic w panelu.
+
 ## Deweloper
 - Poczatkujacy — wyjasniaj decyzje, ostrzegaj przed pulapkami
 - Preferowany jezyk: polski

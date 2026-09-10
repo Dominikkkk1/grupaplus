@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { CARRIER_LABELS } from "@/lib/carriers";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +14,7 @@ interface OrderData {
   is_priority: boolean;
   delivery_type: string;
   shipping_method: string | null;
+  carrier: string | null;
   total_price: number | null;
   notes: string | null;
   deadline: string | null;
@@ -56,7 +58,7 @@ export default function PrintPage() {
       supabase
         .from("orders")
         .select(
-          "order_number, source, status, payment_status, is_priority, delivery_type, shipping_method, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
+          "order_number, source, status, payment_status, is_priority, delivery_type, shipping_method, carrier, total_price, notes, deadline, created_at, contact:contacts(full_name, email, phone), company:companies(name, nip)"
         )
         .eq("id", id)
         .single(),
@@ -355,9 +357,15 @@ export default function PrintPage() {
                 <strong>{order.total_price.toLocaleString("pl-PL")} zł</strong>
               </div>
             )}
+            {order.delivery_type !== "pickup" && order.carrier && (
+              <div>
+                <span style={{ color: "#71717a" }}>Przewoźnik: </span>
+                <strong>{CARRIER_LABELS[order.carrier] ?? order.carrier}</strong>
+              </div>
+            )}
             {order.shipping_method && (
               <div>
-                <span style={{ color: "#71717a" }}>Wysyłka: </span>
+                <span style={{ color: "#71717a" }}>Metoda wysyłki: </span>
                 {order.shipping_method}
               </div>
             )}

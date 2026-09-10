@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, UserPlus, Star, Hourglass } from "lucide-react";
+import { AlertTriangle, UserPlus, Star, Hourglass, Send, Truck } from "lucide-react";
 import { STATUS_CONFIG, ALLOWED_TRANSITIONS } from "@/lib/order-constants";
+import { CARRIERS } from "@/lib/carriers";
+import { APPROVAL_DEADLINE_HOURS, approvalWaitingHours, formatWaitingTime } from "@/lib/approval";
 import { ComplaintForm } from "./complaint-form";
 import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
@@ -31,6 +33,9 @@ export function OrderActions({
   currentStatus,
   isPriority: initialPriority,
   sentForApprovalAt,
+  approvalResentCount = 0,
+  carrier: initialCarrier,
+  deliveryType,
   assignedTo,
   teamUsers,
   items,
@@ -40,6 +45,9 @@ export function OrderActions({
   currentStatus: string;
   isPriority: boolean;
   sentForApprovalAt: string | null;
+  approvalResentCount?: number;
+  carrier: string | null;
+  deliveryType: string;
   assignedTo: string | null;
   teamUsers: { id: string; full_name: string; role: string }[];
   items: OrderItem[];
@@ -52,6 +60,11 @@ export function OrderActions({
   const [priorityFlag, setPriorityFlag] = useState(initialPriority);
   const [priorityLoading, setPriorityLoading] = useState(false);
   const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [carrier, setCarrier] = useState(initialCarrier ?? "");
+  const [carrierLoading, setCarrierLoading] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
+
+  const now = new Date();
 
   const statusConfig = STATUS_CONFIG[currentStatus] ?? {
     label: currentStatus,
@@ -94,6 +107,37 @@ export function OrderActions({
     router.refresh();
   }
 
+  async function changeCarrier(value: string) {
+    setCarrierLoading(true);
+    setCarrier(value);
+    await fetch(`/api/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ carrier: value || null }),
+    });
+    setCarrierLoading(false);
+    router.refresh();
+  }
+
+  /**
+   * "send"   — projekt idzie do klienta po raz pierwszy
+   * "resend" — klient dostal poprawiona wersje, zegar 24 h startuje od nowa
+   */
+  async function sendForApproval(action: "send" | "resend") {
+    setApprovalLoading(true);
+    const res = await fetch(`/api/orders/${orderId}/approval`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Błąd" }));
+      alert(data.error ?? "Nie udało się zapisać");
+    }
+    setApprovalLoading(false);
+    router.refresh();
+  }
+
   async function resolveComplaint(complaintId: string) {
     await fetch(`/api/orders/${orderId}/complaints/${complaintId}`, {
       method: "PATCH",
@@ -122,12 +166,21 @@ export function OrderActions({
             {statusConfig.label}
           </span>
           {currentStatus === "awaiting_approval" && sentForApprovalAt && (() => {
-            const days = Math.floor((Date.now() - new Date(sentForApprovalAt).getTime()) / (1000 * 60 * 60 * 24));
-            const isOverdue = days >= 3;
+            const hours = approvalWaitingHours(sentForApprovalAt, now) ?? 0;
+            const overdue = hours >= APPROVAL_DEADLINE_HOURS;
             return (
-              <span className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${isOverdue ? "border-red-200 bg-red-50 text-red-700" : "border-purple-200 bg-purple-50 text-purple-700"}`}>
+              <span
+                title={
+                  overdue
+                    ? `Projekt wysłano ponad ${APPROVAL_DEADLINE_HOURS} h temu i nie ma odpowiedzi klienta`
+                    : "Czas liczony od wysłania projektu do klienta"
+                }
+                className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${overdue ? "border-red-200 bg-red-50 text-red-700" : "border-purple-200 bg-purple-50 text-purple-700"}`}
+              >
                 <Hourglass size={11} />
-                {days === 0 ? "Wysłano dzisiaj" : `Oczekuje ${days} ${days === 1 ? "dzień" : "dni"}`}
+                {overdue ? "Brak akceptacji: " : "Czeka "}
+                {formatWaitingTime(hours)}
+                {approvalResentCount > 0 && ` (po ${approvalResentCount}. poprawce)`}
               </span>
             );
           })()}
@@ -182,6 +235,51 @@ export function OrderActions({
           <Star size={12} className={priorityFlag ? "fill-amber-400 text-amber-400" : ""} />
           {priorityFlag ? "Priorytet" : "Nadaj priorytet"}
         </button>
+
+        {/* Wysylka projektu do akceptacji / ponowna wysylka po poprawce */}
+        {currentStatus === "confirmed" && (
+          <button
+            onClick={() => sendForApproval("send")}
+            disabled={approvalLoading}
+            className="flex items-center gap-1.5 rounded-lg border border-purple-200 px-3 py-1 text-[12px] font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50"
+            title="Ustawia status na Oczekuje na akceptację i startuje licznik 24 h"
+          >
+            <Send size={12} />
+            Wysłano projekt do klienta
+          </button>
+        )}
+        {currentStatus === "awaiting_approval" && (
+          <button
+            onClick={() => sendForApproval("resend")}
+            disabled={approvalLoading}
+            className="flex items-center gap-1.5 rounded-lg border border-purple-200 px-3 py-1 text-[12px] font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50"
+            title="Licznik 24 h startuje od nowa"
+          >
+            <Send size={12} />
+            Wysłano poprawiony projekt
+          </button>
+        )}
+
+        {/* Przewoznik */}
+        {deliveryType !== "pickup" && (
+          <div className="flex items-center gap-1.5">
+            <Truck size={14} className="text-zinc-400" />
+            <select
+              disabled={carrierLoading}
+              value={carrier}
+              onChange={(e) => changeCarrier(e.target.value)}
+              className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[12px] text-zinc-600 focus:border-zinc-900 focus:outline-none"
+              title="Przewoźnik — po nim filtrujemy paczki do wydania"
+            >
+              <option value="">Przewoźnik</option>
+              {CARRIERS.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Przycisk zgłoszenia */}
         <button

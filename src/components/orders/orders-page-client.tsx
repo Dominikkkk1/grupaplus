@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, Package, Star, MessageSquare, Store } from "lucide-react";
+import { Plus, Search, Package, Star, MessageSquare, Store, Hourglass } from "lucide-react";
 import { NewOrderForm } from "./new-order-form";
 import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
+import { CARRIER_LABELS, CARRIER_GROUPS } from "@/lib/carriers";
+import { APPROVAL_DEADLINE_HOURS, isApprovalOverdue } from "@/lib/approval";
 import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 interface ProductOption {
@@ -25,6 +27,9 @@ export interface Order {
   deadline: string | null;
   is_priority: boolean;
   delivery_type: string;
+  carrier: string | null;
+  shipping_method: string | null;
+  sent_for_approval_at: string | null;
   notes: string | null;
   created_at: string;
   contact: { full_name: string } | null;
@@ -62,7 +67,7 @@ export function OrdersPageClient({
   const isClient = userRole === "client";
   useRealtimeRefresh(["orders", "order_items"], "orders-list-realtime");
   const searchParams = useSearchParams();
-  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "awaiting_approval", "in_production", "ready", "finished"];
+  const VALID_FILTERS = ["active", "all", "priority", "at_risk", "new_today", "new", "confirmed", "awaiting_approval", "approval_overdue", "in_production", "ready", "finished"];
   const rawFilter = searchParams.get("filter") || "active";
   const initialFilter = VALID_FILTERS.includes(rawFilter) ? rawFilter : "active";
   // Auto-open form z kalkulatora lub duplikacji
@@ -101,6 +106,8 @@ export function OrdersPageClient({
   }, [isDuplicate]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
+  // Filtr przewoznika — Grupa Plus pakuje paczki pod godzine odbioru kuriera
+  const [carrierFilter, setCarrierFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"date" | "status" | "number">("date");
   const [sortAsc, setSortAsc] = useState(false);
 
@@ -118,6 +125,23 @@ export function OrdersPageClient({
     return new Date(o.deadline) < in24h;
   }).length;
   const priorityCount = orders.filter((o) => o.is_priority).length;
+  // Projekt u klienta bez odpowiedzi dluzej niz 24 h
+  const approvalOverdueCount = orders.filter(
+    (o) => o.status === "awaiting_approval" && isApprovalOverdue(o.sent_for_approval_at, now)
+  ).length;
+
+  // Ile zamowien na kazda grupe przewoznikow (tylko te do wyslania, nie zakonczone)
+  function carrierGroupOf(o: Order): string {
+    if (!o.carrier) return "brak";
+    const g = CARRIER_GROUPS.find((grp) => (grp.codes as string[]).includes(o.carrier!));
+    return g?.key ?? "brak";
+  }
+  const carrierCounts = orders.reduce<Record<string, number>>((acc, o) => {
+    if (o.delivery_type === "pickup") return acc;
+    const k = carrierGroupOf(o);
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
 
   // Liczniki per status
   const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
@@ -141,7 +165,13 @@ export function OrdersPageClient({
         if (!o.deadline || FINISHED_STATUSES.includes(o.status)) return false;
         if (new Date(o.deadline) >= in24h) return false;
       }
-      if (!["all", "active", "finished", "priority", "at_risk", "new_today"].includes(statusFilter) && o.status !== statusFilter) return false;
+      if (statusFilter === "approval_overdue") {
+        if (o.status !== "awaiting_approval") return false;
+        if (!isApprovalOverdue(o.sent_for_approval_at, now)) return false;
+      }
+      if (!["all", "active", "finished", "priority", "at_risk", "new_today", "approval_overdue"].includes(statusFilter) && o.status !== statusFilter) return false;
+      // Filtr przewoznika
+      if (carrierFilter !== "all" && carrierGroupOf(o) !== carrierFilter) return false;
       // Wyszukiwarka
       if (!query) return true;
       const q = query.toLowerCase();
@@ -215,6 +245,7 @@ export function OrdersPageClient({
             { key: "new", label: "Nowe", count: statusCounts["new"] ?? 0 },
             { key: "confirmed", label: "Potwierdzone", count: statusCounts["confirmed"] ?? 0 },
             { key: "awaiting_approval", label: "Oczekuje na akceptację", count: statusCounts["awaiting_approval"] ?? 0 },
+            { key: "approval_overdue", label: `Brak akceptacji >${APPROVAL_DEADLINE_HOURS} h`, count: approvalOverdueCount },
             { key: "in_production", label: "W produkcji", count: statusCounts["in_production"] ?? 0 },
             { key: "ready", label: "Gotowe", count: statusCounts["ready"] ?? 0 },
             { key: "finished", label: "Zakończone", count: finishedCount },
@@ -241,6 +272,37 @@ export function OrdersPageClient({
         </div>
       )}
 
+      {/* Filtry przewoznika — do pakowania paczek pod odbior kuriera */}
+      {!isClient && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[12px] font-medium text-zinc-400">Przewoźnik:</span>
+          {[
+            { key: "all", label: "Wszyscy", count: 0 },
+            ...CARRIER_GROUPS.map((g) => ({
+              key: g.key,
+              label: g.label,
+              count: carrierCounts[g.key] ?? 0,
+            })),
+            { key: "brak", label: "Bez przewoźnika", count: carrierCounts["brak"] ?? 0 },
+          ].map((c) => (
+            <button
+              key={c.key}
+              onClick={() => setCarrierFilter(c.key)}
+              className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+                carrierFilter === c.key
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+              }`}
+            >
+              {c.label}
+              {c.key !== "all" && c.count > 0 && (
+                <span className="ml-1.5 text-zinc-400">{c.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Table */}
       {filtered.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -251,6 +313,7 @@ export function OrdersPageClient({
                 {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Źródło</th>}
                 {!isClient && <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500">Klient</th>}
                 <th onClick={() => toggleSort("status")} className="cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900">Status {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}</th>
+                {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 md:table-cell">Przewoźnik</th>}
                 {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 lg:table-cell">Płatność</th>}
                 {!isClient && <th className="hidden px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 lg:table-cell">Termin</th>}
                 <th onClick={() => toggleSort("date")} className="hidden cursor-pointer whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 sm:table-cell">Data {sortBy === "date" ? (sortAsc ? "↑" : "↓") : ""}</th>
@@ -283,6 +346,16 @@ export function OrdersPageClient({
                         {order.notes && (
                           <MessageSquare size={12} className="flex-shrink-0 text-amber-500" />
                         )}
+                        {order.status === "awaiting_approval" &&
+                          isApprovalOverdue(order.sent_for_approval_at, now) && (
+                            <span
+                              title={`Projekt u klienta ponad ${APPROVAL_DEADLINE_HOURS} h bez odpowiedzi`}
+                              className="flex flex-shrink-0 items-center gap-0.5 rounded border border-red-200 bg-red-50 px-1 py-0.5 text-[10px] font-semibold text-red-700"
+                            >
+                              <Hourglass size={9} />
+                              {APPROVAL_DEADLINE_HOURS}h
+                            </span>
+                          )}
                       </div>
                     </td>
                     {!isClient && (
@@ -307,6 +380,19 @@ export function OrdersPageClient({
                         {status.label}
                       </span>
                     </td>
+                    {!isClient && (
+                      <td className="hidden px-4 py-3 text-[13px] md:table-cell">
+                        {order.delivery_type === "pickup" ? (
+                          <span className="text-[12px] text-emerald-600">Odbiór osobisty</span>
+                        ) : order.carrier ? (
+                          <span className="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[12px] font-medium text-zinc-700">
+                            {CARRIER_LABELS[order.carrier] ?? order.carrier}
+                          </span>
+                        ) : (
+                          <span className="text-[12px] text-amber-600">brak</span>
+                        )}
+                      </td>
+                    )}
                     {!isClient && (
                       <td className="hidden px-4 py-3 text-[13px] text-zinc-600 lg:table-cell">
                         {order.payment_status === "paid"

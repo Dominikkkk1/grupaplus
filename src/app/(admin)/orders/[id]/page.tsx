@@ -24,6 +24,7 @@ import { OrderActions } from "@/components/orders/order-actions";
 import { DeleteOrderButton } from "@/components/orders/delete-order-button";
 import { DuplicateOrderButton } from "@/components/orders/duplicate-order-button";
 import { STATUS_CONFIG, SOURCE_LABELS, getClientStatus } from "@/lib/order-constants";
+import { CARRIER_LABELS } from "@/lib/carriers";
 
 export default async function OrderDetailPage({
   params,
@@ -147,6 +148,9 @@ export default async function OrderDetailPage({
           currentStatus={order.status}
           isPriority={order.is_priority ?? false}
           sentForApprovalAt={order.sent_for_approval_at as string | null}
+          approvalResentCount={(order.approval_resent_count as number | null) ?? 0}
+          carrier={order.carrier as string | null}
+          deliveryType={order.delivery_type as string}
           assignedTo={order.assigned_to as string | null}
           teamUsers={(teamUsers ?? []) as unknown as { id: string; full_name: string; role: string }[]}
           items={(items ?? []).map((i) => ({
@@ -342,13 +346,26 @@ export default async function OrderDetailPage({
                 </div>
               )}
 
-              {order.shipping_method && (
+              {order.delivery_type !== "pickup" && (
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-zinc-500">
                     <MapPin size={14} />
-                    Wysyłka
+                    Przewoźnik
                   </span>
-                  <span className="font-medium text-zinc-900">
+                  {order.carrier ? (
+                    <span className="font-medium text-zinc-900">
+                      {CARRIER_LABELS[order.carrier as string] ?? order.carrier}
+                    </span>
+                  ) : (
+                    <span className="font-medium text-amber-600">nie wybrano</span>
+                  )}
+                </div>
+              )}
+
+              {order.shipping_method && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-500">Metoda wysyłki</span>
+                  <span className="text-[12px] text-zinc-500" title="Nazwa metody wysyłki ze źródła zamówienia">
                     {order.shipping_method}
                   </span>
                 </div>

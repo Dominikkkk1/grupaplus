@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import { approvalCutoffISO } from "@/lib/approval";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function DashboardPage() {
   // WSZYSTKIE zapytania równolegle (zamiast 4 sekwencyjnych bloków)
   const [
     newTodayRes, inProductionRes, readyRes, overdueRes, awaitingApprovalRes,
+    approvalOverdueRes, readyToShipRes,
     { data: sourceData },
     { data: operatorData }, { data: operatorUsers },
     openComplaintsRes, resolvedThisMonthRes, totalOrdersRes,
@@ -24,6 +26,13 @@ export default async function DashboardPage() {
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "ready"),
     supabase.from("orders").select("id", { count: "exact", head: true }).lt("deadline", new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()).not("status", "in", "(shipped,delivered,cancelled)"),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "awaiting_approval"),
+    // Projekt u klienta ponad 24 h bez odpowiedzi
+    supabase.from("orders").select("id", { count: "exact", head: true })
+      .eq("status", "awaiting_approval")
+      .not("sent_for_approval_at", "is", null)
+      .lt("sent_for_approval_at", approvalCutoffISO(now)),
+    // Paczki gotowe do wydania kurierowi
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "ready"),
     // Źródła zamówień
     supabase.from("orders").select("source").gte("created_at", thirtyDaysAgo.toISOString()),
     // Operatorzy
@@ -96,6 +105,8 @@ export default async function DashboardPage() {
           ready: readyRes.count ?? 0,
           atRisk: overdueRes.count ?? 0,
           awaitingApproval: awaitingApprovalRes.count ?? 0,
+          approvalOverdue: approvalOverdueRes.count ?? 0,
+          readyToShip: readyToShipRes.count ?? 0,
         }}
         sourceCounts={sourceCounts}
         operators={operators}

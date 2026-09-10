@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail } from "./resend";
 import { orderConfirmedEmail, orderShippedEmail, orderReadyEmail, complaintEmail } from "./templates";
+import { getActiveAdminEmails, getUserEmail } from "./recipients";
 
 /**
  * Wysyla powiadomienie email do klienta przy zmianie statusu zamówienia.
@@ -109,21 +110,12 @@ export async function notifyComplaint(
   let recipients: string[] = [];
 
   if (opts.assignedTo) {
-    const { data: assigned } = await supabase
-      .from("users")
-      .select("email")
-      .eq("id", opts.assignedTo)
-      .maybeSingle();
-    if (assigned?.email) recipients.push(assigned.email);
+    const assignedEmail = await getUserEmail(opts.assignedTo);
+    if (assignedEmail) recipients.push(assignedEmail);
   }
 
   if (recipients.length === 0) {
-    const { data: admins } = await supabase
-      .from("users")
-      .select("email")
-      .eq("role", "admin")
-      .eq("is_active", true);
-    recipients = (admins ?? []).map((a) => a.email).filter((e): e is string => !!e);
+    recipients = await getActiveAdminEmails();
   }
 
   if (recipients.length === 0) {

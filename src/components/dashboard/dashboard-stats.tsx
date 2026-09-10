@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
+import { APPROVAL_DEADLINE_HOURS } from "@/lib/approval";
 import {
   Package,
   Factory,
@@ -11,6 +12,8 @@ import {
   Clock,
   Users,
   Wrench,
+  BellRing,
+  Truck,
 } from "lucide-react";
 
 interface Props {
@@ -20,6 +23,8 @@ interface Props {
     ready: number;
     atRisk: number;
     awaitingApproval: number;
+    approvalOverdue: number;
+    readyToShip: number;
   };
   sourceCounts: Record<string, number>;
   operators: {
@@ -97,6 +102,20 @@ export function DashboardStats({
           value={summary.awaitingApproval}
           label="Oczekuje na akceptację"
           href="/orders?filter=awaiting_approval"
+        />
+        <StatCard
+          icon={<BellRing size={18} className="text-red-600" />}
+          iconBg="bg-red-50"
+          value={summary.approvalOverdue}
+          label={`Bez akceptacji >${APPROVAL_DEADLINE_HOURS} h`}
+          href="/orders?filter=approval_overdue"
+        />
+        <StatCard
+          icon={<Truck size={18} className="text-blue-600" />}
+          iconBg="bg-blue-50"
+          value={summary.readyToShip}
+          label="Do wysyłki"
+          href="/shipping"
         />
       </div>
 

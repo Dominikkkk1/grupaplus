@@ -59,7 +59,17 @@ export async function POST(request: NextRequest) {
       .update(rawBody)
       .digest("base64");
 
-    if (signature !== expectedSignature) {
+    // Porownanie o stalym czasie. Zwykle `!==` konczy sie na pierwszym roznym
+    // znaku, a roznice w czasie odpowiedzi pozwalaja zgadywac podpis znak po
+    // znaku. timingSafeEqual rzuca wyjatkiem przy roznej dlugosci, wiec
+    // dlugosc sprawdzamy osobno.
+    const signatureBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expectedSignature);
+    const signatureValid =
+      signatureBuf.length === expectedBuf.length &&
+      crypto.timingSafeEqual(signatureBuf, expectedBuf);
+
+    if (!signatureValid) {
       console.error("[WEBHOOK WOO] HMAC mismatch — invalid signature");
       // Zapisz blad
       if (webhookEvent) {
