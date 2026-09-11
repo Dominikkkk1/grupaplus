@@ -5,6 +5,43 @@ import { useRouter } from "next/navigation";
 import { Truck, Check, Loader2, AlertCircle } from "lucide-react";
 import { CARRIERS } from "@/lib/carriers";
 
+/**
+ * Zamienia to, co wpisal czlowiek, na "GG:MM".
+ *
+ * Poprzednio bylo tu pole <input type="time">. Wyglada wygodnie, ale ma paskudna
+ * wlasciwosc: jesli obie czesci (godzina i minuty) nie sa wypelnione dokladnie
+ * tak, jak chce przegladarka, pole ODDAJE PUSTA WARTOSC. Uzytkownik widzi
+ * "15:30", a formularz wysyla nic — bez zadnego ostrzezenia. Dokladnie to
+ * zdarzylo sie przy pierwszym uzyciu tego ekranu.
+ *
+ * Zwraca: "GG:MM" gdy ok, "" gdy pole puste (to poprawne — brak godziny),
+ * null gdy wpisano cos, czego nie da sie odczytac jako godzina.
+ */
+export function normalizeTime(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return "";
+
+  const cyfry = t.replace(/\D/g, "");
+  let h: number;
+  let m: number;
+
+  if (cyfry.length <= 2) {
+    h = Number(cyfry);
+    m = 0;
+  } else if (cyfry.length === 3) {
+    h = Number(cyfry.slice(0, 1));
+    m = Number(cyfry.slice(1));
+  } else if (cyfry.length === 4) {
+    h = Number(cyfry.slice(0, 2));
+    m = Number(cyfry.slice(2));
+  } else {
+    return null;
+  }
+
+  if (Number.isNaN(h) || Number.isNaN(m) || h > 23 || m > 59) return null;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 export interface CarrierSetting {
   carrier: string;
   pickup_time: string | null;
@@ -47,6 +84,16 @@ export function CarrierSettingsClient({ settings }: { settings: CarrierSetting[]
 
   async function saveAll() {
     setError("");
+
+    // Najpierw sprawdzamy WSZYSTKIE pola — zeby nie zapisac polowy tabelki
+    const zle = CARRIERS.filter((c) => normalizeTime(values[c.code].time) === null);
+    if (zle.length > 0) {
+      setError(
+        `Nie rozumiem godziny przy: ${zle.map((c) => c.label).join(", ")}. Wpisz w formacie 15:30.`
+      );
+      return;
+    }
+
     setSaving(true);
 
     const res = await fetch("/api/carrier-settings", {
@@ -55,7 +102,7 @@ export function CarrierSettingsClient({ settings }: { settings: CarrierSetting[]
       body: JSON.stringify({
         items: CARRIERS.map((c) => ({
           carrier: c.code,
-          pickupTime: values[c.code].time || null,
+          pickupTime: normalizeTime(values[c.code].time) || null,
           notes: values[c.code].notes || null,
         })),
       }),
@@ -71,7 +118,7 @@ export function CarrierSettingsClient({ settings }: { settings: CarrierSetting[]
     setSaving(false);
   }
 
-  const ileZGodzina = CARRIERS.filter((c) => values[c.code].time).length;
+  const ileZGodzina = CARRIERS.filter((c) => normalizeTime(values[c.code].time)).length;
 
   return (
     <div>
@@ -82,6 +129,7 @@ export function CarrierSettingsClient({ settings }: { settings: CarrierSetting[]
         <p className="mt-0.5 text-[12px] text-zinc-500 sm:text-[13px]">
           Pokazują się na stronie &quot;Do wysyłki&quot; przy każdej grupie przewoźnika,
           razem z informacją, ile czasu zostało do odbioru. Puste pole = bez godziny.
+          Wpisz godzinę w formacie 15:30 (samo &quot;1530&quot; też zadziała).
         </p>
       </div>
 
@@ -112,11 +160,26 @@ export function CarrierSettingsClient({ settings }: { settings: CarrierSetting[]
                 </td>
                 <td className="px-4 py-2.5">
                   <input
-                    type="time"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    placeholder="15:30"
                     value={values[c.code].time}
                     onChange={(e) => set(c.code, "time", e.target.value)}
-                    className="rounded-lg border border-zinc-300 px-2.5 py-1.5 text-[13px] focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    onBlur={(e) => {
+                      // Po wyjsciu z pola porzadkujemy zapis: "1530" -> "15:30"
+                      const n = normalizeTime(e.target.value);
+                      if (n !== null) set(c.code, "time", n);
+                    }}
+                    className={`w-24 rounded-lg border px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 ${
+                      normalizeTime(values[c.code].time) === null
+                        ? "border-red-400 bg-red-50 text-red-700 focus:border-red-500 focus:ring-red-500"
+                        : "border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
+                    }`}
                   />
+                  {normalizeTime(values[c.code].time) === null && (
+                    <span className="ml-2 text-[11px] text-red-600">wpisz np. 15:30</span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5">
                   <input
