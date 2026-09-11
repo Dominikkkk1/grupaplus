@@ -169,7 +169,7 @@ function Section({
               <th className="px-3 py-2">Nr</th>
               <th className="px-3 py-2">Klient</th>
               <th className="px-3 py-2">Telefon</th>
-              <th className="px-3 py-2">Termin</th>
+              <th className="px-3 py-2">Termin realizacji</th>
               <th className="px-3 py-2">List przewozowy</th>
             </tr>
           </thead>
