@@ -253,10 +253,10 @@ export function OrderActions({
             onClick={() => sendForApproval("send")}
             disabled={approvalLoading}
             className="flex items-center gap-1.5 rounded-lg border border-purple-200 px-3 py-1 text-[12px] font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50"
-            title="Ustawia status na Oczekuje na akceptację i startuje licznik 24 h"
+            title="Wysyła klientowi maila z linkiem do akceptacji, ustawia status na Oczekuje na akceptację i startuje licznik 24 h"
           >
             <Send size={12} />
-            Wysłano projekt do klienta
+            Wyślij projekt do akceptacji
           </button>
         )}
         {(currentStatus === "awaiting_approval" ||
@@ -265,10 +265,10 @@ export function OrderActions({
             onClick={() => sendForApproval("resend")}
             disabled={approvalLoading}
             className="flex items-center gap-1.5 rounded-lg border border-purple-200 px-3 py-1 text-[12px] font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50"
-            title="Licznik 24 h startuje od nowa"
+            title="Wysyła klientowi nowy link. Licznik 24 h startuje od nowa, a poprzedni link przestaje działać"
           >
             <Send size={12} />
-            Wysłano poprawiony projekt
+            Wyślij poprawioną wersję
           </button>
         )}
 
@@ -337,8 +337,8 @@ export function OrderActions({
             <p className="mt-1 text-[13px] text-amber-800">Bez dodatkowych uwag.</p>
           )}
           <p className="mt-2 text-[11px] text-amber-700">
-            Po wysłaniu poprawionej wersji użyj przycisku &quot;Wysłano poprawiony projekt&quot; —
-            licznik 24 h ruszy od nowa, a stary link przestanie działać.
+            Wgraj poprawiony projekt i kliknij &quot;Wyślij poprawioną wersję&quot; —
+            klient dostanie nowy link, licznik 24 h ruszy od nowa, a stary link przestanie działać.
           </p>
         </div>
       )}
